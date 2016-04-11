@@ -11,5 +11,5 @@ mvn clean install docker:build
 
 ```
 docker run --name portfolio --rm --link quote-generator:CONSOLIDATION \
- --link some-redis:DISCOVERY_REDIS vertx-microservice-workshop/portfolio-service
+ vertx-microservice-workshop/portfolio-service
 ```

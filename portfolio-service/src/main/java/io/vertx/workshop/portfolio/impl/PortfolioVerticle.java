@@ -18,13 +18,14 @@ public class PortfolioVerticle extends MicroServiceVerticle {
   @Override
   public void start() throws Exception {
     super.start();
+
+    // Create the service object
     PortfolioServiceImpl service = new PortfolioServiceImpl(vertx, discovery, config().getDouble("money", 10000.00));
+
+    // Register the service proxy on the event bus
     ProxyHelper.registerService(PortfolioService.class, vertx, service, ADDRESS);
 
-    for (Map.Entry<String, String> entry : System.getenv().entrySet()) {
-      System.out.println(entry.getKey() + " = " + entry.getValue());
-    }
-
+    // Publish it in the discovery infrastructure
     publishEventBusService("portfolio", ADDRESS, PortfolioService.class, ar -> {
       if (ar.failed()) {
         ar.cause().printStackTrace();
@@ -33,13 +34,16 @@ public class PortfolioVerticle extends MicroServiceVerticle {
       }
     });
 
+    // TODO
+    //----
     // The portfolio event service
-    publishMessageSource("portfolio-events", EVENT_ADDRESS, JsonObject.class, ar -> {
+    publishMessageSource("portfolio-events", EVENT_ADDRESS, ar -> {
       if (ar.failed()) {
         ar.cause().printStackTrace();
       } else {
         System.out.println("Portfolio Events service published : " + ar.succeeded());
       }
     });
+    //----
   }
 }
