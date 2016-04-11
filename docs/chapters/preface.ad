@@ -19,3 +19,16 @@ are reactive systems and what is reactive programming, how to build applications
 
 This is a BYOL (bring your own laptop) session, so bring your Windows, OSX, or Linux laptop. If you are using
 Windows, we strongly recommend you to use a VirtualBox image we provide.
+
+What you are going to learn:
+
+* What is vert.x and how to use its asynchronous non-blocking development model
+* How to develop microservices with Vert.x, including discovery
+* How to expose HTTP endpoint with Vert.x
+* How to use the vert.x event bus to send and receive messages
+* How to compose asynchronous actions
+* How to use several languages in the same application
+* How to use databases
+
+And many other points too...
+

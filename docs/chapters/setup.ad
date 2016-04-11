@@ -18,18 +18,19 @@ The build is managed using Apache Maven. Compile everything using:
 mvn clean install
 ----
 
-### Starting the discovery infrastructure
+### The discovery infrastructure
 
 It's time to start. If you remember the microservice section, we need some discovery mechanism. Fortunately, Vert.x
 offers a discovery service. To let every component discovery the service, it needs to store the service _record_ in a
- location that every one can request. To do that, let's start a Redis database that will be used as discovery backend.
+ location that every one can request. This is obvisouly configurable in Vert.x, but let's use the default
+ implementation.
 
-NOTE: Vert.x supports several type of backend, but Redis is very convenient in our case.
+By default, Vert.x discovery service is going to use a distributed map accessible by all the member of the cluster.
+So, when you start your vert.x application and enable the cluster mode, it joins a cluster. This cluster lets:
 
-Start Redis as follows:
+* node to come and go, and so manage member discovery
+* share data such as distributed map, lock, counter...
+* implement the distributed event bus
 
-[source]
-----
-docker run --name some-redis -d  -p 6379:6379 redis
-----
-
+In our context, nothing is required to configure it. Our docker images already start the Vert.x applications in
+cluster mode.

@@ -209,13 +209,104 @@ the HTTP endpoint we have implemented in the quote generator. For this, we are g
 * call the service for each company we own some shares
 * when all calls are done, compute the value and send it back to the caller
 
+//TODO
 
+//TODO discovery CONSOLIDATION
 
 
 === Publishing the service
 
+Now that the service implementation is complete, let's publish it ! First we need a `verticle` that creates the actual
+ service object, registers the service on the event bus and publishes the service in the discovery infrastructure.
+
+Open the `io.vertx.workshop.portfolio.impl.PortfolioVerticle` class. In its `start` method is does what we just say:
+
+1) Create the service object with:
+
+[source, java]
+----
+PortfolioServiceImpl service = new PortfolioServiceImpl(vertx, discovery, config().getDouble("money", 10000.00));
+----
+
+2) Register it on the event bus using the `ProxyHelper` class:
+
+[source, java]
+----
+ProxyHelper.registerService(PortfolioService.class, vertx, service, ADDRESS);
+----
+
+3) Publish the service in the discovery infrastructure to make it discoverable:
+
+[source, java]
+----
+publishEventBusService("portfolio", ADDRESS, PortfolioService.class, ar -> {
+  if (ar.failed()) {
+    ar.cause().printStackTrace();
+  } else {
+    System.out.println("Portfolio service published : " + ar.succeeded());
+  }
+});
+----
+
+The `publishEventBusService` is implemented as follows:
+
+[source, java]
+----
+// Create the service record:
+Record record = EventBusService.createRecord(name, address, serviceClass);
+// Publish it using the discovery service
+discovery.publish(record, ar -> {
+  if (ar.succeeded()) {
+    registeredRecords.add(record);
+    completionHandler.handle(Future.succeededFuture());
+  } else {
+    completionHandler.handle(Future.failedFuture(ar.cause()));
+  }
+});
+----
+
+Are we done ? No.... We have a second service to publish. Remember, we are also sending messages on the event bus
+when we buy or sell stocks. This is also a service (a message source service to be exact).
+
+At the end of the `start` method, add:
+
+[source, java]
+----
+publishMessageSource("portfolio-events", EVENT_ADDRESS, ar -> {
+  if (ar.failed()) {
+    ar.cause().printStackTrace();
+  } else {
+    System.out.println("Portfolio Events service published : " + ar.succeeded());
+  }
+});
+----
+
+`portfolio-events` is the service name, `EVENT_ADDRESS` is the event bus address.
+
+Now we are done, and it's time to build and run this service.
 
 
+=== Run time !
+
+To build the project launch:
+
+----
+mvn clean package docker:build
+----
+
+Then, launch it with:
+
+----
+docker run --name portfolio --rm --link quote-generator:CONSOLIDATION vertx-microservice-workshop/portfolio-service
+----
+
+`link` ? What's this ? It instructs Docker to link this container with the `quote-generator` container we started
+before. This link will be named `CONSOLIDATION`. Vert.x discovery service detects these links and imports
+the service records in the discovery infrastructure, so your application does not have to know whether the service
+has been imported using a docker link, or published _manually_, or imported some other ways.
+
+However, once launched, not much happening.... It's time to implement our first trader that is going to buy and sell
+stocks.
 
 
 

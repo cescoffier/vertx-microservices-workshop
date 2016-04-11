@@ -1,3 +1,5 @@
+# Asciidcotor output
+/docs/output
 ### Maven template
 target/
 pom.xml.tag

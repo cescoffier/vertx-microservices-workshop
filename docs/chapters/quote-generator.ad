@@ -180,16 +180,13 @@ mvn package docker:build
 Then, open a new terminal and launch:
 
 ----
-docker run -p 8081:8080 --rm --name quote-generator --link some-redis:DISCOVERY_REDIS vertx-microservice-workshop/quote-generator
+docker run -p 8081:8080 --rm --name quote-generator vertx-microservice-workshop/quote-generator
 ----
 
 Let's analysis this docker command. It runs a container created from the image we just built
-(`vertx-microservice-workshop/quote-generator`). We give it a name (`quote-generator`) and we link it to the redis
-image we started before. So, it can publish the services in the Redis database and let anyone find them.
-
-The `-p` option configure the port forwarding. So the port 8080 of the application is now exposed on the port 8081 of
- your machine (or the docker-machine). In our microservice world, it also means that the HTTP endpoint becomes
- discoverable.
+(`vertx-microservice-workshop/quote-generator`). We give it a name (`quote-generator`). The `-p` option configure the
+port forwarding. So the port 8080 of the application is now exposed on the port 8081 of your machine (or the
+docker-machine). In our microservice world, it also means that the HTTP endpoint becomes discoverable.
 
 Let's now open a browser and have a look to http://dockerhost:8081.
 

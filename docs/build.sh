@@ -20,7 +20,8 @@ MASTER_ADOC=index.ad
 MASTER_DOCBOOK=${MASTER_ADOC/.ad/.xml}
 
 # Command options
-SHARED_OPTIONS='-a numbered -a experimental -a source-highlighter=coderay -r asciidoctor-diagram -a imagesdir=images'
+SHARED_OPTIONS='-a numbered -a experimental -a source-highlighter=coderay -r asciidoctor-diagram -a imagesdir=images
+--destination-dir=output'
 
 # Formats
 if [ ! -z $1 ]; then
