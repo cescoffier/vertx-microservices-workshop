@@ -1,0 +1,227 @@
+## Event bus services - Portfolio service
+
+In the quote generator we have seen the basics of Vert.x development:
+
+* Asynchronous API and `AsyncResult`
+* Implementing `Handler`
+* Sending and receiving messages from the event bus
+
+In the portfolio component, we are going to implement an _event bus service_.
+
+A `Portfolio` stores the different owned stocks and the available cash.
+
+### RPC and Async RPC
+
+Microservices are not only about REST. They can be exposes using any type of interactions, and _Remote Procedure Calls_ is one of them. With RPC, an component can effectively send a request to another component by doing a local procedure call, which results in the request being packaged as a message and sent to the callee. Likewise, the result is sent back and returned to the caller component as the result of the procedure call:
+
+[plantuml, rpc-sequence, png]
+----
+@startuml
+autonumber
+Bob -> Proxy: hello("Bob")
+hnote over Bob : blocked
+Proxy -> Proxy: Encapsulate the call in a network message
+Proxy ->o Server: Network Communication
+Server -> Server: Unpack the message
+Server -> Alice: hello("Bob")
+Server -> Server: Encapsulate the result in a network message
+Server ->o Proxy: Network Communication
+Proxy -> Proxy: Unpack the message
+Proxy -> Bob : "hello Bob"
+@enduml
+----
+
+Such interactions has the advantages to introduce typing, and so is less error prone than raw messages. However, it also introduces a tighter coupling between the caller and the callee. The caller knows how to call the callee:
+
+1. how the service is called
+2. where the service is living (location)
+
+Traditional RPC exhibits an annoying drawbacks: the caller waits until the response has been received. This is definitely a blocking call, as it involves at least two network messages. In addition, it is not really designed for failures while distributed communications have many reason to fail (`RemoteException` I'm thinking about you...).
+
+Fortunately, Vert.x proposes a different form of RPC: Async RPC. Async RPC follows the same principles as RPC, but instead of _waiting_ for the response, it passes a `Handler<AsyncResult<X>` called when the result is received.
+
+[plantuml, async-rpc-sequence, png]
+----
+ @startuml
+ autonumber
+ participant Bob
+ participant Handler
+ participant Proxy
+ participant Server
+ participant Alice
+ Bob -> Proxy: hello("Bob", handler)
+ hnote over Bob : not blocked
+ Proxy -> Proxy: Encapsulate the call in a network message
+ Proxy ->o Server: Network Communication (event bus message)
+ Server -> Server: Unpack the message
+ Server -> Alice: hello("Bob")
+ Server -> Server: Encapsulate the result in a network message
+ Server ->o Proxy: Network Communication (event bus message reply)
+ Proxy -> Proxy: Unpack the message
+ Proxy -> Handler : AsyncResult("hello Bob")
+ @enduml
+----
+
+The `AsyncResult` notifies the `Handler` whether the invocation was successful or failed. Upon success, the handler can retrieve the result.
+
+Such async-RPC has several advantages:
+
+* the caller is not blocked
+* it is designed for failures
+* it avoids you to send messages on the event bus
+
+### Async service interface
+
+To create an async RPC service, or event bus service, or service proxies, you first need a Java interface declaring the async methods. Open the `io.vertx.workshop.portfolio.PortfolioService` class.
+
+The class is annotated with:
+
+* `ProxyGen` - enables the event bus service proxy and server generation
+* `VertxGen`  - enables the creation of the proxy in the different language supported by Vert.x
+
+Let's have a look at the first method:
+
+[source]
+----
+void getPortfolio(Handler<AsyncResult<Portfolio>> resultHandler);
+----
+
+This method lets you retrieve a `Portfolio` object. As explained above the method is asynchronous and so has a `Handler` parameter receiving an `AsyncResult<Portfolio>`. The other methods follows the same pattern.
+
+NOTE: You may have also noticed the the package as a `package-info.java` class. This file is required to enable the service proxy generation
+
+=== Data objects
+
+The `Portfolio` object is a data object. Event bus proxies support a limited set of types, and for non-supported types, it must use _data objects_ (please check the http://vertx.io/docs/vertx-service-proxy/[documentation] for the whole list of supported types). Data objects are Java classes obeying to a set of constraints:
+
+* It must be annotated with `DataObject`
+* It must have an empty constructor, a copy constructor and a constructor taking a `JsonObject` as parameter
+* It must have a `toJson` method building a `JsonObject` representing the current object
+* Fields must be _property_ with (getters and setters)
+
+Let's open the `io.vertx.workshop.portfolio.Portfolio` class to see how it looks like. As you can see, all the JSON handling is managed by `converter` that are automatically generated, to a data object is very close to a _bean_.
+
+=== Implementing the service
+
+It's nice to have an async interface for our service, but it's time to implement it. We are going to implement 2
+methods in this service:
+
+* `getPortfolio` to understand how to create `AsyncResult` objects
+* `sendActionOnTheEventBus` to see how to send messages on the event bus
+* `evaluate` computing the current value of the portfolio
+
+==== Creating AsyncResult
+
+As we have seen above, our async service have `Handler<AsyncResult<Portfolio>>` parameter. So when we implement this
+service, we would need to call the `Handler` with an instance of `AsyncResult`. To see how this works, let's
+implement the `getPortfolio` method:
+
+In `io.vertx.workshop.portfolio.impl.PortfolioServiceImpl`, replace the body of `getPortfolio` by:
+
+[source]
+----
+resultHandler.handle(Future.succeededFuture(portfolio));
+----
+
+Wow... one single line ? Let's dissect this line:
+
+* `resultHandler.handle` : this is to invoke the `Handler`. `Handler<X>`s have a single method (`handle(X)`).
+* `Future.succeededFuture` : this is how we create an instance of `AsyncResult` denoting a success. The passed value
+ is the result (`portfolio`)
+
+But, wait, What is the relationship between `AsyncResult` and `Future` ? A `Future` represents the result of an action
+that may, or may not, have occurred yet. The action behind a `Future` object may succeed or fail. `AsyncResult`
+is a structure describing the success of the failure of an operation. So, `Future` are `AsyncResult`. In Vert.x
+`AsyncResult` are created from the `Future` class.
+
+`AsyncResult` describes:
+
+* a success as shown before, it encapsulates the result
+* a failure, it encapsulate a `Throwable` instance
+
+NOTE: Did you know that the term `Future` has been introduced in 1977... Not really new.
+
+So, how does this work with our async RPC service.
+
+[plantuml, portfolio-sequence, png]
+----
+ @startuml
+ autonumber
+ participant user
+ participant handler
+ participant proxy
+ user -> proxy: proxy.getPorfolio(handler)
+ proxy -> proxy: Encapsulate the call in a network message
+ proxy ->o server: Network Communication (event bus message)
+ server -> server: Unpack the message
+ server -> PortfolioServiceImpl_instance: getPortfolio(another-handler)
+ PortfolioServiceImpl_instance -> PortfolioServiceImpl_instance: another-handler.handle(Future.succeededFuture(portfolio));
+ server -> server : Encapsulate the result in a network message
+ server ->o proxy: Network Communication (event bus message reply)
+ proxy -> proxy: Unpack the message
+ proxy -> handler : resultHandler.handle(Future.succeededFuture(portfolio))
+ @enduml
+----
+
+==== Sending event on the event bus
+
+In the previous chapter, we have registered a consumer receiving event bus services, it's time to see how to send
+messages on the event bus. You access the eventbus using `vertx.eventBus()`. From this object you can:
+
+* `send` : send a message in point to point mode
+* `publish` : broadcast a message to all consumers registered on the address
+* `send` with a `Handler<AsyncResult<Message>>>`: send a message in point to point mode and expect a reply
+
+In the last point, notice the `AsyncResult<Message>`. It's an async result as the reply may never arrive (and so will
+ be considered as a failure).
+
+Ok, back to our code. We have provided the `buy` and `sell` methods, that are just doing some checks before buying or
+ selling stocks. Once the action is _emitted_, we send a message on the event bus that will be consumed by the `Audit
+  Service` and the `Dashboard`. So, we are going to use the `publish` method.
+
+In the `sendActionOnTheEventBus` method, write:
+
+[source, java]
+----
+vertx.eventBus().publish(EVENT_ADDRESS, new JsonObject()
+    .put("action", action)
+    .put("quote", quote)
+    .put("date", System.currentTimeMillis())
+    .put("original-amount", amount)
+    .put("new-amount", newAmount)
+);
+----
+
+Let's have a deeper look:
+
+1. it gets the `EventBus` instance and call `publish` on it. The first parameter in the `address` on which the
+message is sent
+2. the body is a `JsonObject` containing the different information on the action (buy or sell, the quote (another
+json object), the date...
+
+==== Coordinating async methods - Portfolio value evaluation
+
+The last method to implement is the `evaluate` method. This method computes the current value of the portfolio.
+However, for this it needs to access the "current" value of the stock (so the last quote). It is going to consume
+the HTTP endpoint we have implemented in the quote generator. For this, we are going to:
+
+* discover the service
+* call the service for each company we own some shares
+* when all calls are done, compute the value and send it back to the caller
+
+
+
+
+=== Publishing the service
+
+
+
+
+
+
+
+
+
+
+
+

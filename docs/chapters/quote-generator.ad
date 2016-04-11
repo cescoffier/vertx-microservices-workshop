@@ -1,0 +1,252 @@
+## The first microservice - the quote generator
+
+Remember, the quote generator is unrealistic, and is basically a set of randoms... But before letting you implement
+parts of the application, let's have a look
+
+
+### Project structure
+
+Let's have a look to the project, as every other project are structure the same way.
+
+[source]
+----
+.
+├── README.md <--- component description
+├── pom.xml <--- the Maven file
+└── src
+    ├── docker
+    │   └── config.json <--- a configuration file that is passed when the component starts in its docker container
+    └── main
+        └── java
+            └── io.vertx.workshop.quote
+                            ├── GeneratorConfigVerticle.java <--- the main verticle
+                            ├── QuoteVerticle.java           <--- a verticle managing quotes for a single company
+                            └── RestQuoteAPIVerticle.java    <--- a verticle exposing a REST endpoint
+----
+
+Let's start with the `pom.xml` file. This file specifies the Maven build:
+
+1. Define the dependencies
+2. Build a _fat-jar_
+3. Build a docker container
+
+A _fat-jar_ is a convenient way to package a Vert.x application. It creates a über-jar containing your application
+and all its dependencies, including vert.x. Then to launch it, you just need to use `java -jar ....`, without having
+to handle the `CLASSPATH`. Wait, I told you that Vert.x does not dictate a type of packaging. It's true, fat jars
+are convenient, but it's the the only way.
+
+The created _fat-jar_ is configured to use the `io.vertx.core.Launcher` main class, but you can use your own _main_
+class. The `Launcher` class creates the Vert.x instance, configure it and deploys the _main-verticle_. Again, it's
+just a convenient way, you can use your own _main_ class.
+
+The `pom.xml` file is also configured to create a Docker container, configured to launch the application.
+
+### Verticle
+
+As you may have noticed, the code is structured in 3 `verticles`, but what are these? Verticles is a way to structure
+ Vert.x application. It's not mandatory, but it is quite convenient. A verticle is a chunk of code that will be
+ deployed, on top of Vert.x. A verticle has accessed to the instance of `vertx` on which it's deployed, and can deploy
+ other verticles.
+
+Let's open the `GeneratorConfigVerticle` class, and look at the `start` method:
+
+[source, java]
+----
+@Override
+public void start() throws Exception {
+    super.start();
+
+    JsonArray quotes = config().getJsonArray("quotes");
+    for (Object q : quotes) {
+      JsonObject quote = (JsonObject) q;
+      vertx.deployVerticle(QuoteVerticle.class.getName(),
+          new DeploymentOptions().setConfig(quote));
+    }
+    vertx.deployVerticle(RestQuoteAPIVerticle.class.getName());
+
+    publishMessageSource("quotes", "stocks", rec -> {
+      if (!rec.succeeded()) {
+        rec.cause().printStackTrace();
+      }
+      System.out.println("Quotes service published : "
+          + rec.succeeded());
+    });
+}
+----
+
+Verticles can retrieve a configuration using the `config()` method. Here it gets the details about the company to
+simulate. The configuration is a `JsonObject`. Vert.x heavily uses JSON, so you will see a lot of Json during the lab
+. For each company found in the configuration, it deploys another verticle with the extracted configuration. Finally,
+ it deploys another verticle.
+
+The last part of the method is about the discovery mentioned in the microservice section. This component generates
+quotes sent on the event bus. But to let other components discover where the messages are sent (where means on which
+address), it registers it. `quotes` is the name of the component, `stocks` is the event bus address on which the
+message are sent. The last argument is a `Handler` that is notified when the registration has been completed. The
+`handler` receives a structured called `AsyncResult`.
+
+Remember, Vert.x is promoting an asynchronous, non-blocking development model. Publishing the service may take time
+(actually it does as it creates a records, write it to the backend, and notifies everyone), as as we cannot block the
+ event loop, the method is asynchronous. Asynchronous method have a `Handler` as last parameter that is invoked when
+ the operation has been completed. This `Handler` is called with the same event loop as the one having called the async
+ method. When the asynchronous operation can fail, the `Handler` receives as parameter an `AsyncResult` telling
+ whether or not the operation has succeeded. You will see the following patterns a lot in Vert.x application:
+
+[source, java]
+----
+ // Asynchronous method returning an object of type X
+ operation(param1, param2, Handler<AsyncResult<X>>);
+
+ // Handler receiving an object of type X
+
+ ar -> {
+   if (ar.succeeded()) {
+      X x = ar.result();
+      // Do something with X
+   } else {
+      // it failed
+      Throwable cause = ar.cause();
+   }
+ }
+----
+
+If you remember the architecture, the quote generator also provides a HTTP endpoint returning the last values of the
+quotes (but, you are going to work on it). This _service_ is not published, as we are going to "publish" it using
+Docker.
+
+### The consolidation endpoint
+
+It's time for you to develop some part of the application (I know you have pins and needles in your hands). Open the `RestQuoteAPIVerticle`. It's a verticle class extending `AbstractVerticle`. In the `start` method you need to:
+
+1. Register an event bus consumer to collect the last quotations (in the `quotes` map)
+2. Handle HTTP request to return the list of quotes, or a single quote is the `symbol` param is set.
+
+Let's do that....
+
+#### Implementing a Handler to receive events
+
+The first action is about creating a `Handler`, so a method that is invoked on event. Here the `Handler` is going to be called for every messages sent on the event bus on a specific `address` (receiving each quote sent by the generator). Extend the `Handler` with:
+
+[source, java]
+----
+JsonObject quote = message.body();
+quotes.put(quote.getString("name"), quote);
+----
+
+First, it retrieves the message body. It's a Json object, and stores it in the `quotes` map.
+
+#### Implementing a Handler to handle HTTP requests
+
+Let's now implement the second point.  To handle the HTTP requests, we need a HTTP server. Fortunately, Vert.x let you creates HTTP servers using:
+
+[source, java]
+----
+vertx.createHttpServer()
+    .requestHandler(request -> {...})
+    .listen(port, resultHandler);
+----
+
+
+Replace the content of the `requestHandler` (a handler called on every incoming HTTP request) by:
+
+[source, java]
+----
+HttpServerResponse response = request.response()
+  .putHeader("content-type", "application/json");
+
+String symbol = request.getParam("symbol");
+if (symbol == null) {
+  response.end(Json.encodePrettily(quotes));
+} else {
+  JsonObject quote = quotes.get(symbol);
+  if (quote == null) {
+    response.setStatusCode(404).end();
+  } else {
+    response.end(quote.encodePrettily());
+  }
+}
+----
+
+You may wonder why synchronization is not required. Indeed we write in the map and read from it without any synchronization constructs. Here is only of the main feature of vert.x, as all this code is going to be executed by the **same** event loop, it will be always executed by the **same** thread, so it's never executed concurrently.
+
+### Time to start the quote generator
+
+First, let's build the docker image:
+
+----
+mvn package docker:build
+----
+
+Then, open a new terminal and launch:
+
+----
+docker run -p 8081:8080 --rm --name quote-generator --link some-redis:DISCOVERY_REDIS vertx-microservice-workshop/quote-generator
+----
+
+Let's analysis this docker command. It runs a container created from the image we just built
+(`vertx-microservice-workshop/quote-generator`). We give it a name (`quote-generator`) and we link it to the redis
+image we started before. So, it can publish the services in the Redis database and let anyone find them.
+
+The `-p` option configure the port forwarding. So the port 8080 of the application is now exposed on the port 8081 of
+ your machine (or the docker-machine). In our microservice world, it also means that the HTTP endpoint becomes
+ discoverable.
+
+Let's now open a browser and have a look to http://dockerhost:8081.
+
+It should return something like:
+
+----
+{
+  "MacroHard" : {
+    "volume" : 100000,
+    "shares" : 51351,
+    "symbol" : "MCH",
+    "name" : "MacroHard",
+    "ask" : 655.0,
+    "bid" : 666.0,
+    "open" : 600.0
+  },
+  "Black Coat" : {
+    "volume" : 90000,
+    "shares" : 45889,
+    "symbol" : "BCT",
+    "name" : "Black Coat",
+    "ask" : 654.0,
+    "bid" : 641.0,
+    "open" : 300.0
+  },
+  "Divinator" : {
+    "volume" : 500000,
+    "shares" : 251415,
+    "symbol" : "DVN",
+    "name" : "Divinator",
+    "ask" : 877.0,
+    "bid" : 868.0,
+    "open" : 800.0
+  }
+}
+----
+
+It gives the current details of each quotation. The data is updated every 3 seconds, so refresh your browser to get
+the latest data.
+
+### You are not a financial expert ?
+
+So maybe you are not used to the financial world and words... I'm not too, and this is a overly simplified version.
+Let's define the important fields:
+
+* `name` : the company name
+* `symbol` : short name
+* `shares` : the number of stock that can be bought
+* `open` : the stock price when the session opened
+* `ask` : the price of the stock when you buy them (seller price)
+* `bid` : the price of the stock when you sell them (buyer price)
+
+You can check https://en.wikipedia.org/wiki/Financial_quote[Wikipedia] for more details.
+
+
+
+
+
+
+

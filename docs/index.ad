@@ -1,0 +1,18 @@
+# Vert.x - From zero to (micro)-hero
+v0.1, Apr 8, 2016
+:toc:
+:toc-title: Table of Contents
+:toclevels: 4
+:toc-placement!:
+:imagesdir: images
+
+toc::[]
+
+include::chapters/preface.ad[Preface]
+include::chapters/vertx.ad[Vert.x]
+include::chapters/microservices.ad[Demystifying microservices]
+include::chapters/application.ad[The application]
+include::chapters/prerequisites.ad[Prerequisites]
+include::chapters/setup.ad[Let's start !]
+include::chapters/quote-generator.ad[The first microservice - the quote generator]
+include::chapters/portfolio.ad[Event bus services - the protfolio service]

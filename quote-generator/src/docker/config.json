@@ -1,0 +1,25 @@
+{
+  "quotes": [
+    {
+      "name": "MacroHard",
+      "symbol": "MCH",
+      "volume": 100000,
+      "price": 600,
+      "variation": 200
+    },
+    {
+      "name": "Divinator",
+      "symbol": "DVN",
+      "volume": 500000,
+      "price": 800,
+      "variation": 50
+    },
+    {
+      "name": "Black Coat",
+      "symbol": "BCT",
+      "volume": 90000,
+      "price": 300,
+      "variation": 150
+    }
+  ]
+}

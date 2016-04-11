@@ -1,0 +1,21 @@
+## Preface
+
+Let's start by the beginning.... Vert.x. What's Vert.x, that's a pretty good question. If you go on the
+http://vertx.io[Vert.x web site], Vert.x is defined as "a tool-kit for building reactive applications on the JVM". This
+description is rather fuzzy no ? What's a tool-kit ? What are reactive applications ? In this lab, we are going to
+explain these terms, and build an application using Vert.x. This application is going to be composed by
+_microservices_. A buzzword to be trendy? Actually no, Vert.x was promoting _microservices_  before everyone and his
+dog jumped on the bandwagon. The application is going to be:
+
+* based on vert.x (that's whyt you are here, no ?)
+* distributed
+* reactive
+* (a bit) fun
+
+This lab offers developers an intro-level, hands-on session with Vert.x, from the first line of code, to making
+services, to consuming them and finally to assembling everything in a consistent reactive system. It explains what
+are reactive systems and what is reactive programming, how to build applications based on microservice**s** (the
+**s** is important).
+
+This is a BYOL (bring your own laptop) session, so bring your Windows, OSX, or Linux laptop. If you are using
+Windows, we strongly recommend you to use a VirtualBox image we provide.

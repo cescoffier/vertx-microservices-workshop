@@ -1,0 +1,18 @@
+= Cheatsheets
+
+[[Portfolio]]
+== Portfolio
+
+++++
+ @author <a href="http://escoffier.me">Clement Escoffier</a>
+++++
+'''
+
+[cols=">25%,^25%,50%"]
+[frame="topbot"]
+|===
+^|Name | Type ^| Description
+|[[cash]]`cash`|`Number (double)`|-
+|[[stocks]]`stocks`|`Number (Integer)`|-
+|===
+
