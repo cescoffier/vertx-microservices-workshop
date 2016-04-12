@@ -3,22 +3,22 @@
     {
       "name": "MacroHard",
       "symbol": "MCH",
-      "volume": 100000,
+      "volume": 95000,
       "price": 600,
       "variation": 200
     },
     {
       "name": "Divinator",
       "symbol": "DVN",
-      "volume": 500000,
-      "price": 800,
+      "volume": 98000,
+      "price": 650,
       "variation": 50
     },
     {
       "name": "Black Coat",
       "symbol": "BCT",
       "volume": 90000,
-      "price": 300,
+      "price": 550,
       "variation": 150
     }
   ]
