@@ -1,6 +1,7 @@
 package io.vertx.workshop.portfolio.impl;
 
 import io.vertx.core.*;
+import io.vertx.core.http.HttpClient;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.discovery.DiscoveryService;
 import io.vertx.ext.discovery.types.HttpEndpoint;
@@ -9,10 +10,8 @@ import io.vertx.workshop.portfolio.PortfolioService;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * The portfolio service implementation.
@@ -55,46 +54,61 @@ public class PortfolioServiceImpl implements PortfolioService {
     // TODO
     // ----
 
-    //TODO improve composition here.
-
-    System.out.println("Evaluating portfolio");
-
-    HttpEndpoint.get(vertx, discovery, new JsonObject().put("name", "CONSOLIDATION"), client -> {
-      if (client.failed()) {
-        resultHandler.handle(Future.failedFuture(client.cause()));
-      } else {
-        // We have the client, time to call it
-        List<Future> futures = new ArrayList<>();
-        Set<Map.Entry<String, Integer>> entries = portfolio.getShares().entrySet();
-        for (Map.Entry<String, Integer> entry : entries) {
-          Future<Double> future = Future.future();
-          futures.add(future);
-          client.result().getNow("/?name=" + encode(entry.getKey()), response -> {
-            if (response.statusCode() == 200) {
-              response.bodyHandler(buffer -> {
-                double v = entry.getValue() * buffer.toJsonObject().getDouble("bid");
-                future.complete(v);
-              });
-            } else {
-              future.complete(0.0);
-            }
-          });
-        }
-
-        if (futures.isEmpty()) {
-          resultHandler.handle(Future.succeededFuture(0.0));
-        } else {
-          CompositeFuture.all(futures).setHandler(
-              ar -> {
-                double sum = futures.stream().mapToDouble(fut -> (double) fut.result()).sum();
-                System.out.println("Computed evaluation : " + sum + " / " + portfolio.getShares());
-                resultHandler.handle(Future.succeededFuture(sum));
-              });
-        }
-      }
-    });
+    // First we need to discover and get a HTTP client for the `consolidation` service:
+    HttpEndpoint.get(vertx, discovery, new JsonObject().put("name", "CONSOLIDATION"),
+        client -> {
+          if (client.failed()) {
+            // It failed...
+            resultHandler.handle(Future.failedFuture(client.cause()));
+          } else {
+            // We have the client
+            HttpClient httpClient = client.result();
+            computeEvaluation(httpClient, resultHandler);
+          }
+        });
 
     // ---
+  }
+
+  private void computeEvaluation(HttpClient httpClient, Handler<AsyncResult<Double>> resultHandler) {
+    // We need to call the service for each company we own shares
+    List<Future> results = portfolio.getShares().entrySet().stream()
+        .map(entry -> getValueForCompany(httpClient, entry.getKey(), entry.getValue()))
+        .collect(Collectors.toList());
+
+    if (results.isEmpty()) {
+      // We don't own anything
+      resultHandler.handle(Future.succeededFuture(0.0));
+    } else {
+      // We need to return only when we have all results, for this we create a composite future. The set handler
+      // is called when all the futures has been assigned.
+      CompositeFuture.all(results).setHandler(
+          ar -> {
+            double sum = results.stream().mapToDouble(fut -> (double) fut.result()).sum();
+            resultHandler.handle(Future.succeededFuture(sum));
+          });
+    }
+  }
+
+  private Future<Double> getValueForCompany(HttpClient client, String company, int numberOfShares) {
+    // Create the future object that will  get the value once the value have been retrieved
+    Future<Double> future = Future.future();
+
+    //TODO
+    //----
+    client.getNow("/?name=" + encode(company), response -> {
+      if (response.statusCode() == 200) {
+        response.bodyHandler(buffer -> {
+          double v = numberOfShares * buffer.toJsonObject().getDouble("bid");
+          future.complete(v);
+        });
+      } else {
+        future.complete(0.0);
+      }
+    });
+    // ---
+
+    return future;
   }
 
 

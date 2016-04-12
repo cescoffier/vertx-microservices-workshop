@@ -3,10 +3,9 @@
 Remember, the quote generator is unrealistic, and is basically a set of randoms... But before letting you implement
 parts of the application, let's have a look
 
-
 ### Project structure
 
-Let's have a look to the project, as every other project are structure the same way.
+Let's have a look to the project, as every other project are structured the same way.
 
 [source]
 ----
@@ -30,8 +29,8 @@ Let's start with the `pom.xml` file. This file specifies the Maven build:
 2. Build a _fat-jar_
 3. Build a docker container
 
-A _fat-jar_ is a convenient way to package a Vert.x application. It creates a über-jar containing your application
-and all its dependencies, including vert.x. Then to launch it, you just need to use `java -jar ....`, without having
+A _fat-jar_ is a convenient way to package a Vert.x application. It creates a _über-jar_ containing your application
+and all its dependencies, including vert.x. Then, to launch it, you just need to use `java -jar ....`, without having
 to handle the `CLASSPATH`. Wait, I told you that Vert.x does not dictate a type of packaging. It's true, fat jars
 are convenient, but it's the the only way.
 
@@ -44,32 +43,32 @@ The `pom.xml` file is also configured to create a Docker container, configured t
 ### Verticle
 
 As you may have noticed, the code is structured in 3 `verticles`, but what are these? Verticles is a way to structure
- Vert.x application. It's not mandatory, but it is quite convenient. A verticle is a chunk of code that will be
- deployed, on top of Vert.x. A verticle has accessed to the instance of `vertx` on which it's deployed, and can deploy
- other verticles.
+ Vert.x application code. It's not mandatory, but it is quite convenient. A verticle is a chunk of code that will be
+ deployed on top of a Vert.x instance. A verticle has accessed to the instance of `vertx` on which it's deployed, and
+ can deploy other verticles.
 
 Let's open the `GeneratorConfigVerticle` class, and look at the `start` method:
 
 [source, java]
 ----
 @Override
-public void start() throws Exception {
+public void start() {
     super.start();
 
-    JsonArray quotes = config().getJsonArray("quotes");
+    JsonArray quotes = config().getJsonArray("companies");
     for (Object q : quotes) {
-      JsonObject quote = (JsonObject) q;
-      vertx.deployVerticle(QuoteVerticle.class.getName(),
-          new DeploymentOptions().setConfig(quote));
+      JsonObject company = (JsonObject) q;
+      // Deploy the verticle with a configuration.
+      vertx.deployVerticle(MarketDataVerticle.class.getName(), new DeploymentOptions().setConfig(company));
     }
+
     vertx.deployVerticle(RestQuoteAPIVerticle.class.getName());
 
-    publishMessageSource("quotes", "shares", rec -> {
+    publishMessageSource("market-data", ADDRESS, rec -> {
       if (!rec.succeeded()) {
         rec.cause().printStackTrace();
       }
-      System.out.println("Quotes service published : "
-          + rec.succeeded());
+      System.out.println("Market-Data service published : " + rec.succeeded());
     });
 }
 ----
@@ -77,17 +76,17 @@ public void start() throws Exception {
 Verticles can retrieve a configuration using the `config()` method. Here it gets the details about the company to
 simulate. The configuration is a `JsonObject`. Vert.x heavily uses JSON, so you will see a lot of Json during the lab
 . For each company found in the configuration, it deploys another verticle with the extracted configuration. Finally,
- it deploys another verticle.
+ it deploys another verticle providing a very simple HTTP API.
 
 The last part of the method is about the discovery mentioned in the microservice section. This component generates
-quotes sent on the event bus. But to let other components discover where the messages are sent (where means on which
-address), it registers it. `quotes` is the name of the component, `shares` is the event bus address on which the
+quotes sent on the event bus. But to let other components discover where the messages are sent (_where_ means on which
+address), it registers it. `market-data` is the name of the service, `ADDRESS` is the event bus address on which the
 message are sent. The last argument is a `Handler` that is notified when the registration has been completed. The
 `handler` receives a structured called `AsyncResult`.
 
 Remember, Vert.x is promoting an asynchronous, non-blocking development model. Publishing the service may take time
-(actually it does as it creates a records, write it to the backend, and notifies everyone), as as we cannot block the
- event loop, the method is asynchronous. Asynchronous method have a `Handler` as last parameter that is invoked when
+(actually it does as it creates a record, write it to the backend, and notifies everyone), as as we cannot block the
+ event loop, the method is asynchronous. Asynchronous methods have a `Handler` as last parameter that is invoked when
  the operation has been completed. This `Handler` is called with the same event loop as the one having called the async
  method. When the asynchronous operation can fail, the `Handler` receives as parameter an `AsyncResult` telling
  whether or not the operation has succeeded. You will see the following patterns a lot in Vert.x application:
@@ -112,32 +111,36 @@ Remember, Vert.x is promoting an asynchronous, non-blocking development model. P
 
 If you remember the architecture, the quote generator also provides a HTTP endpoint returning the last values of the
 quotes (but, you are going to work on it). This _service_ is not published, as we are going to "publish" it using
-Docker.
+Docker (no code required, Docker publishes it).
 
 ### The consolidation endpoint
 
-It's time for you to develop some part of the application (I know you have pins and needles in your hands). Open the `RestQuoteAPIVerticle`. It's a verticle class extending `AbstractVerticle`. In the `start` method you need to:
+It's time for you to develop some part of the application (I know you have pins and needles in your hands). Open the
+`RestQuoteAPIVerticle`. It's a verticle class extending `AbstractVerticle`. In the `start` method you need to:
 
 1. Register an event bus consumer to collect the last quotations (in the `quotes` map)
-2. Handle HTTP request to return the list of quotes, or a single quote is the `symbol` param is set.
+2. Handle HTTP request to return the list of quotes, or a single quote if the `name` param is set.
 
 Let's do that....
 
 #### Implementing a Handler to receive events
 
-The first action is about creating a `Handler`, so a method that is invoked on event. Here the `Handler` is going to be called for every messages sent on the event bus on a specific `address` (receiving each quote sent by the generator). Extend the `Handler` with:
+The first action is about creating a `Handler`, so a method that is invoked on event. Here the `Handler` is going to
+be called for every messages sent on the event bus on a specific `address` (receiving each quote sent by the generator).
+ In the `Handler` body write:
 
 [source, java]
 ----
-JsonObject quote = message.body();
-quotes.put(quote.getString("name"), quote);
+JsonObject quote = message.body(); // 1
+quotes.put(quote.getString("name"), quote); // 2
 ----
 
-First, it retrieves the message body. It's a Json object, and stores it in the `quotes` map.
+First, it retrieves the message body (1). It's a Json object, and stores it in the `quotes` map (2).
 
 #### Implementing a Handler to handle HTTP requests
 
-Let's now implement the second point.  To handle the HTTP requests, we need a HTTP server. Fortunately, Vert.x let you creates HTTP servers using:
+Let's now implement the second point.  To handle the HTTP requests, we need a HTTP server. Fortunately, Vert.x lets
+you creates HTTP servers using:
 
 [source, java]
 ----
@@ -151,29 +154,37 @@ Replace the content of the `requestHandler` (a handler called on every incoming 
 
 [source, java]
 ----
-HttpServerResponse response = request.response()
-  .putHeader("content-type", "application/json");
-
-String symbol = request.getParam("symbol");
-if (symbol == null) {
-  response.end(Json.encodePrettily(quotes));
-} else {
-  JsonObject quote = quotes.get(symbol);
-  if (quote == null) {
-    response.setStatusCode(404).end();
-  } else {
-    response.end(quote.encodePrettily());
-  }
-}
+HttpServerResponse response = request.response()    // <1>
+    .putHeader("content-type", "application/json");
+String company = request.getParam("name");          // <2>
+if (company == null) {
+    String content = Json.encodePrettily(quotes);   // <3>
+    response
+        .end(content);                              // <4>
+ } else {
+    JsonObject quote = quotes.get(company);
+    if (quote == null) {
+      response.setStatusCode(404).end();            // <5>
+    } else {
+      response.end(quote.encodePrettily());
+    }
 ----
+<1> Get the `response`object from the `request`
+<2> Gets the `name` parameter (query parameter)
+<3> Encode the map to JSON
+<4> Write the response and flush it using `end(...)`
+<5> If the given name does not match a company, set the status code to `404`
 
-You may wonder why synchronization is not required. Indeed we write in the map and read from it without any synchronization constructs. Here is only of the main feature of vert.x, as all this code is going to be executed by the **same** event loop, it will be always executed by the **same** thread, so it's never executed concurrently.
+You may wonder why synchronization is not required. Indeed we write in the map and read from it without any
+synchronization constructs. Here is only of the main feature of vert.x, as all this code is going to be executed by
+the **same** event loop, it will be always executed by the **same** thread, so it's never executed concurrently.
 
 ### Time to start the quote generator
 
-First, let's build the docker image:
+First, let's build the docker image. In the terminal, execute:
 
 ----
+cd quote-generator
 mvn package docker:build
 ----
 
@@ -227,6 +238,20 @@ It should return something like:
 It gives the current details of each quotation. The data is updated every 3 seconds, so refresh your browser to get
 the latest data.
 
+Let's now launch the dashboard. In another terminal, navigate to `$project/trader-dashboard` and execute:
+
+[source]
+----
+mvn clean package docker:build
+docker run -p 8083:8080 --rm --name dashboard vertx-microservice-workshop/trader-dashboard
+----
+
+Then open your browser to http://dockerhost:8083. You should see:
+
+image::dashboard-initial-state.png[Dashboard, 800]
+
+Some parts have no _content_, and it's normal as it's just the beginning...
+
 ### You are not a financial expert ?
 
 So maybe you are not used to the financial world and words... I'm not too, and this is a overly simplified version.
@@ -240,10 +265,4 @@ Let's define the important fields:
 * `bid` : the price of the stock when you sell them (buyer price)
 
 You can check https://en.wikipedia.org/wiki/Financial_quote[Wikipedia] for more details.
-
-
-
-
-
-
 

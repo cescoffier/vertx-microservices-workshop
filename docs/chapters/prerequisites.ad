@@ -34,7 +34,8 @@ On Windows, we recommend using a Virtualbox image providing Linux.
 
 Do avoid waiting for docker image to download when implementing the application, you should download them beforehand:
 
-//TODO image to retrieve
+[source]
+docker pull library/java
 
 #### Create Docker Host Mapping
 
@@ -48,7 +49,7 @@ Find out the IP address of your machine:
 docker-machine ip default
 ----
 
-NOTE: replace `default` by the name of your docker machine.
+IMPORTANT: Replace `default` by the name of your docker machine.
 
 This will provide the IP address associated with the Docker Machine created earlier.
 
@@ -59,8 +60,8 @@ Edit `/etc/hosts` (Mac OS) or `C:\Windows\System32\drivers\etc\hosts` (Windows) 
 <IP ADDRESS>  dockerhost
 ----
 
-On Linux `dockerhost` is `localhost` (as it runs natively). You would need to replace every reference to `dockerhost`
- by `localhost`.
+On Linux (and on for the lucky people having access to the native version of docker for Windows and Mac), `dockerhost`
+ is `localhost` (as it runs natively). You would need to replace every reference to `dockerhost` by `localhost`.
 
 ### Java Development Kit
 

@@ -48,12 +48,10 @@ public class RestQuoteAPIVerticle extends AbstractVerticle {
 //          response
 //              .end(Json.encodePrettily(quotes));
           // ---- by ----
-          //TODO Change by name
           String company = request.getParam("name");
           if (company == null) {
             String content = Json.encodePrettily(quotes);
             response
-                .putHeader("content-type", "application/json")
                 .end(content);
           } else {
             JsonObject quote = quotes.get(company);
@@ -61,7 +59,6 @@ public class RestQuoteAPIVerticle extends AbstractVerticle {
               response.setStatusCode(404).end();
             } else {
               response
-                  .putHeader("content-type", "application/json")
                   .end(quote.encodePrettily());
             }
           }

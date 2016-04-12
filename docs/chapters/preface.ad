@@ -1,32 +1,33 @@
 ## Preface
 
-Let's start by the beginning.... Vert.x. What's Vert.x, that's a pretty good question. If you go on the
-http://vertx.io[Vert.x web site], Vert.x is defined as "a tool-kit for building reactive applications on the JVM". This
-description is rather fuzzy no ? What's a tool-kit ? What are reactive applications ? In this lab, we are going to
+Let's start from the beginning.... _Vert.x_. What's Vert.x ? That's a pretty good question. If you go on the
+http://vertx.io[Vert.x web site], Vert.x is defined as "a toolkit for building reactive applications on the JVM". This
+description is rather fuzzy no ? What's a toolkit ? What are reactive applications ? In this lab, we are going to
 explain these terms, and build an application using Vert.x. This application is going to be composed by
-_microservices_. A buzzword to be trendy? Actually no, Vert.x was promoting _microservices_  before everyone and his
-dog jumped on the bandwagon. The application is going to be:
+_microservices_. Another buzzword to be trendy? No, Vert.x was promoting _microservices_  before everyone and
+ his dog jumped on the bandwagon. The application is going to be:
 
-* based on vert.x (that's whyt you are here, no ?)
+* based on vert.x (that's why you are here, no ?)
 * distributed
 * reactive
 * (a bit) fun
 
-This lab offers developers an intro-level, hands-on session with Vert.x, from the first line of code, to making
+This lab offers attendees an intro-level, hands-on session with Vert.x, from the first line of code, to making
 services, to consuming them and finally to assembling everything in a consistent reactive system. It explains what
 are reactive systems and what is reactive programming, how to build applications based on microservice**s** (the
 **s** is important).
 
 This is a BYOL (bring your own laptop) session, so bring your Windows, OSX, or Linux laptop. If you are using
-Windows, we strongly recommend you to use a VirtualBox image we provide.
+Windows, we strongly recommend you to use a VirtualBox image we provide. You would also need Docker, not because Vert
+.x needs Docker (it does not!), but to simulate a distributed system.
 
 What you are going to learn:
 
 * What is vert.x and how to use its asynchronous non-blocking development model
-* How to develop microservices with Vert.x, including discovery
-* How to use verticles
-* How to expose HTTP endpoint with Vert.x
+* How to develop microservices with Vert.x with several type of services, and service discovery
+* What are and how to use `verticles`
 * How to use the vert.x event bus to send and receive messages
+* How to expose HTTP endpoint with Vert.x
 * How to compose asynchronous actions
 * How to use several languages in the same application
 * How to use databases

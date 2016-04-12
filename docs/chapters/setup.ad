@@ -4,10 +4,11 @@
 
 [source]
 ----
-git clone ....
+git clone https://github.com/cescoffier/vertx-microservices-workshop
 ----
 
-// TODO
+You can import the code in your IDE as a Maven project. Refer to your IDE documentation to know how to import Maven
+projects.
 
 ### Build
 
@@ -15,6 +16,7 @@ The build is managed using Apache Maven. Compile everything using:
 
 [source]
 ----
+cd vertx-microservices-workshop
 mvn clean install
 ----
 
@@ -22,10 +24,10 @@ mvn clean install
 
 It's time to start. If you remember the microservice section, we need some discovery mechanism. Fortunately, Vert.x
 offers a discovery service. To let every component discovery the service, it needs to store the service _record_ in a
- location that every one can request. This is obvisouly configurable in Vert.x, but let's use the default
+ location that every one can request. This is obviously configurable in Vert.x, but let's use the default
  implementation.
 
-By default, Vert.x discovery service is going to use a distributed map accessible by all the member of the cluster.
+By default, Vert.x discovery service is going to use a distributed map accessible by all the members of the cluster.
 So, when you start your vert.x application and enable the cluster mode, it joins a cluster. This cluster lets:
 
 * node to come and go, and so manage member discovery
