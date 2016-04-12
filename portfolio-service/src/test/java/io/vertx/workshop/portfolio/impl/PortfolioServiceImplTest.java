@@ -5,6 +5,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.serviceproxy.ProxyHelper;
 import io.vertx.workshop.portfolio.Portfolio;
 import io.vertx.workshop.portfolio.PortfolioService;
 import org.junit.After;
@@ -28,7 +29,7 @@ public class PortfolioServiceImplTest {
 
     Async async = tc.async();
     vertx.deployVerticle(PortfolioVerticle.class.getName(), id -> {
-      service = PortfolioService.getProxy(vertx);
+      service = ProxyHelper.createProxy(PortfolioService.class, vertx, PortfolioService.ADDRESS);
       service.getPortfolio(ar -> {
         if (!ar.succeeded()) {
           System.out.println(ar.cause());

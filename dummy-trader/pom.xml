@@ -14,7 +14,7 @@
   <version>1.0-SNAPSHOT</version>
 
   <properties>
-    <main.verticle>io.vertx.workshop.trader.impl.DummyTraderVerticle</main.verticle>
+    <main.verticle>io.vertx.workshop.trader.impl.TraderVerticle</main.verticle>
   </properties>
 
   <dependencies>

@@ -18,13 +18,17 @@ package io.vertx.workshop.portfolio.groovy;
 import groovy.transform.CompileStatic
 import io.vertx.lang.groovy.InternalHelper
 import io.vertx.core.json.JsonObject
-import io.vertx.groovy.core.Vertx
 import io.vertx.core.json.JsonObject
 import io.vertx.core.AsyncResult
 import io.vertx.workshop.portfolio.Portfolio
 import io.vertx.core.Handler
 /**
  * A service managing a portfolio.
+ * <p>
+ * This service is an event bus service (a.k.a service proxies, or async RPC). The client and server are generated at
+ * compile time.
+ * <p>
+ * All method are asynchronous and so ends with a  parameter.
 */
 @CompileStatic
 public class PortfolioService {
@@ -35,6 +39,10 @@ public class PortfolioService {
   public Object getDelegate() {
     return delegate;
   }
+  /**
+   * Gets the portfolio.
+   * @param resultHandler the result handler called when the portfolio has been retrieved. The async result indicates whether the call was successful or not.
+   */
   public void getPortfolio(Handler<AsyncResult<Map<String, Object>>> resultHandler) {
     this.delegate.getPortfolio(new Handler<AsyncResult<io.vertx.workshop.portfolio.Portfolio>>() {
       public void handle(AsyncResult<io.vertx.workshop.portfolio.Portfolio> event) {
@@ -48,6 +56,12 @@ public class PortfolioService {
       }
     });
   }
+  /**
+   * Buy `amount` shares of the given shares (quote).
+   * @param amount the amount
+   * @param quote the last quote
+   * @param resultHandler the result handler with the updated portfolio. If the action cannot be executed, the async result is market as a failure (not enough money, not enough shares available...)
+   */
   public void buy(int amount, Map<String, Object> quote, Handler<AsyncResult<Map<String, Object>>> resultHandler) {
     this.delegate.buy(amount, quote != null ? new io.vertx.core.json.JsonObject(quote) : null, new Handler<AsyncResult<io.vertx.workshop.portfolio.Portfolio>>() {
       public void handle(AsyncResult<io.vertx.workshop.portfolio.Portfolio> event) {
@@ -61,6 +75,12 @@ public class PortfolioService {
       }
     });
   }
+  /**
+   * Sell `amount` shares of the given shares (quote).
+   * @param amount the amount
+   * @param quote the last quote
+   * @param resultHandler the result handler with the updated portfolio. If the action cannot be executed, the async result is market as a failure (not enough share...)
+   */
   public void sell(int amount, Map<String, Object> quote, Handler<AsyncResult<Map<String, Object>>> resultHandler) {
     this.delegate.sell(amount, quote != null ? new io.vertx.core.json.JsonObject(quote) : null, new Handler<AsyncResult<io.vertx.workshop.portfolio.Portfolio>>() {
       public void handle(AsyncResult<io.vertx.workshop.portfolio.Portfolio> event) {
@@ -74,11 +94,11 @@ public class PortfolioService {
       }
     });
   }
+  /**
+   * Evaluates the current value of the portfolio.
+   * @param resultHandler the result handler with the valuation
+   */
   public void evaluate(Handler<AsyncResult<Double>> resultHandler) {
     this.delegate.evaluate(resultHandler);
-  }
-  public static PortfolioService getProxy(Vertx vertx) {
-    def ret= InternalHelper.safeCreate(io.vertx.workshop.portfolio.PortfolioService.getProxy((io.vertx.core.Vertx)vertx.getDelegate()), io.vertx.workshop.portfolio.groovy.PortfolioService.class);
-    return ret;
   }
 }

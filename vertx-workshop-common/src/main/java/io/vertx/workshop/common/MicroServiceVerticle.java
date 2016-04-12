@@ -24,7 +24,7 @@ public class MicroServiceVerticle extends AbstractVerticle {
   protected Set<Record> registeredRecords = new ConcurrentHashSet<>();
 
   @Override
-  public void start() throws Exception {
+  public void start() {
     discovery = DiscoveryService.create(vertx, new DiscoveryOptions().setBackendConfiguration(config()));
     discovery.registerDiscoveryBridge(new DockerEnvironmentBridge(), new JsonObject());
   }
@@ -48,6 +48,14 @@ public class MicroServiceVerticle extends AbstractVerticle {
   }
 
   private void publish(Handler<AsyncResult<Void>> completionHandler, Record record) {
+    if (discovery == null) {
+      try {
+        start();
+      } catch (Exception e) {
+        throw new RuntimeException("Cannot create discovery service");
+      }
+    }
+
     discovery.publish(record, ar -> {
       if (ar.succeeded()) {
         registeredRecords.add(record);

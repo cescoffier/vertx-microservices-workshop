@@ -25,19 +25,30 @@ public class AuditVerticle extends MicroServiceVerticle {
 
   private JDBCClient jdbc;
 
+  /**
+   * Starts the verticle asynchronously. The the initialization is completed, it calls `complete()` on the given
+   * {@link Future} object. If something wrong happens, `fail` is called.
+   *
+   * @param future the future to indicate the completion
+   */
   @Override
-  public void start(Future<Void> future) throws Exception {
+  public void start(Future<Void> future) {
     super.start();
-    jdbc = JDBCClient.createNonShared(vertx, config());
-//    for (Map.Entry<String, String> entry : System.getenv().entrySet()) {
-//      System.out.println(entry.getKey() + " = " + entry.getValue());
-//    }
 
+    // creates the jdbc client.
+    jdbc = JDBCClient.createNonShared(vertx, config());
+
+    // Create 2 futures:
+    // 1. one for the HTTP server
+    // 2. one for the database initialization (table creation)
     Future<HttpServer> httpServerReady = Future.future();
     Future<Void> databaseReady = Future.future();
 
+    // Create the table if needed
     createTableIfNeeded(databaseReady, config().getBoolean("drop", false));
 
+
+    // Use a Vert.x Web router for this REST API.
     Router router = Router.router(vertx);
     router.get("/").handler(this::retrieveOperations);
 
@@ -45,21 +56,22 @@ public class AuditVerticle extends MicroServiceVerticle {
         .requestHandler(router::accept)
         .listen(8080, httpServerReady.completer());
 
-    try {
-      MessageSource.<JsonObject>get(vertx, discovery, new JsonObject().put("name", "portfolio-events"), consumer -> {
-        if (consumer.failed()) {
-          System.err.println("No portfolio-events service, did you start the portfolio-service ?");
-        } else {
-          consumer.result().handler(
-              message -> {
-                storeInDatabase(message.body());
-              }
-          );
-        }
-      });
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
+
+    /**
+     * Retrieve the message soruce service on which the action are sent.
+     */
+    MessageSource.<JsonObject>get(vertx, discovery, new JsonObject().put("name", "portfolio-events"), consumer -> {
+      if (consumer.failed()) {
+        System.err.println("No portfolio-events service, did you start the portfolio-service ?");
+      } else {
+        consumer.result().handler(
+            message -> {
+              storeInDatabase(message.body());
+            }
+        );
+      }
+    });
+
 
     CompositeFuture.all(httpServerReady, databaseReady)
         .setHandler(ar -> {
@@ -149,23 +161,16 @@ public class AuditVerticle extends MicroServiceVerticle {
   }
 
   private void retrieveOperations(RoutingContext context) {
-    Future<SQLConnection> connectionFuture = Future.future();
-    Future<ResultSet> queryFuture = Future.future();
-    queryFuture.setHandler(ar -> {
-      if (ar.failed()) {
-        context.fail(ar.cause());
-      } else {
-        List<JsonObject> operations = ar.result().getRows().stream()
+    jdbc.getConnection(ar -> {
+      SQLConnection connection = ar.result();
+      connection.query("SELECT * FROM AUDIT ORDER BY ID DESC LIMIT 10", result -> {
+        ResultSet set = result.result();
+        List<JsonObject> operations = set.getRows().stream()
             .map(json -> new JsonObject(json.getString("OPERATION")))
             .collect(Collectors.toList());
         context.response().setStatusCode(200).end(Json.encodePrettily(operations));
-      }
+        connection.close();
+      });
     });
-
-    jdbc.getConnection(connectionFuture.completer());
-
-    connectionFuture.compose(connection -> {
-      connection.query("SELECT * FROM AUDIT ORDER BY ID DESC LIMIT 10", queryFuture.completer());
-    }, queryFuture);
   }
 }

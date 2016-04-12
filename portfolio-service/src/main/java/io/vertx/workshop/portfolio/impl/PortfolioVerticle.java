@@ -1,22 +1,19 @@
 package io.vertx.workshop.portfolio.impl;
 
-import io.vertx.core.json.JsonObject;
 import io.vertx.serviceproxy.ProxyHelper;
 import io.vertx.workshop.common.MicroServiceVerticle;
 import io.vertx.workshop.portfolio.PortfolioService;
-
-import java.util.Map;
 
 import static io.vertx.workshop.portfolio.PortfolioService.ADDRESS;
 import static io.vertx.workshop.portfolio.PortfolioService.EVENT_ADDRESS;
 
 /**
- * @author <a href="http://escoffier.me">Clement Escoffier</a>
+ * A verticle publishing the portfolio service.
  */
 public class PortfolioVerticle extends MicroServiceVerticle {
 
   @Override
-  public void start() throws Exception {
+  public void start() {
     super.start();
 
     // Create the service object

@@ -10,22 +10,35 @@ import io.vertx.workshop.common.MicroServiceVerticle;
  */
 public class GeneratorConfigVerticle extends MicroServiceVerticle {
 
+  /**
+   * The address on which the data are sent.
+   */
+  public static final String ADDRESS = "market";
+
+  /**
+   * This method is called when the verticle is deployed.
+   */
   @Override
-  public void start() throws Exception {
+  public void start() {
     super.start();
 
-    JsonArray quotes = config().getJsonArray("quotes");
+    // Read the configuration, and deploy a MarketDataVerticle for each company listed in the configuration.
+    JsonArray quotes = config().getJsonArray("companies");
     for (Object q : quotes) {
-      JsonObject quote = (JsonObject) q;
-      vertx.deployVerticle(QuoteVerticle.class.getName(), new DeploymentOptions().setConfig(quote));
+      JsonObject company = (JsonObject) q;
+      // Deploy the verticle with a configuration.
+      vertx.deployVerticle(MarketDataVerticle.class.getName(), new DeploymentOptions().setConfig(company));
     }
+
+    // Deploy another verticle without configuration.
     vertx.deployVerticle(RestQuoteAPIVerticle.class.getName());
 
-    publishMessageSource("quotes", "stocks", rec -> {
+    // Publish the services in the discovery infrastructure.
+    publishMessageSource("market-data", ADDRESS, rec -> {
       if (!rec.succeeded()) {
         rec.cause().printStackTrace();
       }
-      System.out.println("Quotes service published : " + rec.succeeded());
+      System.out.println("Market-Data service published : " + rec.succeeded());
     });
   }
 }

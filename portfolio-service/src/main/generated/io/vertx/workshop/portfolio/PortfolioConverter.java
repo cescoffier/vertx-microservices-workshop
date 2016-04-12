@@ -30,22 +30,22 @@ public class PortfolioConverter {
     if (json.getValue("cash") instanceof Number) {
       obj.setCash(((Number)json.getValue("cash")).doubleValue());
     }
-    if (json.getValue("stocks") instanceof JsonObject) {
+    if (json.getValue("shares") instanceof JsonObject) {
       java.util.Map<String, java.lang.Integer> map = new java.util.LinkedHashMap<>();
-      json.getJsonObject("stocks").forEach(entry -> {
+      json.getJsonObject("shares").forEach(entry -> {
         if (entry.getValue() instanceof Number)
           map.put(entry.getKey(), ((Number)entry.getValue()).intValue());
       });
-      obj.setStocks(map);
+      obj.setShares(map);
     }
   }
 
   public static void toJson(Portfolio obj, JsonObject json) {
     json.put("cash", obj.getCash());
-    if (obj.getStocks() != null) {
+    if (obj.getShares() != null) {
       JsonObject map = new JsonObject();
-      obj.getStocks().forEach((key,value) -> map.put(key, value));
-      json.put("stocks", map);
+      obj.getShares().forEach((key,value) -> map.put(key, value));
+      json.put("shares", map);
     }
   }
 }

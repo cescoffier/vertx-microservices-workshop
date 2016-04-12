@@ -1,5 +1,5 @@
 /**
- * @author <a href="http://escoffier.me">Clement Escoffier</a>
+ * Indicates that this module contains classes that need to be generated / processed.
  */
 @ModuleGen(name = "vertx-workshop-portfolio", groupPackage = "io.vertx.workshop.portfolio")
 package io.vertx.workshop.portfolio;

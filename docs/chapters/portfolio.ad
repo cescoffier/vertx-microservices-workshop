@@ -8,7 +8,7 @@ In the quote generator we have seen the basics of Vert.x development:
 
 In the portfolio component, we are going to implement an _event bus service_.
 
-A `Portfolio` stores the different owned stocks and the available cash.
+A `Portfolio` stores the different owned shares and the available cash.
 
 ### RPC and Async RPC
 
@@ -176,7 +176,7 @@ In the last point, notice the `AsyncResult<Message>`. It's an async result as th
  be considered as a failure).
 
 Ok, back to our code. We have provided the `buy` and `sell` methods, that are just doing some checks before buying or
- selling stocks. Once the action is _emitted_, we send a message on the event bus that will be consumed by the `Audit
+ selling shares. Once the action is _emitted_, we send a message on the event bus that will be consumed by the `Audit
   Service` and the `Dashboard`. So, we are going to use the `publish` method.
 
 In the `sendActionOnTheEventBus` method, write:
@@ -187,9 +187,8 @@ vertx.eventBus().publish(EVENT_ADDRESS, new JsonObject()
     .put("action", action)
     .put("quote", quote)
     .put("date", System.currentTimeMillis())
-    .put("original-amount", amount)
-    .put("new-amount", newAmount)
-);
+    .put("amount", amount)
+    .put("owned", newAmount);
 ----
 
 Let's have a deeper look:
@@ -266,7 +265,7 @@ discovery.publish(record, ar -> {
 ----
 
 Are we done ? No.... We have a second service to publish. Remember, we are also sending messages on the event bus
-when we buy or sell stocks. This is also a service (a message source service to be exact).
+when we buy or sell shares. This is also a service (a message source service to be exact).
 
 At the end of the `start` method, add:
 
@@ -306,7 +305,7 @@ the service records in the discovery infrastructure, so your application does no
 has been imported using a docker link, or published _manually_, or imported some other ways.
 
 However, once launched, not much happening.... It's time to implement our first trader that is going to buy and sell
-stocks.
+shares.
 
 
 

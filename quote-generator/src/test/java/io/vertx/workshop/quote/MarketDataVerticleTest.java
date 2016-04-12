@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author <a href="http://escoffier.me">Clement Escoffier</a>
  */
-public class QuoteVerticleTest {
+public class MarketDataVerticleTest {
 
 
   @Test
@@ -18,7 +18,7 @@ public class QuoteVerticleTest {
         .put("name", "test")
         .put("symbol", "TT");
 
-    QuoteVerticle verticle = new QuoteVerticle();
+    MarketDataVerticle verticle = new MarketDataVerticle();
     verticle.init(json);
 
     int volume = verticle.stocks;

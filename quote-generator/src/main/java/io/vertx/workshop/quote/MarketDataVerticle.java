@@ -7,35 +7,46 @@ import java.util.Objects;
 import java.util.Random;
 
 /**
- * @author <a href="http://escoffier.me">Clement Escoffier</a>
+ * A verticle simulating the evaluation of a company evaluation in a very unrealistic and irrational way.
+ * It emits the new data on the `market` address on the event bus.
  */
-public class QuoteVerticle extends AbstractVerticle {
+public class MarketDataVerticle extends AbstractVerticle {
 
-  private String name;
-  private int variation;
-  private long period;
-  private String symbol;
+  String name;
+  int variation;
+  long period;
+  String symbol;
   int stocks;
-  private double price;
+  double price;
 
   double bid;
   double ask;
 
   int share;
   private double value;
-  private Random random;
 
+  private final Random random = new Random();
+
+  /**
+   * Method called when the verticle is deployed.
+   */
   @Override
-  public void start() throws Exception {
+  public void start() {
+    // Retrieve the configuration, and initialize the verticle.
     JsonObject config = config();
     init(config);
 
+    // Every `period` ms, the given Handler is called.
     vertx.setPeriodic(period, l -> {
       compute();
       send();
     });
   }
 
+  /**
+   * Read the configuration and set the initial values.
+   * @param config the configuration
+   */
   void init(JsonObject config) {
     period = config.getLong("period", 3000L);
     variation = config.getInteger("variation", 100);
@@ -45,8 +56,6 @@ public class QuoteVerticle extends AbstractVerticle {
     stocks = config.getInteger("volume", 10000);
     price = config.getDouble("price", 100.0);
 
-    random = new Random();
-
     value = price;
     ask = price + random.nextInt(variation / 2);
     bid = price + random.nextInt(variation / 2);
@@ -54,10 +63,16 @@ public class QuoteVerticle extends AbstractVerticle {
     share = stocks / 2;
   }
 
+  /**
+   * Sends the market data on the event bus.
+   */
   private void send() {
-    vertx.eventBus().publish("stocks", toJson());
+    vertx.eventBus().publish(GeneratorConfigVerticle.ADDRESS, toJson());
   }
 
+  /**
+   * Compute the new evaluation...
+   */
   void compute() {
 
     if (random.nextBoolean()) {
@@ -91,8 +106,13 @@ public class QuoteVerticle extends AbstractVerticle {
     }
   }
 
+  /**
+   * @return a json representation of the market data (quote). The structure is close to
+   * <a href="https://en.wikipedia.org/wiki/Market_data">https://en.wikipedia.org/wiki/Market_data</a>.
+   */
   private JsonObject toJson() {
     return new JsonObject()
+        .put("exchange", "vert.x stock exchange")
         .put("symbol", symbol)
         .put("name", name)
         .put("bid", bid)

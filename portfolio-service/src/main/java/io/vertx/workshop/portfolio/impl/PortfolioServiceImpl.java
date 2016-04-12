@@ -1,20 +1,21 @@
 package io.vertx.workshop.portfolio.impl;
 
 import io.vertx.core.*;
-import io.vertx.core.http.HttpClient;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.discovery.DiscoveryService;
 import io.vertx.ext.discovery.types.HttpEndpoint;
 import io.vertx.workshop.portfolio.Portfolio;
 import io.vertx.workshop.portfolio.PortfolioService;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 /**
- * @author <a href="http://escoffier.me">Clement Escoffier</a>
+ * The portfolio service implementation.
  */
 public class PortfolioServiceImpl implements PortfolioService {
 
@@ -43,8 +44,8 @@ public class PortfolioServiceImpl implements PortfolioService {
         .put("action", action)
         .put("quote", quote)
         .put("date", System.currentTimeMillis())
-        .put("original-amount", amount)
-        .put("new-amount", newAmount)
+        .put("amount", amount)
+        .put("owned", newAmount)
     );
     // ----
   }
@@ -56,32 +57,45 @@ public class PortfolioServiceImpl implements PortfolioService {
 
     //TODO improve composition here.
 
+    System.out.println("Evaluating portfolio");
+
     HttpEndpoint.get(vertx, discovery, new JsonObject().put("name", "CONSOLIDATION"), client -> {
       if (client.failed()) {
         resultHandler.handle(Future.failedFuture(client.cause()));
       } else {
         // We have the client, time to call it
         List<Future> futures = new ArrayList<>();
-        Set<Map.Entry<String, Integer>> entries = portfolio.getStocks().entrySet();
+        Set<Map.Entry<String, Integer>> entries = portfolio.getShares().entrySet();
         for (Map.Entry<String, Integer> entry : entries) {
           Future<Double> future = Future.future();
           futures.add(future);
-          client.result().getNow("/" + entry.getKey(), response -> {
+          client.result().getNow("/?name=" + encode(entry.getKey()), response -> {
             if (response.statusCode() == 200) {
-              response.bodyHandler(buffer -> future.complete(entry.getValue() * buffer.toJsonObject().getDouble("bid")));
+              response.bodyHandler(buffer -> {
+                double v = entry.getValue() * buffer.toJsonObject().getDouble("bid");
+                future.complete(v);
+              });
             } else {
               future.complete(0.0);
             }
           });
         }
-        CompositeFuture.all(futures).setHandler(
-            ar -> resultHandler.handle(Future.succeededFuture(futures.stream().mapToDouble(fut -> (double) fut.result()).sum())));
+
+        if (futures.isEmpty()) {
+          resultHandler.handle(Future.succeededFuture(0.0));
+        } else {
+          CompositeFuture.all(futures).setHandler(
+              ar -> {
+                double sum = futures.stream().mapToDouble(fut -> (double) fut.result()).sum();
+                System.out.println("Computed evaluation : " + sum + " / " + portfolio.getShares());
+                resultHandler.handle(Future.succeededFuture(sum));
+              });
+        }
       }
     });
 
     // ---
   }
-
 
 
   @Override
@@ -104,7 +118,7 @@ public class PortfolioServiceImpl implements PortfolioService {
       portfolio.setCash(portfolio.getCash() - price);
       int current = portfolio.getAmount(name);
       int newAmount = current + amount;
-      portfolio.getStocks().put(name, newAmount);
+      portfolio.getShares().put(name, newAmount);
       sendActionOnTheEventBus("BUY", amount, quote, newAmount);
       resultHandler.handle(Future.succeededFuture(portfolio));
     } else {
@@ -112,7 +126,6 @@ public class PortfolioServiceImpl implements PortfolioService {
           "need " + price + ", has " + portfolio.getCash()));
     }
   }
-
 
 
   @Override
@@ -130,9 +143,9 @@ public class PortfolioServiceImpl implements PortfolioService {
       // Yes, sell it
       int newAmount = current - amount;
       if (newAmount == 0) {
-        portfolio.getStocks().remove(name);
+        portfolio.getShares().remove(name);
       } else {
-        portfolio.getStocks().put(name, newAmount);
+        portfolio.getShares().put(name, newAmount);
       }
       portfolio.setCash(portfolio.getCash() + price);
       sendActionOnTheEventBus("SELL", amount, quote, newAmount);
@@ -142,6 +155,14 @@ public class PortfolioServiceImpl implements PortfolioService {
           "in portfolio"));
     }
 
+  }
+
+  private static String encode(String value) {
+    try {
+      return URLEncoder.encode(value, "UTF-8");
+    } catch (UnsupportedEncodingException e) {
+      throw new RuntimeException("Unsupported encoding");
+    }
   }
 
 

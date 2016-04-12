@@ -64,7 +64,7 @@ public void start() throws Exception {
     }
     vertx.deployVerticle(RestQuoteAPIVerticle.class.getName());
 
-    publishMessageSource("quotes", "stocks", rec -> {
+    publishMessageSource("quotes", "shares", rec -> {
       if (!rec.succeeded()) {
         rec.cause().printStackTrace();
       }
@@ -81,7 +81,7 @@ simulate. The configuration is a `JsonObject`. Vert.x heavily uses JSON, so you 
 
 The last part of the method is about the discovery mentioned in the microservice section. This component generates
 quotes sent on the event bus. But to let other components discover where the messages are sent (where means on which
-address), it registers it. `quotes` is the name of the component, `stocks` is the event bus address on which the
+address), it registers it. `quotes` is the name of the component, `shares` is the event bus address on which the
 message are sent. The last argument is a `Handler` that is notified when the registration has been completed. The
 `handler` receives a structured called `AsyncResult`.
 

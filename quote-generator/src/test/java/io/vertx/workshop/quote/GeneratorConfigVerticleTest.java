@@ -30,7 +30,7 @@ public class GeneratorConfigVerticleTest {
     List<JsonObject> dvn = new ArrayList<>();
     List<JsonObject> bct = new ArrayList<>();
 
-    vertx.eventBus().consumer("stocks", message -> {
+    vertx.eventBus().consumer(GeneratorConfigVerticle.ADDRESS, message -> {
       JsonObject quote = (JsonObject) message.body();
       System.out.println(quote.encodePrettily());
       assertThat(quote.getDouble("bid")).isGreaterThan(0);

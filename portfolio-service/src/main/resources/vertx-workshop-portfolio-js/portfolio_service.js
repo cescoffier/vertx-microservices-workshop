@@ -16,7 +16,6 @@
 
 /** @module vertx-workshop-portfolio-js/portfolio_service */
 var utils = require('vertx-js/util/utils');
-var Vertx = require('vertx-js/vertx');
 
 var io = Packages.io;
 var JsonObject = io.vertx.core.json.JsonObject;
@@ -25,7 +24,10 @@ var Portfolio = io.vertx.workshop.portfolio.Portfolio;
 
 /**
  A service managing a portfolio.
-
+ <p>
+ This service is an event bus service (a.k.a service proxies, or async RPC). The client and server are generated at
+ compile time.
+ <p>
  @class
 */
 var PortfolioService = function(j_val) {
@@ -34,9 +36,10 @@ var PortfolioService = function(j_val) {
   var that = this;
 
   /**
+   Gets the portfolio.
 
    @public
-   @param resultHandler {function} 
+   @param resultHandler {function} the result handler called when the portfolio has been retrieved. The async result indicates whether the call was successful or not. 
    */
   this.getPortfolio = function(resultHandler) {
     var __args = arguments;
@@ -52,11 +55,12 @@ var PortfolioService = function(j_val) {
   };
 
   /**
+   Buy `amount` shares of the given shares (quote).
 
    @public
-   @param amount {number} 
-   @param quote {Object} 
-   @param resultHandler {function} 
+   @param amount {number} the amount 
+   @param quote {Object} the last quote 
+   @param resultHandler {function} the result handler with the updated portfolio. If the action cannot be executed, the async result is market as a failure (not enough money, not enough shares available...) 
    */
   this.buy = function(amount, quote, resultHandler) {
     var __args = arguments;
@@ -72,11 +76,12 @@ var PortfolioService = function(j_val) {
   };
 
   /**
+   Sell `amount` shares of the given shares (quote).
 
    @public
-   @param amount {number} 
-   @param quote {Object} 
-   @param resultHandler {function} 
+   @param amount {number} the amount 
+   @param quote {Object} the last quote 
+   @param resultHandler {function} the result handler with the updated portfolio. If the action cannot be executed, the async result is market as a failure (not enough share...) 
    */
   this.sell = function(amount, quote, resultHandler) {
     var __args = arguments;
@@ -92,9 +97,10 @@ var PortfolioService = function(j_val) {
   };
 
   /**
+   Evaluates the current value of the portfolio.
 
    @public
-   @param resultHandler {function} 
+   @param resultHandler {function} the result handler with the valuation 
    */
   this.evaluate = function(resultHandler) {
     var __args = arguments;
@@ -113,19 +119,6 @@ var PortfolioService = function(j_val) {
   // NOTE! This is an internal API and must not be used in user code.
   // If you rely on this property your code is likely to break if we change it / remove it without warning.
   this._jdel = j_portfolioService;
-};
-
-/**
-
- @memberof module:vertx-workshop-portfolio-js/portfolio_service
- @param vertx {Vertx} 
- @return {PortfolioService}
- */
-PortfolioService.getProxy = function(vertx) {
-  var __args = arguments;
-  if (__args.length === 1 && typeof __args[0] === 'object' && __args[0]._jdel) {
-    return utils.convReturnVertxGen(JPortfolioService["getProxy(io.vertx.core.Vertx)"](vertx._jdel), PortfolioService);
-  } else throw new TypeError('function invoked with invalid arguments');
 };
 
 // We export the Constructor function

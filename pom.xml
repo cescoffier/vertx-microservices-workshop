@@ -67,6 +67,10 @@
       <artifactId>vertx-codegen</artifactId>
       <optional>true</optional>
     </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-sockjs-service-proxy</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>io.vertx</groupId>
@@ -281,6 +285,7 @@
     <module>audit-service</module>
     <module>dummy-trader</module>
     <module>vertx-workshop-common</module>
+    <module>trader-dashboard</module>
   </modules>
 
 

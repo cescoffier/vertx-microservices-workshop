@@ -4,7 +4,7 @@
 == Portfolio
 
 ++++
- @author <a href="http://escoffier.me">Clement Escoffier</a>
+ Structure representing a portfolio. It stores the available cash and the owned shares.
 ++++
 '''
 
@@ -12,7 +12,13 @@
 [frame="topbot"]
 |===
 ^|Name | Type ^| Description
-|[[cash]]`cash`|`Number (double)`|-
-|[[stocks]]`stocks`|`Number (Integer)`|-
+|[[cash]]`cash`|`Number (double)`|
++++
+Sets the available cash. Method used by the converter.
++++
+|[[shares]]`shares`|`Number (Integer)`|
++++
+Sets the owned shares. Method used by the converter.
++++
 |===
 

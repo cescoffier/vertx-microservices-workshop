@@ -10,9 +10,9 @@ microservices:
 _Divinator_, and _BlackCoat_. The quotes are sent on the Vert.x event bus.
 
 * The traders - the trader are a set of component that receive the quotations and decide whether or not they need to
-sell or buy stocks. For this they rely on the _portfolio_ service.
+sell or buy shares. For this they rely on the _portfolio_ service.
 
-* The portfolio - it manages your money and your current set of stocks. It is exposed as a service proxies, i.e. a
+* The portfolio - it manages your money and your current set of shares. It is exposed as a service proxies, i.e. a
 RPC service on top of the vert.x event bus. For every successful operation it sends a message on the event bus
 describing the operation.
 
