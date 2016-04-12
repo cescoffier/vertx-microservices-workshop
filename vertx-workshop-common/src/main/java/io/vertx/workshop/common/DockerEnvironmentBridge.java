@@ -128,7 +128,7 @@ public class DockerEnvironmentBridge implements DiscoveryBridge {
     // Add as metadata all entries
     variables.entrySet().stream().forEach(entry -> {
       if (entry.getKey().startsWith(name + "_")) {
-        String label = entry.getKey().substring((name + "_").length() + 1);
+        String label = entry.getKey().substring((name + "_").length());
         record.getMetadata().put(label, entry.getValue());
       }
     });

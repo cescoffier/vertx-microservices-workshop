@@ -100,6 +100,7 @@ public class DockerEnvironmentBridgeTest {
   private void assertRedis(Record record) {
     assertThat(record.getName()).isEqualTo("DISCOVERY_REDIS");
     assertThat(record.getLocation().getString("endpoint")).isEqualToIgnoringCase("tcp://172.17.0.2:6379");
+    assertThat(record.getMetadata().getString("PORT_6379_TCP_PORT")).isEqualToIgnoringCase("6379");
   }
 
   private void assertConsolidation(Record record) {
