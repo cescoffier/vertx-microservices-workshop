@@ -10,11 +10,10 @@
     <version>1.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>dummy-trader</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <artifactId>compulsive-traders</artifactId>
 
   <properties>
-    <main.verticle>io.vertx.workshop.trader.impl.TraderVerticle</main.verticle>
+    <main.verticle>io.vertx.workshop.trader.impl.MainVerticle</main.verticle>
   </properties>
 
   <dependencies>

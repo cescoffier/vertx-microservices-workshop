@@ -246,6 +246,10 @@ mvn clean package docker:build
 docker run -p 8083:8080 --rm --name dashboard vertx-microservice-workshop/trader-dashboard
 ----
 
+TIP: Docker is yelling with something like `Error response from daemon: Conflict. The name "/quote-generator" is
+already in use by container...`, no problem, let be more convincing and launch `docker rm -f quote-generator` and
+then relaunch the command.
+
 Then open your browser to http://dockerhost:8083. You should see:
 
 image::dashboard-initial-state.png[Dashboard, 800]

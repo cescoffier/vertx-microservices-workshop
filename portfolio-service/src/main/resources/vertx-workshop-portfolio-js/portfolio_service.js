@@ -16,6 +16,7 @@
 
 /** @module vertx-workshop-portfolio-js/portfolio_service */
 var utils = require('vertx-js/util/utils');
+var Vertx = require('vertx-js/vertx');
 
 var io = Packages.io;
 var JsonObject = io.vertx.core.json.JsonObject;
@@ -119,6 +120,19 @@ var PortfolioService = function(j_val) {
   // NOTE! This is an internal API and must not be used in user code.
   // If you rely on this property your code is likely to break if we change it / remove it without warning.
   this._jdel = j_portfolioService;
+};
+
+/**
+
+ @memberof module:vertx-workshop-portfolio-js/portfolio_service
+ @param vertx {Vertx} 
+ @return {PortfolioService}
+ */
+PortfolioService.getProxy = function(vertx) {
+  var __args = arguments;
+  if (__args.length === 1 && typeof __args[0] === 'object' && __args[0]._jdel) {
+    return utils.convReturnVertxGen(JPortfolioService["getProxy(io.vertx.core.Vertx)"](vertx._jdel), PortfolioService);
+  } else throw new TypeError('function invoked with invalid arguments');
 };
 
 // We export the Constructor function

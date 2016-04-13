@@ -18,6 +18,7 @@ package io.vertx.workshop.portfolio.groovy;
 import groovy.transform.CompileStatic
 import io.vertx.lang.groovy.InternalHelper
 import io.vertx.core.json.JsonObject
+import io.vertx.groovy.core.Vertx
 import io.vertx.core.json.JsonObject
 import io.vertx.core.AsyncResult
 import io.vertx.workshop.portfolio.Portfolio
@@ -44,17 +45,15 @@ public class PortfolioService {
    * @param resultHandler the result handler called when the portfolio has been retrieved. The async result indicates whether the call was successful or not.
    */
   public void getPortfolio(Handler<AsyncResult<Map<String, Object>>> resultHandler) {
-    this.delegate.getPortfolio(new Handler<AsyncResult<io.vertx.workshop.portfolio.Portfolio>>() {
-      public void handle(AsyncResult<io.vertx.workshop.portfolio.Portfolio> event) {
-        AsyncResult<Map<String, Object>> f
-        if (event.succeeded()) {
-          f = InternalHelper.<Map<String, Object>>result((Map<String, Object>)InternalHelper.wrapObject(event.result()?.toJson()))
+    delegate.getPortfolio(resultHandler != null ? new Handler<AsyncResult<io.vertx.workshop.portfolio.Portfolio>>() {
+      public void handle(AsyncResult<io.vertx.workshop.portfolio.Portfolio> ar) {
+        if (ar.succeeded()) {
+          resultHandler.handle(io.vertx.core.Future.succeededFuture((Map<String, Object>)InternalHelper.wrapObject(ar.result()?.toJson())));
         } else {
-          f = InternalHelper.<Map<String, Object>>failure(event.cause())
+          resultHandler.handle(io.vertx.core.Future.failedFuture(ar.cause()));
         }
-        resultHandler.handle(f)
       }
-    });
+    } : null);
   }
   /**
    * Buy `amount` shares of the given shares (quote).
@@ -63,17 +62,15 @@ public class PortfolioService {
    * @param resultHandler the result handler with the updated portfolio. If the action cannot be executed, the async result is market as a failure (not enough money, not enough shares available...)
    */
   public void buy(int amount, Map<String, Object> quote, Handler<AsyncResult<Map<String, Object>>> resultHandler) {
-    this.delegate.buy(amount, quote != null ? new io.vertx.core.json.JsonObject(quote) : null, new Handler<AsyncResult<io.vertx.workshop.portfolio.Portfolio>>() {
-      public void handle(AsyncResult<io.vertx.workshop.portfolio.Portfolio> event) {
-        AsyncResult<Map<String, Object>> f
-        if (event.succeeded()) {
-          f = InternalHelper.<Map<String, Object>>result((Map<String, Object>)InternalHelper.wrapObject(event.result()?.toJson()))
+    delegate.buy(amount, quote != null ? new io.vertx.core.json.JsonObject(quote) : null, resultHandler != null ? new Handler<AsyncResult<io.vertx.workshop.portfolio.Portfolio>>() {
+      public void handle(AsyncResult<io.vertx.workshop.portfolio.Portfolio> ar) {
+        if (ar.succeeded()) {
+          resultHandler.handle(io.vertx.core.Future.succeededFuture((Map<String, Object>)InternalHelper.wrapObject(ar.result()?.toJson())));
         } else {
-          f = InternalHelper.<Map<String, Object>>failure(event.cause())
+          resultHandler.handle(io.vertx.core.Future.failedFuture(ar.cause()));
         }
-        resultHandler.handle(f)
       }
-    });
+    } : null);
   }
   /**
    * Sell `amount` shares of the given shares (quote).
@@ -82,23 +79,25 @@ public class PortfolioService {
    * @param resultHandler the result handler with the updated portfolio. If the action cannot be executed, the async result is market as a failure (not enough share...)
    */
   public void sell(int amount, Map<String, Object> quote, Handler<AsyncResult<Map<String, Object>>> resultHandler) {
-    this.delegate.sell(amount, quote != null ? new io.vertx.core.json.JsonObject(quote) : null, new Handler<AsyncResult<io.vertx.workshop.portfolio.Portfolio>>() {
-      public void handle(AsyncResult<io.vertx.workshop.portfolio.Portfolio> event) {
-        AsyncResult<Map<String, Object>> f
-        if (event.succeeded()) {
-          f = InternalHelper.<Map<String, Object>>result((Map<String, Object>)InternalHelper.wrapObject(event.result()?.toJson()))
+    delegate.sell(amount, quote != null ? new io.vertx.core.json.JsonObject(quote) : null, resultHandler != null ? new Handler<AsyncResult<io.vertx.workshop.portfolio.Portfolio>>() {
+      public void handle(AsyncResult<io.vertx.workshop.portfolio.Portfolio> ar) {
+        if (ar.succeeded()) {
+          resultHandler.handle(io.vertx.core.Future.succeededFuture((Map<String, Object>)InternalHelper.wrapObject(ar.result()?.toJson())));
         } else {
-          f = InternalHelper.<Map<String, Object>>failure(event.cause())
+          resultHandler.handle(io.vertx.core.Future.failedFuture(ar.cause()));
         }
-        resultHandler.handle(f)
       }
-    });
+    } : null);
   }
   /**
    * Evaluates the current value of the portfolio.
    * @param resultHandler the result handler with the valuation
    */
   public void evaluate(Handler<AsyncResult<Double>> resultHandler) {
-    this.delegate.evaluate(resultHandler);
+    delegate.evaluate(resultHandler);
+  }
+  public static PortfolioService getProxy(Vertx vertx) {
+    def ret = InternalHelper.safeCreate(io.vertx.workshop.portfolio.PortfolioService.getProxy(vertx != null ? (io.vertx.core.Vertx)vertx.getDelegate() : null), io.vertx.workshop.portfolio.groovy.PortfolioService.class);
+    return ret;
   }
 }

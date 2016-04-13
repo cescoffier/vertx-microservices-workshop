@@ -123,6 +123,23 @@
 
   };
 
+  /**
+
+   @memberof module:vertx-workshop-portfolio-js/portfolio_service
+   @param vertx {Vertx} 
+   @return {PortfolioService}
+   */
+  PortfolioService.getProxy = function(vertx) {
+    var __args = arguments;
+    if (__args.length === 1 && typeof __args[0] === 'object' && __args[0]._jdel) {
+      if (closed) {
+        throw new Error('Proxy is closed');
+      }
+      j_eb.send(j_address, {"vertx":__args[0]}, {"action":"getProxy"});
+      return;
+    } else throw new TypeError('function invoked with invalid arguments');
+  };
+
   if (typeof exports !== 'undefined') {
     if (typeof module !== 'undefined' && module.exports) {
       exports = module.exports = PortfolioService;

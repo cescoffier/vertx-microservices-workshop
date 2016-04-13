@@ -1,0 +1,15 @@
+## The Audit service
+
+The law is the law... The _Sarbanes–Oxley Act_ requires you to keep a track of every transaction you do on a
+ financial market. The audit service records the shares you buy and sell in a database. It's going to be a HSQL
+ database, but is would be similar with another database, even no-sql database.
+
+### Accessing data asynchronously
+
+As said previously, Vert.x is asynchronous and you must never block the event loop. And you know what's definitely
+blocking ? Database access and more particularly JDBC ! Fortunately, Vert.x provides a JDBC client that is asynchronous.
+
+The principle is simple (and is applied to all client accessing blocking system):
+
+
+

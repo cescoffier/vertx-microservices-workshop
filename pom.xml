@@ -283,7 +283,7 @@
     <module>quote-generator</module>
     <module>portfolio-service</module>
     <module>audit-service</module>
-    <module>dummy-trader</module>
+    <module>compulsive-traders</module>
     <module>vertx-workshop-common</module>
     <module>trader-dashboard</module>
   </modules>
