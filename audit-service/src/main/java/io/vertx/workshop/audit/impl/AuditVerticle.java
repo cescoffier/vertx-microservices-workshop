@@ -81,11 +81,10 @@ public class AuditVerticle extends MicroServiceVerticle {
     String sql = "INSERT INTO AUDIT (operation) VALUES ?";
 
     Future<SQLConnection> connectionFuture = Future.future();
-    Future<Void> completionFuture = Future.future();
     jdbc.getConnection(connectionFuture.completer());
 
-    connectionFuture
-        .compose(connection -> {
+    connectionFuture.compose(connection -> {
+          Future<Void> completionFuture = Future.future();
           connection.updateWithParams(sql,
               new JsonArray().add(operation.encode()),
               ar -> {
@@ -95,10 +94,8 @@ public class AuditVerticle extends MicroServiceVerticle {
                   connection.close(completionFuture.completer());
                 }
               });
-        }, completionFuture);
-
-
-    completionFuture.setHandler(ar -> {
+          return completionFuture;
+        }).setHandler(ar -> {
       if (ar.failed()) {
         System.err.println("Failed to insert operation in database: " + ar.cause());
       } else {
@@ -109,24 +106,25 @@ public class AuditVerticle extends MicroServiceVerticle {
 
   private void createTableIfNeeded(Future<Void> future, Boolean drop) {
     Future<SQLConnection> connectionFuture = Future.future();
-    Future<SQLConnection> droppedFuture = Future.future();
-    Future<SQLConnection> closeFuture = Future.future();
 
-    Handler<SQLConnection> dropTable = connection -> {
+    jdbc.getConnection(connectionFuture.completer());
+
+    connectionFuture.compose(connection -> {
+      Future<SQLConnection> droppedFuture = Future.future();
       if (!drop) {
         droppedFuture.complete(connection);
-        return;
+      } else {
+        connection.execute("DROP TABLE IF EXISTS AUDIT", v -> {
+          if (v.failed()) {
+            droppedFuture.fail(v.cause());
+          } else {
+            droppedFuture.complete(connection);
+          }
+        });
       }
-      connection.execute("DROP TABLE IF EXISTS AUDIT", v -> {
-        if (v.failed()) {
-          droppedFuture.fail(v.cause());
-        } else {
-          droppedFuture.complete(connection);
-        }
-      });
-    };
-
-    Handler<SQLConnection> createTable = connection -> {
+      return droppedFuture;
+    }).compose(connection -> {
+      Future<SQLConnection> closeFuture = Future.future();
       connection.execute(
           "CREATE TABLE IF NOT EXISTS AUDIT (id INTEGER IDENTITY, operation varchar(250))", v -> {
             if (v.failed()) {
@@ -135,23 +133,22 @@ public class AuditVerticle extends MicroServiceVerticle {
               closeFuture.complete(connection);
             }
           });
-    };
-
-    Handler<SQLConnection> closeConnection = connection -> {
+      return closeFuture;
+    }).compose(connection -> {
       connection.close(future.completer());
-    };
-
-    jdbc.getConnection(connectionFuture.completer());
-
-    connectionFuture.compose(dropTable, droppedFuture);
-    droppedFuture.compose(createTable, closeFuture);
-    closeFuture.compose(closeConnection, future);
+    }, future);
   }
 
   private void retrieveOperations(RoutingContext context) {
     Future<SQLConnection> connectionFuture = Future.future();
-    Future<ResultSet> queryFuture = Future.future();
-    queryFuture.setHandler(ar -> {
+
+    jdbc.getConnection(connectionFuture.completer());
+
+    connectionFuture.compose(connection -> {
+      Future<ResultSet> queryFuture = Future.future();
+      connection.query("SELECT * FROM AUDIT ORDER BY ID DESC LIMIT 10", queryFuture.completer());
+      return queryFuture;
+    }).setHandler(ar -> {
       if (ar.failed()) {
         context.fail(ar.cause());
       } else {
@@ -161,11 +158,5 @@ public class AuditVerticle extends MicroServiceVerticle {
         context.response().setStatusCode(200).end(Json.encodePrettily(operations));
       }
     });
-
-    jdbc.getConnection(connectionFuture.completer());
-
-    connectionFuture.compose(connection -> {
-      connection.query("SELECT * FROM AUDIT ORDER BY ID DESC LIMIT 10", queryFuture.completer());
-    }, queryFuture);
   }
 }
