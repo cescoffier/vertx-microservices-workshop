@@ -61,14 +61,7 @@ public class AuditVerticle extends MicroServiceVerticle {
       e.printStackTrace();
     }
 
-    CompositeFuture.all(httpServerReady, databaseReady)
-        .setHandler(ar -> {
-          if (ar.succeeded()) {
-            future.complete();
-          } else {
-            future.fail(ar.cause());
-          }
-        });
+    CompositeFuture.all(httpServerReady, databaseReady).<Void>map(null).setHandler(future.completer());
   }
 
   @Override

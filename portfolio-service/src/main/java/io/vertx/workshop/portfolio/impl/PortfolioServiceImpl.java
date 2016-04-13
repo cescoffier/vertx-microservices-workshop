@@ -56,28 +56,25 @@ public class PortfolioServiceImpl implements PortfolioService {
 
     //TODO improve composition here.
 
-    HttpEndpoint.get(vertx, discovery, new JsonObject().put("name", "CONSOLIDATION"), client -> {
-      if (client.failed()) {
-        resultHandler.handle(Future.failedFuture(client.cause()));
-      } else {
-        // We have the client, time to call it
-        List<Future> futures = new ArrayList<>();
-        Set<Map.Entry<String, Integer>> entries = portfolio.getStocks().entrySet();
-        for (Map.Entry<String, Integer> entry : entries) {
-          Future<Double> future = Future.future();
-          futures.add(future);
-          client.result().getNow("/" + entry.getKey(), response -> {
-            if (response.statusCode() == 200) {
-              response.bodyHandler(buffer -> future.complete(entry.getValue() * buffer.toJsonObject().getDouble("bid")));
-            } else {
-              future.complete(0.0);
-            }
-          });
-        }
-        CompositeFuture.all(futures).setHandler(
-            ar -> resultHandler.handle(Future.succeededFuture(futures.stream().mapToDouble(fut -> (double) fut.result()).sum())));
-      }
-    });
+    Future<HttpClient> clientFut = Future.future();
+    HttpEndpoint.get(vertx, discovery, new JsonObject().put("name", "CONSOLIDATION"), clientFut.completer());
+
+    clientFut.compose(client -> {
+      // We have the client, time to call it
+      List<Future> futures = new ArrayList<>();
+      portfolio.getStocks().forEach((k,v) -> {
+        Future<Double> future = Future.future();
+        futures.add(future);
+        client.getNow("/" + k, response -> {
+          if (response.statusCode() == 200) {
+            response.bodyHandler(buffer -> future.complete(v * buffer.toJsonObject().getDouble("bid")));
+          } else {
+            future.complete(0.0);
+          }
+        });
+      });
+      return CompositeFuture.all(futures).map(c -> c.<Double>list().stream().reduce(0D, Double::sum));
+    }).setHandler(resultHandler);
 
     // ---
   }
