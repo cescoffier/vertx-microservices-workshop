@@ -17,3 +17,8 @@ include::chapters/setup.ad[Let's start !]
 include::chapters/quote-generator.ad[Your first Vert.x microservice - the quote generator]
 include::chapters/portfolio.ad[Exposing Event bus services, and HTTP client  - the portfolio service]
 include::chapters/traders.ad[Consuming Event bus services and polyglot verticle - the trader service]
+include::chapters/audit.ad[Database and complex composition - the audit service]
+include::chapters/dashboard.ad[Anatomy of the dashboard]
+include::chapters/conclusion.ad[You made it!]
+include::chapters/references.ad[References]
+

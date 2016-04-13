@@ -1,0 +1,9 @@
+## Anatomy of the dashboard
+
+This section is about the dashboard. You won't have to write any code. It just explains how it works:
+
+1. How to configure configure vert.x web to expose static resources
+2. How to configure the SockJS - Eventbus bridge
+3. How can you consume an event bus proxy from the browser
+
+// TODO

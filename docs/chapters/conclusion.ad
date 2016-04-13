@@ -1,0 +1,11 @@
+## Conclusion
+
+You made it ! Or at least you jump to this point. Anyway, congratulations. We hope you enjoy this lab and learn some
+stuff.
+
+If you want to go further here are some references:
+
+* http://vertx.io[The vert.x web site]
+* http://vertx.io/blog/posts/introduction-to-vertx.html[A blog post series to start developing with vert.x]
+* https://github.com/vert-x3/vertx-microservice-toolbox[a set of building blocks for microservices application]
+

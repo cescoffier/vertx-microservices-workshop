@@ -12,7 +12,7 @@ import io.vertx.ext.web.handler.sockjs.SockJSHandler;
 import io.vertx.workshop.common.MicroServiceVerticle;
 
 /**
- * @author <a href="http://escoffier.me">Clement Escoffier</a>
+ * The dashboard of the micro-trader application.
  */
 public class DashboardVerticle extends MicroServiceVerticle {
 
@@ -21,7 +21,7 @@ public class DashboardVerticle extends MicroServiceVerticle {
     super.start();
     Router router = Router.router(vertx);
 
-    // Eventbus bridge
+    // Event bus bridge
     SockJSHandler sockJSHandler = SockJSHandler.create(vertx);
     BridgeOptions options = new BridgeOptions();
     options
@@ -49,26 +49,21 @@ public class DashboardVerticle extends MicroServiceVerticle {
   }
 
   private void lastOperations(RoutingContext context) {
-    try {
-      HttpEndpoint.get(vertx, discovery, new JsonObject().put("name", "AUDIT"), client -> {
-        if (client.failed() || client.result() == null) {
-          System.err.println("No audit service");
-          context.response()
-              .putHeader("content-type", "application/json")
-              .setStatusCode(200)
-              .end(new JsonObject().put("message", "No audit service").encode());
-        } else {
-          client.result().getNow("/", response -> {
-            response
-                .bodyHandler(buffer -> context.response()
-                    .putHeader("content-type", "application/json")
-                    .setStatusCode(200)
-                    .end(buffer));
-          });
-        }
-      });
-    } catch (Throwable e) {
-      e.printStackTrace();
-    }
+    HttpEndpoint.get(vertx, discovery, new JsonObject().put("name", "AUDIT"), client -> {
+      if (client.failed() || client.result() == null) {
+        context.response()
+            .putHeader("content-type", "application/json")
+            .setStatusCode(200)
+            .end(new JsonObject().put("message", "No audit service").encode());
+      } else {
+        client.result().getNow("/", response -> {
+          response
+              .bodyHandler(buffer -> context.response()
+                  .putHeader("content-type", "application/json")
+                  .setStatusCode(200)
+                  .end(buffer));
+        });
+      }
+    });
   }
 }

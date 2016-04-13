@@ -73,9 +73,17 @@ public class AuditVerticleTest {
   }
 
   @Test
-  public void testMultipleInsertion(TestContext tc) {
+  public void testMultipleInsertion(TestContext tc) throws InterruptedException {
     Async async = tc.async();
 
+    vertx.eventBus().publish("portfolio", createBuyOperation());
+    vertx.eventBus().publish("portfolio", createSellOperation());
+    vertx.eventBus().publish("portfolio", createBuyOperation());
+    vertx.eventBus().publish("portfolio", createSellOperation());
+    vertx.eventBus().publish("portfolio", createBuyOperation());
+    vertx.eventBus().publish("portfolio", createSellOperation());
+    vertx.eventBus().publish("portfolio", createBuyOperation());
+    vertx.eventBus().publish("portfolio", createSellOperation());
     vertx.eventBus().publish("portfolio", createBuyOperation());
     vertx.eventBus().publish("portfolio", createSellOperation());
     vertx.eventBus().publish("portfolio", createBuyOperation());
@@ -85,7 +93,7 @@ public class AuditVerticleTest {
       tc.assertEquals(response.statusCode(), 200);
       response.bodyHandler(buffer -> {
         JsonArray array = buffer.toJsonArray();
-        tc.assertEquals(array.size(), 4);
+        tc.assertEquals(array.size(), 10);
         async.complete();
       });
     });

@@ -145,9 +145,10 @@ Wow... one single line ? Let's dissect it:
  is the result (`portfolio`)
 
 But, wait, what is the relationship between `AsyncResult` and `Future` ? A `Future` represents the result of an action
-that may, or may not, have occurred yet. The action behind a `Future` object may succeed or fail. `AsyncResult`
-is a structure describing the success of the failure of an operation. So, `Future` are `AsyncResult`. In Vert.x
-`AsyncResult` are created from the `Future` class.
+that may, or may not, have occurred yet. The result may be `void` if the `Future` is used to detect the completion of
+ an operation. The operation behind a `Future` object may succeed or fail. `AsyncResult` is a structure describing the
+  success of the failure of an operation. So, `Future` are `AsyncResult`. In Vert.x `AsyncResult` are created from
+  the `Future` class.
 
 `AsyncResult` describes:
 
