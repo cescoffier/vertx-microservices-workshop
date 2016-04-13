@@ -1,9 +1,16 @@
 ## Conclusion
 
 You made it ! Or at least you jump to this point. Anyway, congratulations. We hope you enjoy this lab and learn some
-stuff.
+stuff. There is many other things Vert.x can do and that was not illustrated there.
 
-If you want to go further here are some references:
+Don't forget that reactive system and so Vert.x require a mind-shift:
+
+* Vert.x is a toolkit
+* Asynchronous, non-blocking development model can be hard to understand at the first glance, but it becomes very
+convenient very quickly. Don't also forget that computers are asynchronous, so using such development model is
+using it the right way to use it to its whole power.
+
+If you want to, and I hope so, go further here are some references:
 
 * http://vertx.io[The vert.x web site]
 * http://vertx.io/blog/posts/introduction-to-vertx.html[A blog post series to start developing with vert.x]

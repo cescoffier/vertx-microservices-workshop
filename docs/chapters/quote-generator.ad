@@ -18,9 +18,9 @@ Let's have a look to the project, as every other project are structured the same
     └── main
         └── java
             └── io.vertx.workshop.quote
-                            ├── GeneratorConfigVerticle.java <--- the main verticle
-                            ├── QuoteVerticle.java           <--- a verticle managing quotes for a single company
-                            └── RestQuoteAPIVerticle.java    <--- a verticle exposing a REST endpoint
+                            ├── GeneratorConfigVerticle.java <--- the verticles
+                            ├── QuoteVerticle.java
+                            └── RestQuoteAPIVerticle.java
 ----
 
 Let's start with the `pom.xml` file. This file specifies the Maven build:

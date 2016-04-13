@@ -23,6 +23,9 @@ MASTER_DOCBOOK=${MASTER_ADOC/.ad/.xml}
 SHARED_OPTIONS='-a numbered -a experimental -a source-highlighter=coderay -r asciidoctor-diagram -a imagesdir=images
 --destination-dir=output'
 
+cp stylesheets/* output
+cp -R images output
+
 # Formats
 if [ ! -z $1 ]; then
   read -a FORMATS <<<$(IFS=','; echo $1)
@@ -35,7 +38,7 @@ fi
 for f in ${FORMATS[*]}; do
   if [ $f == 'html' ]; then
     echo "Converting to HTML ..."
-    $ASCIIDOCTOR -v $SHARED_OPTIONS $MASTER_ADOC
+    $ASCIIDOCTOR -v $SHARED_OPTIONS -a stylesheet=./stylesheets/style.css $MASTER_ADOC
   elif [ $f == 'docbook' ]; then
     echo "Converting to DocBook ..."
     $ASCIIDOCTOR -b docbook $SHARED_OPTIONS $MASTER_ADOC
@@ -44,8 +47,10 @@ for f in ${FORMATS[*]}; do
     $FOPUB $MASTER_DOCBOOK
   elif [ $f == 'pdf' ]; then
     echo "Converting to PDF ..."
-    $ASCIIDOCTOR_PDF $SHARED_OPTIONS $MASTER_ADOC
+    $ASCIIDOCTOR_PDF $SHARED_OPTIONS -a stylesheet=./stylesheets/style.css $MASTER_ADOC
   fi
 done
+
+
 
 exit 0

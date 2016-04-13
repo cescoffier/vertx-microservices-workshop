@@ -36,3 +36,4 @@ So, when you start your vert.x application and enable the cluster mode, it joins
 
 In our context, nothing is required to configure it. Our docker images already start the Vert.x applications in
 cluster mode.
+

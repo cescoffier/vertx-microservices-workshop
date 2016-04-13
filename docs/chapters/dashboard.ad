@@ -4,6 +4,146 @@ This section is about the dashboard. You won't have to write any code. It just e
 
 1. How to configure configure vert.x web to expose static resources
 2. How to configure the SockJS - Eventbus bridge
-3. How can you consume an event bus proxy from the browser
+3. How to answer to a REST using a HTTP client
+4. How can you consume an event bus proxy from the browser
 
-// TODO
+The dashboard is a single verticle (`io.vertx.workshop.dashboard.DashboardVerticle`).
+
+### Vert.x Web and static files
+
+As mentioned in the previous section, vert.x web is a vert.x component to build web application. Its whole
+architecture is centered on the `Router` object. You create this router and configure the _routes_. For each route
+you configure the _HTTP verb_ and the _path_ and associate the `Handler` that is called when a matching request is
+received. The `router` is creates a follows:
+
+[source, java]
+----
+Router router = Router.router(vertx);
+----
+
+Vert.x web provides a set of `Handler` for common task such as serving static files:
+
+[source, java]
+----
+// Static content
+router.route("/*").handler(StaticHandler.create());
+----
+
+It serves all files from the `webroot` directory (default) or the server root. For example, `webroot/index.html` is
+served using the `http://0.0.0.0:8080/index.html` url.
+
+Once the router is configured, you need a HTTP server and use the router to handle the requests:
+
+[source, java]
+----
+vertx.createHttpServer()
+    .requestHandler(router::accept)
+    .listen(8080);
+----
+
+### SockJS - Eventbus bridge
+
+SockJS is a browser JavaScript library that provides a WebSocket-like object. SockJS gives you a coherent, cross-browser,
+Javascript API which creates a low latency, full duplex, cross-domain communication channel between the browser and the
+web server. Under the hood SockJS tries to use native WebSockets first. If that fails it can use a variety of
+browser-specific transport protocols and presents them through WebSocket-like abstractions. SockJS-client does require
+a server counterpart to handle the communication. And you know what, Vert.x implements it !
+
+With the SockJS - Eventbus bridge, events from the event bus can be sent to browsers and JAvaScript code running in
+the browser can send messages to the event bus.
+
+To enable the bridge you need thw following code:
+
+[source, java]
+----
+SockJSHandler sockJSHandler = SockJSHandler.create(vertx);                      // <1>
+BridgeOptions options = new BridgeOptions();
+options
+    .addOutboundPermitted(new PermittedOptions().setAddress("market"))         // <2>
+    .addOutboundPermitted(new PermittedOptions().setAddress("portfolio"))
+    .addOutboundPermitted(new PermittedOptions().setAddress("service.portfolio"))
+    .addInboundPermitted(new PermittedOptions().setAddress("service.portfolio"));
+
+sockJSHandler.bridge(options);                                                 // <3>
+router.route("/eventbus/*").handler(sockJSHandler);                            // <4>
+----
+
+In (1), we create the `SockJSHandler`. It needs to be configured as by default, for security reason, no messages will
+ be transmitted. The set of permitted addresses configure bridge (2). Outbound addresses are for messages from the event
+ bus to the browser, while inbound addresses are for messages from the browser to the event bus. Finally in (3) and
+ (4), it configures the handler and create a router in the `router`. The `/eventbus/*` path is used by the SockJS
+ client (in the browser) to negotiate the connection and receive / send the messages.
+
+This is not the only bridge that exists for the event bus. There is also a TCP eventbus bridge for native system. The
+ SockJS bridge can also be used from Node.JS.
+
+### Delegating REST calls
+
+It's often required to implement a REST API on top of another one. This pattern can be very costly on traditional
+architecture as each call would block a thread until the call to this second REST API has completed. With Vert.x
+delegation is easy, asynchronous and non blocking.
+
+For example in the dashboard, we want to retrieve the list of operations. This list is offered by the audit service.
+So in the dashboard we have this route definition:
+
+[source, java]
+----
+router.get("/operations").handler(this::lastOperations);
+----
+
+And the handler is:
+
+[source, java]
+----
+private void lastOperations(RoutingContext context) {
+    HttpEndpoint.get(vertx, discovery, new JsonObject().put("name", "AUDIT"), client -> {
+        if (client.failed() || client.result() == null) {
+            context.response()
+                .putHeader("content-type", "application/json")
+                .setStatusCode(200)
+                .end(new JsonObject().put("message", "No audit service").encode());
+        } else {
+            client.result().getNow("/", response -> {
+                response
+                  .bodyHandler(buffer -> context.response()
+                  .putHeader("content-type", "application/json")
+                  .setStatusCode(200)
+                  .end(buffer));
+                client.result().close();
+            });
+        }
+    });
+}
+----
+
+It retrieves the audit service from the discovery infrastructure and once it gets the HTTP client. It uses it to call
+ the audit REST API. The response is simply send back to the HTTP response. Finally, don't forget to close the HTTP
+ client.
+
+### Consuming event bus service from the browser
+
+As said above, there is a bridge between sockJS and the event bus to let the browser sends and receives messages. As
+event bus services communicate using event bus messages, it is possible to implement a service client in the browser.
+ Vert.x generates this client for you.
+
+So, if you open the `index.html` file, you can see:
+
+[source, html]
+----
+<script src="libs/portfolio_service-proxy.js"></script>
+----
+
+This imports a script generated by vert.x (in the portfolio project). Then we can use the service as follows:
+
+[source, javascript]
+----
+var service = new PortfolioService(eventbus, "service.portfolio");
+service.getPortfolio(function (err, res) {
+   // ....
+}
+----
+
+Yes, you can call the service method directly from your browser.
+
+
+

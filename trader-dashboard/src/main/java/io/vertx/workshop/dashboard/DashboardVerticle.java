@@ -36,7 +36,7 @@ public class DashboardVerticle extends MicroServiceVerticle {
     // Discovery endpoint
     DiscoveryRestEndpoint.create(router, discovery);
 
-    // Last operation
+    // Last operations
     router.get("/operations").handler(this::lastOperations);
 
     // Static content
@@ -62,6 +62,7 @@ public class DashboardVerticle extends MicroServiceVerticle {
                   .putHeader("content-type", "application/json")
                   .setStatusCode(200)
                   .end(buffer));
+          client.result().close();
         });
       }
     });
