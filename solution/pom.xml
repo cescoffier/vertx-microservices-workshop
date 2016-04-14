@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>io.vertx.workshop</groupId>
+  <artifactId>vertx-microservice-workshop</artifactId>
+  <version>1.0-SNAPSHOT</version>
+
+  <parent>
+    <groupId>io.vertx</groupId>
+    <artifactId>vertx-ext-parent</artifactId>
+    <version>20</version>
+  </parent>
+
+  <packaging>pom</packaging>
+
+  <properties>
+    <stack.version>3.3.0-SNAPSHOT</stack.version>
+    <doc.skip>true</doc.skip>
+
+    <!--overridden in each project packaged as a fat jar -->
+    <main.verticle/>
+
+    <docker.group.name>vertx-microservice-workshop</docker.group.name>
+    <docker.image>${docker.group.name}/${project.artifactId}:${project.version}</docker.image>
+
+    <discovery.service-type>unknown</discovery.service-type>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.vertx</groupId>
+        <artifactId>vertx-dependencies</artifactId>
+        <version>${stack.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-service-proxy</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-lang-groovy</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-lang-js</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-lang-ruby</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-codegen</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-sockjs-service-proxy</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-hazelcast</artifactId>
+    </dependency>
+
+    <!-- Microservice toolbox -->
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-discovery-service</artifactId>
+      <version>3.3.0-SNAPSHOT</version>
+    </dependency>
+
+
+    <!-- Test dependencies -->
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-unit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.12</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <version>3.3.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.jayway.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <version>1.7.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.jayway.restassured</groupId>
+      <artifactId>rest-assured</artifactId>
+      <version>2.8.0</version>
+      <scope>test</scope>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.8</source>
+          <target>1.8</target>
+        </configuration>
+        <executions>
+          <execution>
+            <id>default-compile</id>
+            <configuration>
+              <annotationProcessors>
+                <annotationProcessor>io.vertx.codegen.CodeGenProcessor</annotationProcessor>
+              </annotationProcessors>
+              <generatedSourcesDirectory>src/main/generated</generatedSourcesDirectory>
+              <compilerArgs>
+                <arg>-AoutputDirectory=${project.basedir}/src/main</arg>
+              </compilerArgs>
+            </configuration>
+          </execution>
+          <execution>
+            <id>default-testCompile</id>
+            <configuration>
+              <annotationProcessors>
+                <annotationProcessor>io.vertx.codegen.CodeGenProcessor</annotationProcessor>
+              </annotationProcessors>
+              <generatedTestSourcesDirectory>src/test/generated</generatedTestSourcesDirectory>
+              <compilerArgs>
+                <arg>-AoutputDirectory=${project.basedir}/src/test</arg>
+              </compilerArgs>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>io.fabric8</groupId>
+          <artifactId>docker-maven-plugin</artifactId>
+          <version>0.14.1</version>
+          <configuration>
+            <images>
+              <image>
+                <name>${docker.image}</name>
+                <build>
+                  <from>java:8</from>
+                  <tags>
+                    <tag>latest</tag>
+                    <tag>${project.version}</tag>
+                  </tags>
+                  <ports>
+                    <port>8080</port>
+                  </ports>
+                  <workdir>/opt</workdir>
+                  <entryPoint>
+                    <exec>
+                      <arg>java</arg>
+                      <arg>-jar</arg>
+                      <arg>${project.artifactId}-${project.version}-fat.jar</arg>
+                      <arg>-cluster</arg>
+                      <arg>-conf</arg>
+                      <arg>config.json</arg>
+                      <arg>-cp</arg>
+                      <arg>.</arg>
+                    </exec>
+                  </entryPoint>
+                  <runCmds>
+                    <runcmd>chmod -R 777 /opt</runcmd>
+                  </runCmds>
+                  <assembly>
+                    <basedir>/</basedir>
+                    <inline>
+                      <files>
+                        <file>
+                          <source>${project.build.directory}/${project.artifactId}-${project.version}-fat.jar</source>
+                          <outputDirectory>/opt</outputDirectory>
+                          <fileMode>0755</fileMode>
+                        </file>
+                      </files>
+                      <fileSets>
+                        <fileSet>
+                          <directory>${project.basedir}/src/docker/</directory>
+                          <outputDirectory>/opt</outputDirectory>
+                          <fileMode>0755</fileMode>
+                        </fileSet>
+                      </fileSets>
+                    </inline>
+                  </assembly>
+                  <env>
+                    <SERVICE_TYPE>${discovery.service-type}</SERVICE_TYPE>
+                  </env>
+                </build>
+                <run>
+                  <ports>
+                    <port>http.port:8080</port>
+                    <port>eventbus.port:5701</port>
+                  </ports>
+                </run>
+              </image>
+            </images>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.1</version>
+          <configuration>
+            <source>1.8</source>
+            <target>1.8</target>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>2.3</version>
+          <executions>
+            <execution>
+              <phase>package</phase>
+              <goals>
+                <goal>shade</goal>
+              </goals>
+              <configuration>
+                <transformers>
+                  <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                    <manifestEntries>
+                      <Main-Class>io.vertx.core.Launcher</Main-Class>
+                      <Main-Verticle>${main.verticle}</Main-Verticle>
+                    </manifestEntries>
+                  </transformer>
+                  <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                    <resource>META-INF/services/io.vertx.core.spi.VerticleFactory</resource>
+                  </transformer>
+                </transformers>
+                <artifactSet>
+                </artifactSet>
+                <outputFile>${project.build.directory}/${project.artifactId}-${project.version}-fat.jar</outputFile>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+  <modules>
+    <module>vertx-workshop-common</module>
+    <module>quote-generator</module>
+    <module>portfolio-service</module>
+    <module>audit-service</module>
+    <module>compulsive-traders</module>
+    <module>trader-dashboard</module>
+  </modules>
+
+
+
+</project>

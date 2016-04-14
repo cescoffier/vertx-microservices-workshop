@@ -23,19 +23,11 @@ public class RestQuoteAPIVerticle extends AbstractVerticle {
       // TODO Populate the `quotes` map with the received quote
       // Quotes are json objects you can retrieve from the message body
       // The map is structured as follows: name -> quote
-
       // ----
-      JsonObject quote = message.body();
-      quotes.put(quote.getString("name"), quote);
+
       // ----
     });
 
-    // TODO Create a HTTP server that returns the quotes
-    // The request handler returns a specific quote if the `symbol` parameter is set, or the whole map if none.
-    // To write the response use: `request.response().end(content)`
-    // Responses are returned as JSON, so don't forget the "content-type": "application/json" header.
-    // If the symbol is set but not found, you should return 404.
-    // Once the request handler is set,
 
 
     vertx.createHttpServer()
@@ -43,25 +35,17 @@ public class RestQuoteAPIVerticle extends AbstractVerticle {
           HttpServerResponse response = request.response()
               .putHeader("content-type", "application/json");
 
+          // TODO
+          // The request handler returns a specific quote if the `symbol` parameter is set, or the whole map if none.
+          // To write the response use: `request.response().end(content)`
+          // Responses are returned as JSON, so don't forget the "content-type": "application/json" header.
+          // If the symbol is set but not found, you should return 404.
+          // Once the request handler is set,
+
+          response
+              .end(Json.encodePrettily(quotes));
+
           // ----
-          // TODO Change here...
-//          response
-//              .end(Json.encodePrettily(quotes));
-          // ---- by ----
-          String company = request.getParam("name");
-          if (company == null) {
-            String content = Json.encodePrettily(quotes);
-            response
-                .end(content);
-          } else {
-            JsonObject quote = quotes.get(company);
-            if (quote == null) {
-              response.setStatusCode(404).end();
-            } else {
-              response
-                  .end(quote.encodePrettily());
-            }
-          }
 
           // ----
         })

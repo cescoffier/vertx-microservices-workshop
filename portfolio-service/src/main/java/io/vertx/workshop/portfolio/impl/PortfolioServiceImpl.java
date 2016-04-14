@@ -32,20 +32,14 @@ public class PortfolioServiceImpl implements PortfolioService {
   public void getPortfolio(Handler<AsyncResult<Portfolio>> resultHandler) {
     // TODO
     // ----
-    resultHandler.handle(Future.succeededFuture(portfolio));
+
     // ----
   }
 
   private void sendActionOnTheEventBus(String action, int amount, JsonObject quote, int newAmount) {
     // TODO
     // ----
-    vertx.eventBus().publish(EVENT_ADDRESS, new JsonObject()
-        .put("action", action)
-        .put("quote", quote)
-        .put("date", System.currentTimeMillis())
-        .put("amount", amount)
-        .put("owned", newAmount)
-    );
+
     // ----
   }
 
@@ -53,19 +47,6 @@ public class PortfolioServiceImpl implements PortfolioService {
   public void evaluate(Handler<AsyncResult<Double>> resultHandler) {
     // TODO
     // ----
-
-    // First we need to discover and get a HTTP client for the `consolidation` service:
-    HttpEndpoint.get(vertx, discovery, new JsonObject().put("name", "CONSOLIDATION"),
-        client -> {
-          if (client.failed()) {
-            // It failed...
-            resultHandler.handle(Future.failedFuture(client.cause()));
-          } else {
-            // We have the client
-            HttpClient httpClient = client.result();
-            computeEvaluation(httpClient, resultHandler);
-          }
-        });
 
     // ---
   }
@@ -96,16 +77,7 @@ public class PortfolioServiceImpl implements PortfolioService {
 
     //TODO
     //----
-    client.getNow("/?name=" + encode(company), response -> {
-      if (response.statusCode() == 200) {
-        response.bodyHandler(buffer -> {
-          double v = numberOfShares * buffer.toJsonObject().getDouble("bid");
-          future.complete(v);
-        });
-      } else {
-        future.complete(0.0);
-      }
-    });
+
     // ---
 
     return future;

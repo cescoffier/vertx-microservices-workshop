@@ -49,21 +49,6 @@ public class AuditVerticle extends MicroServiceVerticle {
 
     // TODO
     // ----
-    Future<Void> databaseReady = initializeDatabase(config().getBoolean("drop", false));
-    Future<MessageConsumer<JsonObject>> messageListenerReady = retrieveThePortfolioMessageSource();
-    Future<HttpServer> httpEndpointReady = configureTheHTTPServer();
-
-    CompositeFuture.all(httpEndpointReady, databaseReady, messageListenerReady)
-        .setHandler(ar -> {
-          if (ar.succeeded()) {
-            // Register the handle called on messages
-            messageListenerReady.result().handler(message -> storeInDatabase(message.body()));
-            // Notify the completion
-            future.complete();
-          } else {
-            future.fail(ar.cause());
-          }
-        });
 
     // ----
   }
@@ -84,31 +69,7 @@ public class AuditVerticle extends MicroServiceVerticle {
 
     //TODO
     // ----
-    // 1 - we retrieve the connection
-    jdbc.getConnection(ar -> {
-      if (ar.failed()) {
-        context.fail(ar.cause());
-      } else {
-        SQLConnection connection = ar.result();
-        // 2. we execute the query
-        connection.query(SELECT_STATEMENT, result -> {
-          ResultSet set = result.result();
 
-          // 3. Build the list of operations
-          List<JsonObject> operations = set.getRows().stream()
-              .map(json -> new JsonObject(json.getString("OPERATION")))
-              .collect(Collectors.toList());
-
-          // 4. Close the connection
-          connection.close();
-
-          // 5. Send the list to the response
-          context.response().setStatusCode(200).end(Json.encodePrettily(operations));
-
-
-        });
-      }
-    });
     // ----
   }
 
@@ -117,13 +78,7 @@ public class AuditVerticle extends MicroServiceVerticle {
 
     //TODO
     //----
-    // Use a Vert.x Web router for this REST API.
-    Router router = Router.router(vertx);
-    router.get("/").handler(this::retrieveOperations);
 
-    vertx.createHttpServer()
-        .requestHandler(router::accept)
-        .listen(8080, future.completer());
     //----
     return future;
   }

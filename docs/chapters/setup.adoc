@@ -10,6 +10,8 @@ git clone https://github.com/cescoffier/vertx-microservices-workshop
 You can import the code in your IDE as a Maven project. Refer to your IDE documentation to know how to import Maven
 projects.
 
+TIP: The complete solution is given in the `solution` directory.
+
 ### Build
 
 The build is managed using Apache Maven. Compile everything using:

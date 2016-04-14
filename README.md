@@ -5,6 +5,8 @@ Vert.x.
 
 Instructions are available on http://209.132.178.63/workshop/ (this url is going to change)
 
+Complete code is available in the `solution` directory.
+
 ## Teasing
 
 Vert.x is a toolkit to create reactive distributed applications running on the top of the Java Virtual Machine. Vert.x 

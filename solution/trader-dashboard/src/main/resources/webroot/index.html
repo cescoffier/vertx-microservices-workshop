@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MicroTrader Dashboard</title>
+
+    <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.css">
+    <style>
+        .block {
+            background-color: #fff;
+            border-color: #ddd;
+            border-width: 1px;
+            border-radius: 4px 4px 0 0;
+            -webkit-box-shadow: none;
+            box-shadow: none;
+            padding: 0 15px 15px;
+            border-style: solid;
+        }
+
+        .block h2 {
+            font-size: 12px;
+            font-weight: 700;
+            color: #959595;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <br/>
+    <!-- First row -->
+    <div class="row">
+        <!-- portfolio -->
+        <div class="col-md-6">
+            <div class="block">
+                <h2>Portfolio</h2>
+                <dl class="dl-horizontal">
+                    <dt>Cash</dt>
+                    <dd id="cash">0</dd>
+                    <dt>Value</dt>
+                    <dd id="value">0</dd>
+                    <dt>Total Value</dt>
+                    <dd id="total">0</dd>
+                    <dt>Divinator Shares</dt>
+                    <dd id="divinator">0</dd>
+                    <dt>Black Coat Shares</dt>
+                    <dd id="blackcoat">0</dd>
+                    <dt>MacroHard Shares</dt>
+                    <dd id="macrohard">0</dd>
+                </dl>
+            </div>
+
+            <div class="block" id="chart-block" style="margin-top: 10px">
+                <canvas id="chart" width="400" height="255"></canvas>
+            </div>
+        </div>
+
+        <!-- operations -->
+        <div class="col-md-6 block">
+            <h2>Last operations</h2>
+            <table class="table table-striped">
+                <thead>
+                <tr>
+                    <th>Action</th>
+                    <th>Amount</th>
+                    <th>Company</th>
+                </tr>
+                </thead>
+                <tbody id="operations">
+                <!-- content added here -->
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <!-- second row services -->
+    <div class="row" style="margin-top:10px">
+        <div class="col-md-12" style="padding-right: 0" id="svc">
+            <div class="block">
+                <h2>Available services</h2>
+                <table class="table table-striped">
+                    <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Status</th>
+                        <th>Type</th>
+                        <th>Registration Id</th>
+                        <th>Location</th>
+                        <th>Metadata</th>
+                    </tr>
+                    </thead>
+                    <tbody id="services">
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="bower_components/jquery/dist/jquery.min.js"></script>
+<script src="bower_components/sockjs/sockjs.min.js"></script>
+<script src="bower_components/vertx3-eventbus-client/vertx-eventbus.js"></script>
+<script src="bower_components/Chart.js/Chart.js"></script>
+<script src="bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+<script src="libs/portfolio_service-proxy.js"></script>
+
+<script>
+
+    var quotes = {
+        "divinator": 0,
+        "blackcoat": 0,
+        "macrohard": 0,
+        "index": 0
+    };
+
+    var eventbus = new EventBus('/eventbus');
+    var service;
+    eventbus.onopen = function () {
+        eventbus.registerHandler('market', function (error, message) {
+            //console.log('received a message on shares ' + JSON.stringify(message));
+            handleStockUpdate(message.body);
+        });
+
+        service = new PortfolioService(eventbus, "service.portfolio");
+        updatePortfolio();
+    };
+
+
+    function handleStockUpdate(quote) {
+        var price = quote.bid;
+        if (quote.name === "Divinator") {
+            quotes.divinator = price;
+        } else if (quote.name === "Black Coat") {
+            quotes.blackcoat = price;
+        } else {
+            quotes.macrohard = price;
+        }
+    }
+
+    function retrieveLastOperations() {
+        $.get("/operations", {}, function (json) {
+            if (json.message) {
+                $("#operations").html("No audit service available");
+            } else {
+                $("#operations").empty();
+                $.each(json, function (i, operation) {
+                    var row = $("<tr>");
+                    var action = $("<td>" + operation.action + "</td>");
+                    var amount = $("<td>" + operation.amount + "</td>");
+                    var company = $("<td>" + operation.quote.name + "</td>");
+                    row.append(action).append(amount).append(company);
+                    $("#operations").append(row);
+                });
+
+            }
+        });
+    }
+
+    function retrieveServices() {
+        $.get("/discovery", {}, function (services) {
+            $("#services").empty();
+            $.each(services, function (i, svc) {
+                createRowForService(svc);
+            });
+        });
+    }
+
+    function createRowForService(svc) {
+        var row = $("<tr id='" + svc.name + "'>" +
+                "<td>" + svc.name + "</td>" +
+                "<td class='status'>" + insertServiceStatus(svc.status) + "</td>" +
+                "<td class='type'>" + svc.type + "</td>" +
+                "<td class='registration'>" + svc.registration + "</td>" +
+                "<td class='location'>" + insertServiceMetadata(svc.location) + "</td>" +
+                "<td class='location'>" + insertServiceMetadata(svc.metadata) + "</td>" +
+                "</tr>");
+        $("#services").append(row);
+    }
+
+    function insertServiceStatus(status) {
+        switch (status) {
+            case "UP" :
+                return "<span class='label label-success'>UP</span>";
+            case "DOWN" :
+                return "<span class='label label-danger'>DOWN</span>";
+            case "OUT_OF_SERVICE" :
+                return "<span class='label label-warning'>OUT OF SERVICE</span>";
+        }
+    }
+
+    function insertServiceMetadata(metadata) {
+        var list = "<ul>";
+        $.each(metadata, function (key, value) {
+            list += "<li>" + key + " = " + value + "</li>";
+        });
+        list += "</ul>";
+        return list
+    }
+
+    function updatePortfolio() {
+        if (!service) {
+            console.log("Portfolio Service not available");
+        } else {
+            service.getPortfolio(function (err, res) {
+                if (err) {
+                    console.log("Error while retrieving the portfolio", err);
+                } else {
+                    $("#cash").html(res.cash);
+                    var divinator = res.shares["Divinator"];
+                    var macrohard = res.shares["MacroHard"];
+                    var blackcoat = res.shares["Black Coat"];
+
+                    if (divinator) {
+                        $("#divinator").html(divinator);
+                    } else {
+                        $("#divinator").html(0);
+                    }
+
+                    if (macrohard) {
+                        $("#macrohard").html(macrohard);
+                    } else {
+                        $("#macrohard").html(0);
+                    }
+
+                    if (blackcoat) {
+                        $("#blackcoat").html(blackcoat);
+                    } else {
+                        $("#blackcoat").html(0);
+                    }
+
+                    service.evaluate(function (err, result) {
+                        if (err) {
+                            console.log("Cannot evaluate portfolio", err);
+                        } else {
+                            $("#value").html(result);
+                            $("#total").html(parseInt($("#cash").html()) + result);
+                        }
+                    });
+                }
+            })
+        }
+    }
+
+    // Start periodic tasks
+    retrieveLastOperations();
+    retrieveServices();
+    setInterval(retrieveServices, 5000);
+    setInterval(retrieveLastOperations, 5000);
+    setInterval(updatePortfolio, 5000);
+
+    createChart();
+
+    function createChart() {
+        var canvas = document.getElementById('chart');
+        var ctx = canvas.getContext("2d");
+        var startingData = {
+            labels: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            datasets: [
+                {
+                    data: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    fillColor: "rgba(220,220,220,0.2)",
+                    strokeColor: "rgba(220,220,220,1)",
+                    pointColor: "rgba(220,220,220,1)",
+                    pointStrokeColor: "#fff",
+                    label: "Divinator"
+                },
+                {
+                    data: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    fillColor: "rgba(151,187,205,0.2)",
+                    strokeColor: "rgba(151,187,205,1)",
+                    pointColor: "rgba(151,187,205,1)",
+                    pointStrokeColor: "#fff",
+                    label: "Black Coat"
+                },
+                {
+                    data: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    fillColor: "rgba(80,90,180,0.2)",
+                    strokeColor: "rgba(80,90,180,1)",
+                    pointColor: "rgba(80,90,180,1)",
+                    pointStrokeColor: "#fff",
+                    label: "MacroHard"
+                }
+            ]
+        };
+
+        var chart = new Chart(ctx).Line(startingData, {animationSteps: 5});
+        var lastLabel = 10;
+
+        setInterval(function () {
+            chart.addData([quotes.divinator, quotes.blackcoat, quotes.macrohard], ++lastLabel);
+            chart.removeData();
+        }, 3000);
+
+    }
+
+
+</script>
+
+</body>
+</html>

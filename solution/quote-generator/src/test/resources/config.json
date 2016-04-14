@@ -1,0 +1,29 @@
+{
+  "companies": [
+    {
+      "name": "MacroHard",
+      "symbol": "MCH",
+      "volume": 100000,
+      "price": 600,
+      "variation": 200,
+      "period": 100
+    },
+    {
+      "name": "Divinator",
+      "symbol": "DVN",
+      "volume": 500000,
+      "price": 800,
+      "variation": 50,
+      "period": 100
+    },
+    {
+      "name": "Black Coat",
+      "symbol": "BCT",
+      "volume": 90000,
+      "price": 300,
+      "variation": 150,
+      "period": 100
+    }
+  ]
+
+}
