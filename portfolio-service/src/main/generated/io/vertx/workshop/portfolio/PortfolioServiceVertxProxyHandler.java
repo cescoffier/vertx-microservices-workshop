@@ -37,12 +37,10 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import io.vertx.serviceproxy.ProxyHelper;
 import io.vertx.serviceproxy.ProxyHandler;
-import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.AsyncResult;
 import io.vertx.workshop.portfolio.Portfolio;
 import io.vertx.core.Handler;
-import io.vertx.workshop.portfolio.PortfolioService;
 
 /*
   Generated Proxy code - DO NOT EDIT
@@ -150,7 +148,6 @@ public class PortfolioServiceVertxProxyHandler extends ProxyHandler {
           service.evaluate(createHandler(msg));
           break;
         }
-
         default: {
           throw new IllegalStateException("Invalid action: " + action);
         }

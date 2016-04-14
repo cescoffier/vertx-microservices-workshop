@@ -1,4 +1,3 @@
-require 'vertx/vertx'
 require 'vertx/util/utils.rb'
 # Generated from io.vertx.workshop.portfolio.PortfolioService
 module VertxWorkshopPortfolio
@@ -58,14 +57,6 @@ module VertxWorkshopPortfolio
         return @j_del.java_method(:evaluate, [Java::IoVertxCore::Handler.java_class]).call((Proc.new { |ar| yield(ar.failed ? ar.cause : nil, ar.succeeded ? ar.result : nil) }))
       end
       raise ArgumentError, "Invalid arguments when calling evaluate()"
-    end
-    # @param [::Vertx::Vertx] vertx 
-    # @return [::VertxWorkshopPortfolio::PortfolioService]
-    def self.get_proxy(vertx=nil)
-      if vertx.class.method_defined?(:j_del) && !block_given?
-        return ::Vertx::Util::Utils.safe_create(Java::IoVertxWorkshopPortfolio::PortfolioService.java_method(:getProxy, [Java::IoVertxCore::Vertx.java_class]).call(vertx.j_del),::VertxWorkshopPortfolio::PortfolioService)
-      end
-      raise ArgumentError, "Invalid arguments when calling get_proxy(vertx)"
     end
   end
 end

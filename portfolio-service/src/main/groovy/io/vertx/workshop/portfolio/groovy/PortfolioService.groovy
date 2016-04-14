@@ -18,7 +18,6 @@ package io.vertx.workshop.portfolio.groovy;
 import groovy.transform.CompileStatic
 import io.vertx.lang.groovy.InternalHelper
 import io.vertx.core.json.JsonObject
-import io.vertx.groovy.core.Vertx
 import io.vertx.core.json.JsonObject
 import io.vertx.core.AsyncResult
 import io.vertx.workshop.portfolio.Portfolio
@@ -95,9 +94,5 @@ public class PortfolioService {
    */
   public void evaluate(Handler<AsyncResult<Double>> resultHandler) {
     delegate.evaluate(resultHandler);
-  }
-  public static PortfolioService getProxy(Vertx vertx) {
-    def ret = InternalHelper.safeCreate(io.vertx.workshop.portfolio.PortfolioService.getProxy(vertx != null ? (io.vertx.core.Vertx)vertx.getDelegate() : null), io.vertx.workshop.portfolio.groovy.PortfolioService.class);
-    return ret;
   }
 }

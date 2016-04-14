@@ -78,22 +78,13 @@
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
-      <artifactId>vertx-jdbc-client</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.vertx</groupId>
       <artifactId>vertx-hazelcast</artifactId>
     </dependency>
 
-    <!-- Microservice stack -->
+    <!-- Microservice toolbox -->
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-discovery-service</artifactId>
-      <version>3.3.0-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-circuit-breaker</artifactId>
       <version>3.3.0-SNAPSHOT</version>
     </dependency>
 
@@ -280,11 +271,11 @@
   </build>
 
   <modules>
+    <module>vertx-workshop-common</module>
     <module>quote-generator</module>
     <module>portfolio-service</module>
     <module>audit-service</module>
     <module>compulsive-traders</module>
-    <module>vertx-workshop-common</module>
     <module>trader-dashboard</module>
   </modules>
 
