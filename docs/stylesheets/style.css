@@ -42,6 +42,15 @@ p {
     font-size: 1.5em;
 }
 
+li {
+    font-size: 1.5em;
+}
+
+li p {
+    font-size: 1em;
+}
+
+
 code {
     color: #c7254e;
     background-color: #f9f2f4;
