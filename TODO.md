@@ -9,3 +9,5 @@
 * Import / Export of docker image
 * Import / Export of the maven repo
 * Style the Asciidoc output 
+* Test form empty maven repo and docker images
+* Check that docker on linux does not support wide multicast.
