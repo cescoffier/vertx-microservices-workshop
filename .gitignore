@@ -111,7 +111,6 @@ fabric.properties
 nbproject/private/
 build/
 nbbuild/
-dist/
 nbdist/
 nbactions.xml
 .nb-gradle/
