@@ -1,4 +1,4 @@
-## Micro-Trader
+## The Micro-Trader Application
 
 Now that you know more about Vert.x and microservices, it's time to discuss the application we are going to develop
 in this lab.
