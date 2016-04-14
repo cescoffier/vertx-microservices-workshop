@@ -42,7 +42,11 @@ p {
     font-size: 1.5em;
 }
 
-li {
+.toc li {
+    font-size: inherit;
+}
+
+.sect1 li, .sect2 li, .sect3 li {
     font-size: 1.5em;
 }
 
