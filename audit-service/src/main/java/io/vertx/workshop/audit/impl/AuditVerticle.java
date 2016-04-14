@@ -79,17 +79,17 @@ public class AuditVerticle extends MicroServiceVerticle {
     // 1. Get the connection
     // 2. When done, execute the query
     // 3. When done, iterate over the result to build a list
-    // 4. return this list in the response
-    // 5. close the connection
+    // 4. close the connection
+    // 5. return this list in the response
 
     //TODO
     // ----
     // 1 - we retrieve the connection
     jdbc.getConnection(ar -> {
-      SQLConnection connection = ar.result();
       if (ar.failed()) {
         context.fail(ar.cause());
       } else {
+        SQLConnection connection = ar.result();
         // 2. we execute the query
         connection.query(SELECT_STATEMENT, result -> {
           ResultSet set = result.result();
@@ -99,11 +99,13 @@ public class AuditVerticle extends MicroServiceVerticle {
               .map(json -> new JsonObject(json.getString("OPERATION")))
               .collect(Collectors.toList());
 
-          // 4. Send the list to the response
+          // 4. Close the connection
+          connection.close();
+
+          // 5. Send the list to the response
           context.response().setStatusCode(200).end(Json.encodePrettily(operations));
 
-          // 5. Close the connection
-          connection.close();
+
         });
       }
     });
