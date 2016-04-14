@@ -16,8 +16,8 @@ FOPUB=fopub
 ASCIIDOCTOR_PDF=asciidoctor-pdf
 
 # File names
-MASTER_ADOC=index.ad
-MASTER_DOCBOOK=${MASTER_ADOC/.ad/.xml}
+MASTER_ADOC=index.adoc
+MASTER_DOCBOOK=${MASTER_ADOC/.adoc/.xml}
 
 # Command options
 SHARED_OPTIONS='-a numbered -a experimental -a source-highlighter=coderay -r asciidoctor-diagram -a imagesdir=images
@@ -51,6 +51,7 @@ for f in ${FORMATS[*]}; do
   fi
 done
 
+cp -R images output
 
 
 exit 0

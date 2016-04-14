@@ -1,0 +1,24 @@
+# Vert.x - From zero to (micro)-hero
+v0.1, Apr 8, 2016
+:toc:
+:toc-title: Table of Contents
+:toclevels: 4
+:toc-placement!:
+:imagesdir: images
+
+toc::[]
+
+include::chapters/preface.adoc[Preface]
+include::chapters/vertx.adoc[Vert.x]
+include::chapters/microservices.adoc[Demystifying microservices]
+include::chapters/application.adoc[The application]
+include::chapters/prerequisites.adoc[Prerequisites]
+include::chapters/setup.adoc[Let's start !]
+include::chapters/quote-generator.adoc[Your first Vert.x microservice - the quote generator]
+include::chapters/portfolio.adoc[Exposing Event bus services, and HTTP client  - the portfolio service]
+include::chapters/traders.adoc[Consuming Event bus services and polyglot verticle - the trader service]
+include::chapters/audit.adoc[Database and complex composition - the audit service]
+include::chapters/dashboard.adoc[Anatomy of the dashboard]
+include::chapters/conclusion.adoc[You made it!]
+include::chapters/references.adoc[References]
+
