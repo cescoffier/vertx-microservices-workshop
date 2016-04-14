@@ -110,9 +110,31 @@ To notify Vert.x that the start process is completed (or successfully or not), i
 
 ### Configure the HTTP server - async method pattern
 
-We have mentioned that async method have a signature with a `Handler` as last parameter. There is another type of
-async method that returns a `Future` object when the operations they are executing are completed. Let's implement the
- `configureTheHTTPServer` method following this pattern:
+We have mentioned that async method have a signature with a `Handler` as last parameter. There is an equivalent syntax
+that returns a `Future` object when the operations they are executing are completed:
+
+[source, java]
+----
+void asyncMethod(a, b, Handler<R> handler);
+// is equivalent to
+Future<R> asyncMethod(a, b);
+----
+
+Indeed, the caller can attach a `Handler` on the returned `Future` object to be notified when the operaiton has
+completed:
+
+[source, java]
+----
+Future<R> future = asyncMethod(a, b);
+future.setHandler(ar -> {
+  if (ar.failed()) { /* the operaiton has failed */ }
+  else {
+    // Do something with the result
+  }
+});
+----
+
+Let's implement the `configureTheHTTPServer` method following this pattern:
 
 [source, java]
 ----
