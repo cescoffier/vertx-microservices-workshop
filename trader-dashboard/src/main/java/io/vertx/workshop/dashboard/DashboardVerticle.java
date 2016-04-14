@@ -58,11 +58,13 @@ public class DashboardVerticle extends MicroServiceVerticle {
       } else {
         client.result().getNow("/", response -> {
           response
-              .bodyHandler(buffer -> context.response()
-                  .putHeader("content-type", "application/json")
-                  .setStatusCode(200)
-                  .end(buffer));
-          client.result().close();
+              .bodyHandler(buffer -> {
+                context.response()
+                    .putHeader("content-type", "application/json")
+                    .setStatusCode(200)
+                    .end(buffer);
+                client.result().close();
+              });
         });
       }
     });
