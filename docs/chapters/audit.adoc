@@ -171,7 +171,7 @@ So, the caller can call this method and get a `Future`. It can register a `Handl
 If you look at the `retrieveThePortfolioMessageSource`, you would see the very same pattern.
 
 
-### Initializing the database with sequential composition
+### Initializing the database with chain composition
 
 In the `start` method, we are calling `initializeDatabase`. Let's look at this method using another type of action
 composition. This method:
@@ -179,48 +179,95 @@ composition. This method:
 * get a connection to the database
 * drop the table
 * create the table
-* close the connection
+* close the connection (whatever the result of the two last operations)
 
 All these operations may fail.
 
-In the method code you see for each "step" a pair (`future`, `handler`):
+In the last paragraph we have seen methods returning `Future`. _Chains` are a composition of such functions:
 
-[source, java]
-----
-// When the connection is retrieve, we want to drop the table (if drop is set to true)
-// First, create a future notifying of the completion of the operation
-Future<SQLConnection> tableDropped = Future.future();
-// Then, define a handler doing this operation.
-Handler<SQLConnection> dropTableHandler = (connection) -> {
-  if (!drop) {
-    tableDropped.complete(connection); // Immediate completion.
-  } else {
-    connection.execute(DROP_STATEMENT, completer(tableDropped, connection));
-  }
-};
-----
+1. you have an input
+2. you execute a first `Function` taking the input from (1) and returning a `Future`
+3. you execute a second `Function` taking the input from (2) and returning a `Future`
+4 ....
 
-The `Future` is used in the `Handler` to notify of the completion of the operation.
-
-Once you have all the steps implemented like that, we can build a _sequential_ composition, i.e. A calls B when it's
- done, B calls C when it's done. This is achieved with the `compose` method of `Future`:
+The completion of a chain is a `Future` object. If one of the chained operation fails, this `Future` is marked as
+failed, otherwise it is completed with the result of the last operation:
 
 [source, code]
 ----
-Future connectionRetrieved = ...
-Future tableDropped = ...
-Future tableCreated = ...
-// ...
-// connectionRetrieved -> dropTable
-connectionRetrieved.compose(dropTableHandler, databaseReady);
-// dropTable -> createTable
-tableDropped.compose(createTableHandler, databaseReady);
-// createTable -> closeConnection
-tableCreated.compose(closeConnectionHandler, databaseReady);
+Future<X> chain = Chain.chain(input, function1, function2, function3);
 ----
 
-The `compose` method executes the given `Handler` (first parameter) when the `future` is completed successfully. If
-the `future` is a failure, it reports the failure on the second parameter (another `future` object).
+A chain can be triggered by a `Future` too, so will start its execution upon the successful completion of the given
+`Future`.
+
+So do use the composition pattern, we just need a set of `Functions` and a `Future` that would trigger the chain.
+Let's create this `Future` first:
+
+[source, java]
+----
+// This future will be assigned when the connection with the database is established.
+// We are going to use this future as a reference on the connection to close it.
+Future<SQLConnection> connectionRetrieved = Future.future();
+// Retrieve a connection with the database, report on the databaseReady if failed, or
+// assign the connectionRetrieved future.
+jdbc.getConnection(connectionRetrieved.completer());
+----
+
+Then, we need two functions taking a `SQLConnection` as parameter
+
+1. The first function drops the table if needed
+2. The second function creates the table
+
+[source,java]
+----
+// When the connection is retrieved, we want to drop the table (if drop is set to true)
+Function<SQLConnection, Future<SQLConnection>> dropTable = connection -> {
+  Future<SQLConnection> future = Future.future();
+  if (!drop) {
+    future.complete(connection); // Immediate completion.
+  } else {
+    connection.execute(DROP_STATEMENT, completer(future, connection));
+  }
+  return future;
+};
+
+// When the table is dropped, we recreate it
+Function<SQLConnection, Future<Void>> createTable = connection -> {
+  Future<Void> future = Future.future();
+  connection.execute(CREATE_TABLE_STATEMENT, future.completer());
+  return future;
+};
+----
+
+As explained above, both function returns a `Future` object. The result of the first function is used as input of the
+ second function.
+
+It's now time to build the chain:
+
+[source, java]
+----
+// Ok, now it's time to chain all these actions:
+// connectionRetrieved -> dropTable -> createTable -> in all case
+// close the connection
+
+Chain.chain(connectionRetrieved, dropTable, createTable)       // <1>
+    .setHandler(ar -> {                                        // <2>
+      // Whatever the result, if the connection has been
+      // retrieved, close it
+      if (connectionRetrieved.result() != null) {               // <3>
+        connectionRetrieved.result().close();
+      }
+
+      // Complete the main future with the result.
+      databaseReady.completer().handle(ar);                     // <4>
+    });
+----
+
+In (1) we create the chain. The first parameter is the `Future` triggering the chain. The two other parameters are
+the chained functions. We attach a `Handler` to the returned `Future` that is executed when the chain has been
+executed with the result (2). In (3) we check whether we had a connection and close it. Finally, in (4) we complete
+the main `Future` (returned by the method).
 
 ### Retrieve results from the database with callback-based composition
 
@@ -265,7 +312,12 @@ jdbc.getConnection(ar -> {
 ----
 
 So obviously it's possible. But imagine when you have several asynchronous operation to chain, it become a callback
-hell very quickly. So, as a recommendation: use the vert.x composition operator.
+hell very quickly. So, as a recommendation: use the vert.x composition operators.
+
+IMPORTANT: All the composition operators (`all`, `compose`, `any`, `chain`...) are implemented on top of callbacks.
+The _pure_ async programming is using callbacks, `Future` and composition are there to provide a direct
+correspondence between synchronous functions and asynchronous operations and so ease the implementation of complex
+processes.
 
 
 ### Show time !

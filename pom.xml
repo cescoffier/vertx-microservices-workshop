@@ -27,6 +27,8 @@
     <docker.image>${docker.group.name}/${project.artifactId}:${project.version}</docker.image>
 
     <discovery.service-type>unknown</discovery.service-type>
+
+    <project.root>./</project.root>
   </properties>
 
   <dependencyManagement>
@@ -272,13 +274,20 @@
 
   <modules>
     <module>vertx-workshop-common</module>
-    <module>quote-generator</module>
-    <module>portfolio-service</module>
-    <module>audit-service</module>
-    <module>compulsive-traders</module>
+    <module>${project.root}quote-generator</module>
+    <module>${project.root}portfolio-service</module>
+    <module>${project.root}audit-service</module>
+    <module>${project.root}compulsive-traders</module>
     <module>trader-dashboard</module>
   </modules>
 
-
+  <profiles>
+    <profile>
+      <id>solution</id>
+      <properties>
+        <project.root>solution/</project.root>
+      </properties>
+    </profile>
+  </profiles>
 
 </project>
