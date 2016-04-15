@@ -27,8 +27,6 @@
     <docker.image>${docker.group.name}/${project.artifactId}:${project.version}</docker.image>
 
     <discovery.service-type>unknown</discovery.service-type>
-
-    <project.root>./</project.root>
   </properties>
 
   <dependencyManagement>
@@ -268,26 +266,42 @@
             </execution>
           </executions>
         </plugin>
+        
+        <plugin>
+     <groupId>org.eclipse.m2e</groupId>
+     <artifactId>lifecycle-mapping</artifactId>
+     <version>1.0.0</version>
+     <configuration>
+       <lifecycleMappingMetadata>
+         <pluginExecutions>
+           <pluginExecution>
+             <pluginExecutionFilter>
+               <groupId>org.codehaus.gmavenplus</groupId>
+        	   <artifactId>gmavenplus-plugin</artifactId>
+               <versionRange>[1.0.0,)</versionRange>
+               <goals>
+                 <goal>compile</goal>
+               </goals>
+             </pluginExecutionFilter>
+             <action>
+               <ignore/>
+             </action>
+           </pluginExecution>
+         </pluginExecutions>
+       </lifecycleMappingMetadata>
+     </configuration>
+    </plugin>
       </plugins>
     </pluginManagement>
   </build>
 
   <modules>
     <module>vertx-workshop-common</module>
-    <module>${project.root}quote-generator</module>
-    <module>${project.root}portfolio-service</module>
-    <module>${project.root}audit-service</module>
-    <module>${project.root}compulsive-traders</module>
+    <module>quote-generator</module>
+    <module>portfolio-service</module>
+    <module>audit-service</module>
+    <module>compulsive-traders</module>
     <module>trader-dashboard</module>
   </modules>
-
-  <profiles>
-    <profile>
-      <id>solution</id>
-      <properties>
-        <project.root>solution/</project.root>
-      </properties>
-    </profile>
-  </profiles>
 
 </project>
