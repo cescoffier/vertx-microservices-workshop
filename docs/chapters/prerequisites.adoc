@@ -78,3 +78,8 @@ You need a JDK 8 installed on your machine. Install is from:
 
 We recommend you to use an IDE. You can use Eclipse, IntelliJ or Netbeans.
 
+#### No IDE ?
+
+If you don't have an IDE, here are the step to get started with Eclipse. First download Eclipse from https://www.eclipse.org/downloads/[the download page]. In the _Eclipse Package_ list, select _Eclipse IDE for Java Developers_. It brings you to a download page with a `Download` button. Once downloaded, unzip it.
+
+In the destination directory, you should find an `Eclipse` binary that you can execute. Eclipse will prompt you to create a workspace. Once launch, click on the _Workbench_ arrow (top right corner).

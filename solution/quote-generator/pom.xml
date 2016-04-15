@@ -12,6 +12,7 @@
   </parent>
 
   <artifactId>quote-generator</artifactId>
+  <name>Quote Generator (Solution)</name>
 
   <properties>
     <!-- Main verticle -->

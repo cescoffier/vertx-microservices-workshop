@@ -11,6 +11,7 @@
   </parent>
 
   <artifactId>portfolio-service</artifactId>
+  <name>Portfolio Service (Solution)</name>
 
   <properties>
     <main.verticle>io.vertx.workshop.portfolio.impl.PortfolioVerticle</main.verticle>

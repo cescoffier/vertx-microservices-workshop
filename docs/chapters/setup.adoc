@@ -7,10 +7,18 @@
 git clone https://github.com/cescoffier/vertx-microservices-workshop
 ----
 
-You can import the code in your IDE as a Maven project. Refer to your IDE documentation to know how to import Maven
-projects.
+You can import the code in your IDE as a Maven project. Refer to your IDE documentation to know how to import Maven projects.
+
+For Eclipse:
+
+1. Click on `File - Import ... - Maven - Existing Maven Projects`
+2. Select the location where you cloned the sources
+3. Click _Finish_ and wait...
+
+You are going to see a couple of compilation error. This is because Eclipse does not mark the `src/main/generated` directory as _source root_ by default. Rick click on `portfolio-service/src/main/generated` and select _Build Path -> Use as Source Folder_.
 
 TIP: The complete solution is given in the `solution` directory.
+
 
 ### Build
 

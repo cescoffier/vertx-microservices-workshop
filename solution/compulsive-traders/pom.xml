@@ -11,6 +11,7 @@
   </parent>
 
   <artifactId>compulsive-traders</artifactId>
+  <name>Compulsive Traders (Solution)</name>
 
   <properties>
     <main.verticle>io.vertx.workshop.trader.impl.MainVerticle</main.verticle>

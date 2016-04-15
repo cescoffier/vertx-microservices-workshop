@@ -11,6 +11,7 @@
   </parent>
 
   <artifactId>audit-service</artifactId>
+  <name>Audit Service (Solution)</name>
 
   <properties>
     <main.verticle>io.vertx.workshop.audit.impl.AuditVerticle</main.verticle>
