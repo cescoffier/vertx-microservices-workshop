@@ -15,10 +15,11 @@ For Eclipse:
 2. Select the location where you cloned the sources
 3. Click _Finish_ and wait...
 
-You are going to see a couple of compilation error. This is because Eclipse does not mark the `src/main/generated` directory as _source root_ by default. Rick click on `portfolio-service/src/main/generated` and select _Build Path -> Use as Source Folder_.
+You are going to see a couple of compilation error. This is because Eclipse does not mark the `src/main/generated`
+directories as _source root_ by default. Right-click on `portfolio-service/src/main/generated` and select _Build Path
+-> Use as Source Folder_.
 
-TIP: The complete solution is given in the `solution` directory.
-
+TIP: A complete solution is given in the `solution` directory.
 
 ### Build
 
@@ -30,20 +31,21 @@ cd vertx-microservices-workshop
 mvn clean install
 ----
 
-### The discovery infrastructure
+### Clustering and Discovery infrastructure
 
-It's time to start. If you remember the microservice section, we need some discovery mechanism. Fortunately, Vert.x
-offers a discovery service. To let every component discovery the service, it needs to store the service _record_ in a
- location that every one can request. This is obviously configurable in Vert.x, but let's use the default
- implementation.
+It's about time to start. If you remember the microservice section, we need some discovery mechanism. Fortunately,
+Vert.x offers a discovery service. To let every component discover the services, it needs to store the service
+_record_ in a location that every one can access.
 
 By default, Vert.x discovery service is going to use a distributed map accessible by all the members of the cluster.
-So, when you start your vert.x application and enable the cluster mode, it joins a cluster. This cluster lets:
+So, when you start your vert.x application and enable the cluster mode, it joins a cluster. This cluster lets nodes:
 
-* node to come and go, and so manage member discovery
-* share data such as distributed map, lock, counter...
-* implement the distributed event bus
+* to come and go, and so manage member discovery
+* to share data such as distributed map, lock, counter...
+* to access the event bus
 
 In our context, nothing is required to configure it. Our docker images already start the Vert.x applications in
 cluster mode.
+
+In this lab, the cluster is built using Hazelcast and the member discovery uses _multicast_.
 

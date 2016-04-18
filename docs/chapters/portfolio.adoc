@@ -12,9 +12,9 @@ A `Portfolio` stores the different owned shares and the available cash.
 
 ### RPC and Async RPC
 
-Microservices are not only about REST. They can be exposes using any type of interactions, and _Remote Procedure Calls_
-is one of them. With RPC, an component can effectively send a request to another component by doing a local procedure
-call, which results in the request being packaged as a message and sent to the callee. Likewise, the result is sent back
+Microservices are not only about REST. They can be exposed using any types of interactions, and _Remote Procedure Calls_
+is one of them. With RPC, a component can effectively send a request to another component by doing a local procedure
+call, which results in the request being packaged in a message and sent to the callee. Likewise, the result is sent back
  and returned to the caller component as the result of the procedure call:
 
 [plantuml, rpc-sequence, png]
@@ -40,7 +40,7 @@ Such interactions has the advantages to introduce typing, and so is less error p
 1. how the service is called
 2. where the service is living (location)
 
-Traditional RPC exhibits an annoying drawbacks: the caller waits until the response has been received. This is
+Traditional RPC exhibits an annoying drawback: the caller waits until the response has been received. This is
 definitely a blocking call, as it involves at least two network messages. In addition, it is not really designed for
 failures while distributed communications have many reasons to fail (`RemoteException` I'm thinking about you...).
 
@@ -69,14 +69,14 @@ instead of _waiting_ for the response, it passes a `Handler<AsyncResult<X>` call
  @enduml
 ----
 
-The `AsyncResult` notifies the `Handler` whether the invocation was successful or failed. Upon success, the handler can
+The `AsyncResult` notifies the `Handler` whether the invocation succeeded or failed. Upon success, the handler can
  retrieve the result.
 
 Such async-RPC has several advantages:
 
 * the caller is not blocked
 * it deals with failures
-* it avoids you to send messages on the event bus and manage object marshalling and unmarshalling.
+* it avoids you to send messages on the event bus and manage object marshalling and unmarshalling for you.
 
 ### Async service interface
 
@@ -145,17 +145,17 @@ Wow... one single line ? Let's dissect it:
  is the result (`portfolio`)
 
 But, wait, what is the relationship between `AsyncResult` and `Future` ? A `Future` represents the result of an action
-that may, or may not, have occurred yet. The result may be `void` if the `Future` is used to detect the completion of
+that may, or may not, have occurred yet. The result may be `null` if the `Future` is used to detect the completion of
  an operation. The operation behind a `Future` object may succeed or fail. `AsyncResult` is a structure describing the
-  success of the failure of an operation. So, `Future` are `AsyncResult`. In Vert.x `AsyncResult` are created from
-  the `Future` class.
+  success of the failure of an operation. So, `Future` are `AsyncResult`. In Vert.x `AsyncResult` instances are
+  created from the `Future` class.
 
 `AsyncResult` describes:
 
 * a success as shown before, it encapsulates the result
 * a failure, it encapsulates a `Throwable` instance
 
-INFO: Did you know that the term `Future` has been introduced in 1977, `Promise` in 1976... Not really new.
+INFO: Did you know that the term `Future` has been introduced in 1977, `Promise` in 1976... Not really new things.
 
 So, how does this work with our async RPC service, let's look at this sequence diagram:
 

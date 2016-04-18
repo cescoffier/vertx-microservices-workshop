@@ -1,11 +1,13 @@
 ## Preface
 
-Let's start from the beginning.... _Vert.x_. What's Vert.x ? That's a pretty good question. If you go on the
-http://vertx.io[Vert.x web site], Vert.x is defined as "a toolkit for building reactive applications on the JVM". This
-description is rather fuzzy no ? What's a toolkit ? What are reactive applications ? In this lab, we are going to
-explain these terms, and build an application using Vert.x. This application is going to be composed by
-_microservices_. Another buzzword to be trendy? No, Vert.x was promoting _microservices_  before everyone and
- his dog jumped on the bandwagon. The application is going to be:
+Let's start from the beginning.... _Vert.x_. What's Vert.x ? That's a pretty good question, and probably a good start.
+ If you go on the http://vertx.io[Vert.x web site], Vert.x is defined as _"a toolkit for building reactive
+ applications on the JVM"_. This description is rather fuzzy no ? What's a toolkit ? What are reactive applications ?
+ In this lab, we are going to explain these words, and build an application using Vert.x illustrating what vert.x is.
+ This application is going to be composed by _microservices_. Another buzzword to be trendy ? No, Vert.x was promoting
+  _microservices_  before everyone and his dog jumped on the bandwagon.
+
+The developed application is going to be:
 
 * based on vert.x (that's why you are here, no ?)
 * distributed
@@ -13,21 +15,20 @@ _microservices_. Another buzzword to be trendy? No, Vert.x was promoting _micros
 * (a bit) fun
 
 This lab offers attendees an intro-level, hands-on session with Vert.x, from the first line of code, to making
-services, to consuming them and finally to assembling everything in a consistent reactive system. It explains what
-are reactive systems and what is reactive programming, how to build applications based on microservice**s** (the
-**s** is important).
+services, to consuming them and finally to assembling everything in a consistent reactive system. It illustrates what
+are reactive systems, what is reactive programming, and how to build applications based on reactive microservice**s**
+(the **s** is important).
 
-This is a BYOL (bring your own laptop) session, so bring your Windows, OSX, or Linux laptop. If you are using
-Windows, we strongly recommend you to use a VirtualBox image we provide. You would also need Docker, not because Vert
-.x needs Docker (it does not!), but to simulate a distributed system.
+This is a BYOL (bring your own laptop) session, so bring your Windows, OSX, or Linux laptop. You would also need Docker,
+ not because Vert.x needs Docker (it does not!), but to simulate a distributed system.
 
 What you are going to learn:
 
 * What is vert.x and how to use its asynchronous non-blocking development model
-* How to develop microservices with Vert.x with several type of services, and service discovery
+* How to develop microservices with Vert.x with several types of services, and service discovery
 * What are and how to use `verticles`
 * How to use the vert.x event bus to send and receive messages
-* How to expose HTTP endpoint with Vert.x
+* How to expose HTTP endpoints with Vert.x, and also how to consume them
 * How to compose asynchronous actions
 * How to use several languages in the same application
 * How to use databases

@@ -1,7 +1,6 @@
 ## The first microservice - the quote generator
 
-Remember, the quote generator is unrealistic, and is basically a set of randoms... But before letting you implement
-parts of the application, let's have a look
+Disclaimer, the quote generator is unrealistic, and is basically a set of randoms...
 
 ### Project structure
 
@@ -43,8 +42,8 @@ The `pom.xml` file is also configured to create a Docker container, configured t
 ### Verticle
 
 As you may have noticed, the code is structured in 3 `verticles`, but what are these? Verticles is a way to structure
- Vert.x application code. It's not mandatory, but it is quite convenient. A verticle is a chunk of code that will be
- deployed on top of a Vert.x instance. A verticle has accessed to the instance of `vertx` on which it's deployed, and
+ Vert.x application code. It's not mandatory, but it is quite convenient. A verticle is a chunk of code that is
+ deployed on top of a Vert.x instance. A verticle has access to the instance of `vertx` on which it's deployed, and
  can deploy other verticles.
 
 Let's open the `GeneratorConfigVerticle` class, and look at the `start` method:
@@ -74,21 +73,21 @@ public void start() {
 ----
 
 Verticles can retrieve a configuration using the `config()` method. Here it gets the details about the company to
-simulate. The configuration is a `JsonObject`. Vert.x heavily uses JSON, so you will see a lot of Json during the lab
-. For each company found in the configuration, it deploys another verticle with the extracted configuration. Finally,
- it deploys another verticle providing a very simple HTTP API.
+simulate. The configuration is a `JsonObject`. Vert.x heavily uses JSON, so you are going to see a lot of Json during
+ the lab. For each company found in the configuration, it deploys another verticle with the extracted configuration.
+ Finally, it deploys another verticle providing a very simple HTTP API.
 
 The last part of the method is about the discovery mentioned in the microservice section. This component generates
 quotes sent on the event bus. But to let other components discover where the messages are sent (_where_ means on which
 address), it registers it. `market-data` is the name of the service, `ADDRESS` is the event bus address on which the
-message are sent. The last argument is a `Handler` that is notified when the registration has been completed. The
+messages are sent. The last argument is a `Handler` that is notified when the registration has been completed. The
 `handler` receives a structured called `AsyncResult`.
 
 Remember, Vert.x is promoting an asynchronous, non-blocking development model. Publishing the service may take time
-(actually it does as it creates a record, write it to the backend, and notifies everyone), as as we cannot block the
+(actually it does as it creates a record, write it to the backend, and notifies everyone), as we cannot block the
  event loop, the method is asynchronous. Asynchronous methods have a `Handler` as last parameter that is invoked when
  the operation has been completed. This `Handler` is called with the same event loop as the one having called the async
- method. When the asynchronous operation can fail, the `Handler` receives as parameter an `AsyncResult` telling
+ method. As the asynchronous operation can fail, the `Handler` receives as parameter an `AsyncResult` telling
  whether or not the operation has succeeded. You will see the following patterns a lot in Vert.x application:
 
 [source, java]
@@ -115,7 +114,7 @@ Docker (no code required, Docker publishes it).
 
 ### The consolidation endpoint
 
-It's time for you to develop some part of the application (I know you have pins and needles in your hands). Open the
+It's time for you to develop some parts of the application (I know you have pins and needles in your fingers). Open the
 `RestQuoteAPIVerticle`. It's a verticle class extending `AbstractVerticle`. In the `start` method you need to:
 
 1. Register an event bus consumer to collect the last quotations (in the `quotes` map)
@@ -140,7 +139,7 @@ First, it retrieves the message body (1). It's a Json object, and stores it in t
 #### Implementing a Handler to handle HTTP requests
 
 Let's now implement the second point.  To handle the HTTP requests, we need a HTTP server. Fortunately, Vert.x lets
-you creates HTTP servers using:
+you create HTTP servers using:
 
 [source, java]
 ----
@@ -176,8 +175,8 @@ if (company == null) {
 <5> If the given name does not match a company, set the status code to `404`
 
 You may wonder why synchronization is not required. Indeed we write in the map and read from it without any
-synchronization constructs. Here is only of the main feature of vert.x, as all this code is going to be executed by
-the **same** event loop, it will be always executed by the **same** thread, so it's never executed concurrently.
+synchronization constructs. Here is one of the main feature of vert.x: all this code is going to be executed by
+the **same** event loop, so it's always accessed by the **same** thread, never concurrently.
 
 ### Time to start the quote generator
 
@@ -196,7 +195,7 @@ docker run -p 8081:8080 --rm --name quote-generator vertx-microservice-workshop/
 
 Let's analysis this docker command. It runs a container created from the image we just built
 (`vertx-microservice-workshop/quote-generator`). We give it a name (`quote-generator`). The `-p` option configure the
-port forwarding. So the port 8080 of the application is now exposed on the port 8081 of your machine (or the
+port forwarding. The port 8080 of the application is now exposed on the port 8081 of your machine (or the
 docker-machine). In our microservice world, it also means that the HTTP endpoint becomes discoverable.
 
 Let's now open a browser and have a look to http://dockerhost:8081.
@@ -238,7 +237,7 @@ It should return something like:
 It gives the current details of each quotation. The data is updated every 3 seconds, so refresh your browser to get
 the latest data.
 
-Let's now launch the dashboard. In another terminal, navigate to `$project/trader-dashboard` and execute:
+Let's now launch the dashboard. In another terminal, navigate to `$project-home/trader-dashboard` and execute:
 
 [source]
 ----
@@ -246,8 +245,8 @@ mvn clean package docker:build
 docker run -p 8083:8080 --rm --name dashboard vertx-microservice-workshop/trader-dashboard
 ----
 
-TIP: Docker is yelling with something like `Error response from daemon: Conflict. The name "/quote-generator" is
-already in use by container...`, no problem, let be more convincing and launch `docker rm -f quote-generator` and
+TIP: Docker is yelling with something like `Error response from daemon: Conflict. The name "/xyz" is
+already in use by container...`, no problem, let be more convincing and launch `docker rm -f xyz` and
 then relaunch the command.
 
 Then open your browser to http://dockerhost:8083. You should see:

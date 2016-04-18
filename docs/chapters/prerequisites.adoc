@@ -12,7 +12,7 @@ It's going to be your turn now... But before starting, you need to install a cou
 #### Docker Toolbox or Packages
 
 Docker runs natively on Linux. Because the Docker daemon uses Linux-specific kernel features, you can’t run Docker
-natively in OS X or Windows (yet, we they are working on that). Instead, you must use `docker-machine` to create and
+natively in OS X or Windows (yet, they are working on that). Instead, you must use `docker-machine` to create and
 attach to a virtual machine (VM). This machine is a Linux VM that hosts Docker for you on your Mac or Windows.
 This can be easily installed using https://www.docker.com/docker-toolbox[Docker Toolbox].
 
@@ -26,9 +26,6 @@ Windows]
 . http://docs.docker.com/engine/installation/fedora/[Docker on Fedora]
 
 Complete set of operating systems are listed at http://docs.docker.com/engine/installation/[Install Docker Engine].
-
-On Windows, we recommend using a Virtualbox image providing Linux.
-//TODO image to retrieve
 
 #### Images
 
@@ -60,7 +57,7 @@ Edit `/etc/hosts` (Mac OS) or `C:\Windows\System32\drivers\etc\hosts` (Windows) 
 <IP ADDRESS>  dockerhost
 ----
 
-On Linux (and on for the lucky people having access to the native version of docker for Windows and Mac), `dockerhost`
+On Linux (and for the lucky people having access to the native version of docker for Windows and Mac), `dockerhost`
  is `localhost` (as it runs natively). You would need to replace every reference to `dockerhost` by `localhost`.
 
 ### Java Development Kit
@@ -80,6 +77,12 @@ We recommend you to use an IDE. You can use Eclipse, IntelliJ or Netbeans.
 
 #### No IDE ?
 
-If you don't have an IDE, here are the step to get started with Eclipse. First download Eclipse from https://www.eclipse.org/downloads/[the download page]. In the _Eclipse Package_ list, select _Eclipse IDE for Java Developers_. It brings you to a download page with a `Download` button. Once downloaded, unzip it.
+If you don't have an IDE, here are the step to get started with Eclipse.
 
-In the destination directory, you should find an `Eclipse` binary that you can execute. Eclipse will prompt you to create a workspace. Once launch, click on the _Workbench_ arrow (top right corner).
+1. First download Eclipse from https://www.eclipse.org/downloads/[the download page].
+2. In the _Eclipse Package_ list, select _Eclipse IDE for Java Developers_. It brings you to a download page with a
+`Download` button.
+3. Once downloaded, unzip it.
+4. In the destination directory, you should find an `Eclipse` binary that you can execute.
+5. Eclipse asks you to create a workspace.
+6. Once launched, click on the _Workbench_ arrow (top right corner).

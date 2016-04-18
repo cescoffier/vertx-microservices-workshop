@@ -9,15 +9,15 @@ microservices:
 * The quote generator - this simulator, absolutely not realistic - generates the quotes for 3 companies _MacroHard_,
 _Divinator_, and _BlackCoat_. The market data are sent on the Vert.x event bus.
 
-* The traders - the trader are a set of component that receive the quotes and decide whether or not they want to
+* The traders - the trader are a set of component receiving the quotes and deciding whether or not they want to
 sell or buy shares. For this they rely on the _portfolio_ service.
 
-* The portfolio - it manages the money and your current set of shares. It is exposed as a service proxies, i.e. a
-RPC service on top of the vert.x event bus. For every successful operation it sends a message on the event bus
-describing the operation. It uses the quote generator to evaluate the current value of the portfolio.
+* The portfolio - it manages the money and your current set of shares. It is exposed as a _service proxy_, i.e. a
+asynchronous RPC service on top of the vert.x event bus. For every successful operation it sends a message on the event
+ bus describing the operation. It uses the quote generator to evaluate the current value of the portfolio.
 
-* The audit - that's the legal side.... You need to keep a list of all your operations (yes, that's the law). The
-audit component receives the operation from the event bus and store them in a database. It also provides a REST
+* The audit - that's the legal side... You need to keep a list of all your operations (yes, that's the law). The
+audit component receives the operation from the event bus and stores them in a database. It also provides a REST
 endpoint to retrieve the last operations.
 
 * The dashboard - some UI to let you know if you became rich...
@@ -31,10 +31,9 @@ The application uses several types of services:
 * HTTP endpoint (_i.e._ REST API) - the service is located using a URL
 * Service proxies that are asynchronous services exposed on the event bus using a RPC interaction, the service is
 located using a address
-* Message sources that are component publishing messages on the event bus, the service is located using a address
-* Data sources that are data storage services (such as a database), the service is located using a network name
+* Message sources that are components publishing messages on the event bus, the service is located using a address
 
-At runtime, each component will runs in its own docker container. The containers are going to be interacted with
+At runtime, each component runs in its own docker container. The containers are going to be inter-connected with
 links when name resolution is required.
 
 The dashboard presents the available services, the value of each company quotes, the last operations made by your
@@ -42,4 +41,5 @@ traders and the current state of your portfolio:
 
 image::dashboard.png[Dashboard, 800]
 
-
+You are going to implement critical parts of this application. The rest of the code is provided to illustrate some
+other vert.x features.

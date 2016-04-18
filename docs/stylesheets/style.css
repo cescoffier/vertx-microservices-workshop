@@ -79,3 +79,7 @@ code, kbd, pre, samp {
 .quoteblock blockquote:before {
     color: #782b90;
 }
+
+sup.footnote {
+    vertical-align: baseline;
+}
