@@ -58,7 +58,8 @@ public void start() {
     for (Object q : quotes) {
       JsonObject company = (JsonObject) q;
       // Deploy the verticle with a configuration.
-      vertx.deployVerticle(MarketDataVerticle.class.getName(), new DeploymentOptions().setConfig(company));
+      vertx.deployVerticle(MarketDataVerticle.class.getName(),
+         new DeploymentOptions().setConfig(company));
     }
 
     vertx.deployVerticle(RestQuoteAPIVerticle.class.getName());
@@ -167,6 +168,7 @@ if (company == null) {
     } else {
       response.end(quote.encodePrettily());
     }
+ }
 ----
 <1> Get the `response`object from the `request`
 <2> Gets the `name` parameter (query parameter)

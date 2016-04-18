@@ -1,5 +1,5 @@
 # Vert.x - From zero to (micro)-hero
-v0.1, Apr 18, 2016
+v0.2, Apr 18, 2016
 :toc:
 :toc-title: Table of Contents
 :toclevels: 4

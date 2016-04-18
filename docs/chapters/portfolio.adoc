@@ -204,7 +204,7 @@ vertx.eventBus().publish(EVENT_ADDRESS, new JsonObject()
     .put("quote", quote)
     .put("date", System.currentTimeMillis())
     .put("amount", amount)
-    .put("owned", newAmount)
+    .put("owned", newAmount));
 ----
 
 Let's have a deeper look:

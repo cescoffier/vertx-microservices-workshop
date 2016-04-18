@@ -16,8 +16,8 @@ Before seen how there are implemented, let's explain the absolutely illogic algo
 1. A compulsive trader is picking randomly one company name and a number of shares (`x`)
 2. Randomly it tries to buy or sell `x` shares of the company
 
-It does not check whether or not it has enough shares or money, it just tries... This logic is implemented in `io
-.vertx.workshop.trader.impl.TraderUtils`.
+It does not check whether or not it has enough shares or money, it just tries... This logic is implemented in
+`io.vertx.workshop.trader.impl.TraderUtils`.
 
 ### Deploying several instance and polyglot verticles.
 
