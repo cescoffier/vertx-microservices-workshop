@@ -4,7 +4,7 @@ This section is about the dashboard. You won't have to write any code. It just e
 
 1. How to configure configure Vert.x web to expose static resources
 2. How to configure the SockJS - Eventbus bridge
-3. How to answer to a REST using a HTTP client
+3. How to implement a REST endpoint delegating to another REST endpoint (proxy pattern)
 4. How can you consume an event bus proxy from the browser
 
 The dashboard is a single verticle (`io.vertx.workshop.dashboard.DashboardVerticle`).
@@ -21,7 +21,7 @@ received. The `router` is creates a follows:
 Router router = Router.router(vertx);
 ----
 
-Vert.x web provides a set of `Handler` for common task such as serving static files:
+Vert.x web provides a set of `Handler` for common tasks such as serving static files:
 
 [source, java]
 ----
@@ -41,7 +41,7 @@ vertx.createHttpServer()
     .listen(8080);
 ----
 
-### SockJS - Eventbus bridge
+### SockJS - Event bus bridge
 
 SockJS is a browser JavaScript library that provides a WebSocket-like object. SockJS gives you a coherent, cross-browser,
 Javascript API which creates a low latency, full duplex, cross-domain communication channel between the browser and the
@@ -49,7 +49,7 @@ web server. Under the hood SockJS tries to use native WebSockets first. If that 
 browser-specific transport protocols and presents them through WebSocket-like abstractions. SockJS-client does require
 a server counterpart to handle the communication. And you know what, Vert.x implements it !
 
-With the SockJS - Eventbus bridge, events from the event bus can be sent to browsers and JAvaScript code running in
+With the SockJS - Event bus bridge, events from the event bus can be sent to browsers and JavaScript code running in
 the browser can send messages to the event bus.
 
 To enable the bridge you need thw following code:
@@ -68,14 +68,14 @@ sockJSHandler.bridge(options);                                                 /
 router.route("/eventbus/*").handler(sockJSHandler);                            // <4>
 ----
 
-In (1), we create the `SockJSHandler`. It needs to be configured as by default, for security reason, no messages will
- be transmitted. The set of permitted addresses configure bridge (2). Outbound addresses are for messages from the event
+In (1), we create the `SockJSHandler`. It needs to be configured, as by default, for security reasons, no messages are
+ transmitted. A set of permitted addresses configures bridge (2). Outbound addresses are for messages from the event
  bus to the browser, while inbound addresses are for messages from the browser to the event bus. Finally in (3) and
  (4), it configures the handler and create a router in the `router`. The `/eventbus/*` path is used by the SockJS
- client (in the browser) to negotiate the connection and receive / send the messages.
+ client (in the browser) to negotiate the connection, receive and send the messages.
 
-This is not the only bridge that exists for the event bus. There is also a TCP eventbus bridge for native system. The
- SockJS bridge can also be used from Node.JS.
+This is not the only bridge that exists for the event bus. There is also a TCP event bus bridge for native systems.
+Notice also, that the SockJS bridge can also be used from Node.JS.
 
 ### Delegating REST calls
 
@@ -103,21 +103,26 @@ private void lastOperations(RoutingContext context) {
                 .setStatusCode(200)
                 .end(new JsonObject().put("message", "No audit service").encode());
         } else {
-            client.result().getNow("/", response -> {
-                response
-                  .bodyHandler(buffer -> context.response()
-                  .putHeader("content-type", "application/json")
-                  .setStatusCode(200)
-                  .end(buffer));
-                client.result().close();
-            });
+            client.result().get("/", response -> {
+              response
+                  .exceptionHandler(context::fail)
+                  .bodyHandler(buffer -> {
+                    context.response()
+                        .putHeader("content-type", "application/json")
+                        .setStatusCode(200)
+                        .end(buffer);
+                    client.result().close();
+                  });
+            })
+                .exceptionHandler(context::fail)
+                .end();
         }
     });
 }
 ----
 
 It retrieves the audit service from the discovery infrastructure and once it gets the HTTP client. It uses it to call
- the audit REST API. The response is simply send back to the HTTP response. Finally, don't forget to close the HTTP
+ the audit REST API. The response is simply sent back to the HTTP response. Finally, don't forget to close the HTTP
  client.
 
 ### Consuming event bus service from the browser

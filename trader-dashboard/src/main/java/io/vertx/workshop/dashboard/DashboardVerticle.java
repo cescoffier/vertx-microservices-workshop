@@ -56,8 +56,9 @@ public class DashboardVerticle extends MicroServiceVerticle {
             .setStatusCode(200)
             .end(new JsonObject().put("message", "No audit service").encode());
       } else {
-        client.result().getNow("/", response -> {
+        client.result().get("/", response -> {
           response
+              .exceptionHandler(context::fail)
               .bodyHandler(buffer -> {
                 context.response()
                     .putHeader("content-type", "application/json")
@@ -65,7 +66,9 @@ public class DashboardVerticle extends MicroServiceVerticle {
                     .end(buffer);
                 client.result().close();
               });
-        });
+        })
+            .exceptionHandler(context::fail)
+            .end();
       }
     });
   }
