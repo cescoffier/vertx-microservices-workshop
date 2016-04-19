@@ -43,3 +43,4 @@ image::dashboard.png[Dashboard, 800]
 
 You are going to implement critical parts of this application. The rest of the code is provided to illustrate some
 other vert.x features.
+
