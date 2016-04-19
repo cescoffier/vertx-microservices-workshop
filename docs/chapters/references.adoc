@@ -1,6 +1,6 @@
 ## References
 
-Some recommended reading. Nothing especially about microservices or vert.x because the concepts are broader than
+Some recommended reading. Nothing especially about microservices or Vert.x because the concepts are broader than
 these two topics.
 
 [bibliography]

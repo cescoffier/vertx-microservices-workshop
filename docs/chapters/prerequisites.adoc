@@ -18,12 +18,12 @@ This can be easily installed using https://www.docker.com/docker-toolbox[Docker 
 
 Follow the instructions to install Docker:
 
-. https://github.com/docker/toolbox/releases/download/v1.10.3/DockerToolbox-1.10.3.pkg[Docker Tool Box 1.10.3 for Mac]
-. https://github.com/docker/toolbox/releases/download/v1.10.3/DockerToolbox-1.10.3.exe[Docker Toolbox 1.10.3 for
+* https://github.com/docker/toolbox/releases/download/v1.10.3/DockerToolbox-1.10.3.pkg[Docker Tool Box 1.10.3 for Mac]
+* https://github.com/docker/toolbox/releases/download/v1.10.3/DockerToolbox-1.10.3.exe[Docker Toolbox 1.10.3 for
 Windows]
-. http://docs.docker.com/engine/installation/ubuntulinux/[Docker on Ubuntu]
-. http://docs.docker.com/engine/installation/centos/[Docker on Centos]
-. http://docs.docker.com/engine/installation/fedora/[Docker on Fedora]
+* http://docs.docker.com/engine/installation/ubuntulinux/[Docker on Ubuntu]
+* http://docs.docker.com/engine/installation/centos/[Docker on Centos]
+* http://docs.docker.com/engine/installation/fedora/[Docker on Fedora]
 
 Complete set of operating systems are listed at http://docs.docker.com/engine/installation/[Install Docker Engine].
 
@@ -86,3 +86,4 @@ If you don't have an IDE, here are the step to get started with Eclipse.
 4. In the destination directory, you should find an `Eclipse` binary that you can execute.
 5. Eclipse asks you to create a workspace.
 6. Once launched, click on the _Workbench_ arrow (top right corner).
+

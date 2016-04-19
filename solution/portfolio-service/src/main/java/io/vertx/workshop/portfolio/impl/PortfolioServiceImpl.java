@@ -91,7 +91,8 @@ public class PortfolioServiceImpl implements PortfolioService {
     Future<Double> future = Future.future();
 
     //----
-    client.getNow("/?name=" + encode(company), response -> {
+    client.get("/?name=" + encode(company), response -> {
+      response.exceptionHandler(future::fail);
       if (response.statusCode() == 200) {
         response.bodyHandler(buffer -> {
           double v = numberOfShares * buffer.toJsonObject().getDouble("bid");
@@ -100,7 +101,9 @@ public class PortfolioServiceImpl implements PortfolioService {
       } else {
         future.complete(0.0);
       }
-    });
+    })
+        .exceptionHandler(future::fail)
+        .end();
     // ---
 
     return future;

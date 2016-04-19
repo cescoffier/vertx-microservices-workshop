@@ -16,9 +16,11 @@ import io.vertx.ext.sql.SQLConnection;
 import io.vertx.ext.sql.UpdateResult;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.workshop.common.Chain;
 import io.vertx.workshop.common.MicroServiceVerticle;
 
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -49,7 +51,7 @@ public class AuditVerticle extends MicroServiceVerticle {
 
     // TODO
     // ----
-
+    future.fail("not implemented yet");
     // ----
   }
 
@@ -126,61 +128,56 @@ public class AuditVerticle extends MicroServiceVerticle {
   }
 
   private Future<Void> initializeDatabase(boolean drop) {
-
     // The database initialization is a multi-step process:
     // 1. Retrieve the connection
     // 2. Drop the table is exist
     // 3. Create the table
-    // 4. Close the connection
-    // To handle such a process, we are going to create a set of (Future, Handler) that we compose.
+    // 4. Close the connection (in any case)
+    // To handle such a process, we are going to create a set of Future we are going to compose as a chain:
+    // retrieve the connection -> drop table -> create table -> close the connection
+    // For this we use `Function<X, Future<R>>`that takes a parameter `X` and return a `Future<R>` object.
 
     // This is the returned future to notify of the completion of the whole process
     Future<Void> databaseReady = Future.future();
 
     // This future will be assigned when the connection with the database is established.
+    // We are going to use this future as a reference on the connection to close it.
     Future<SQLConnection> connectionRetrieved = Future.future();
-    // Retrieve a connection with the database, report on the databaseReady if failed, or assign the connectionRetrieve
+    // Retrieve a connection with the database, report on the databaseReady if failed, or assign the connectionRetrieved
     // future.
     jdbc.getConnection(connectionRetrieved.completer());
 
-
-    // When the connection is retrieve, we want to drop the table (if drop is set to true)
-    // First, create a future notifying of the completion of the operation
-    Future<SQLConnection> tableDropped = Future.future();
-    // Then, define a handler doing this operation.
-    Handler<SQLConnection> dropTableHandler = (connection) -> {
+    // When the connection is retrieved, we want to drop the table (if drop is set to true)
+    Function<SQLConnection, Future<SQLConnection>> dropTable = connection -> {
+      Future<SQLConnection> future = Future.future();
       if (!drop) {
-        tableDropped.complete(connection); // Immediate completion.
+        future.complete(connection); // Immediate completion.
       } else {
-        connection.execute(DROP_STATEMENT, completer(tableDropped, connection));
+        connection.execute(DROP_STATEMENT, completer(future, connection));
       }
+      return future;
     };
 
-    // When the table is dropped (or skipped), we need to create the table. We use the same pattern
-    // First,  create a future notifying of the completion of the operation
-    Future<SQLConnection> tableCreated = Future.future();
-    // Then define a handler doing this operation
-    Handler<SQLConnection> createTableHandler = (connection) -> {
-      connection.execute(CREATE_TABLE_STATEMENT,
-          completer(tableCreated, connection)
-      );
+    // When the table is dropped, we recreate it
+    Function<SQLConnection, Future<Void>> createTable = connection -> {
+      Future<Void> future = Future.future();
+      connection.execute(CREATE_TABLE_STATEMENT, future.completer());
+      return future;
     };
 
-    // Finally, we must close the connection, here is the handler that would do it.
-    Handler<SQLConnection> closeConnectionHandler = (connection) -> connection.close(databaseReady.completer());
+    // Ok, now it's time to chain all these actions:
+    // connectionRetrieved -> dropTable -> createTable -> in all case close the connection
 
-    // Ok, now it's time to compose all these actions:
-    // connectionRetrieved -> dropTable -> createTable -> closeConnection
-    // The Future.compose method takes a Handler as first param and a Future as second param
-    // If the future on which the composition is done is succeeded, the handler is called, otherwise the failure is
-    // reported on the future object (second parameter).
+    Chain.chain(connectionRetrieved, dropTable, createTable)
+        .setHandler(ar -> {
+          // Whatever the result, if the connection has been retrieved, close it
+          if (connectionRetrieved.result() != null) {
+            connectionRetrieved.result().close();
+          }
 
-    // connectionRetrieved -> dropTable
-    connectionRetrieved.compose(dropTableHandler, databaseReady);
-    // dropTable -> createTable
-    tableDropped.compose(createTableHandler, databaseReady);
-    // createTable -> closeConnection
-    tableCreated.compose(closeConnectionHandler, databaseReady);
+          // Complete the main future with the result.
+          databaseReady.completer().handle(ar);
+        });
 
     return databaseReady;
   }

@@ -3,13 +3,13 @@
 Let's start from the beginning.... _Vert.x_. What's Vert.x ? That's a pretty good question, and probably a good start.
  If you go on the http://vertx.io[Vert.x web site], Vert.x is defined as _"a toolkit for building reactive
  applications on the JVM"_. This description is rather fuzzy no ? What's a toolkit ? What are reactive applications ?
- In this lab, we are going to explain these words, and build an application using Vert.x illustrating what vert.x is.
+ In this lab, we are going to explain these words, and build an application using Vert.x illustrating what Vert.x is.
  This application is going to be composed by _microservices_. Another buzzword to be trendy ? No, Vert.x was promoting
   _microservices_  before everyone and his dog jumped on the bandwagon.
 
 The developed application is going to be:
 
-* based on vert.x (that's why you are here, no ?)
+* based on Vert.x (that's why you are here, no ?)
 * distributed
 * reactive
 * (a bit) fun
@@ -24,10 +24,10 @@ This is a BYOL (bring your own laptop) session, so bring your Windows, OSX, or L
 
 What you are going to learn:
 
-* What is vert.x and how to use its asynchronous non-blocking development model
+* What is Vert.x and how to use its asynchronous non-blocking development model
 * How to develop microservices with Vert.x with several types of services, and service discovery
 * What are and how to use `verticles`
-* How to use the vert.x event bus to send and receive messages
+* How to use the Vert.x event bus to send and receive messages
 * How to expose HTTP endpoints with Vert.x, and also how to consume them
 * How to compose asynchronous actions
 * How to use several languages in the same application

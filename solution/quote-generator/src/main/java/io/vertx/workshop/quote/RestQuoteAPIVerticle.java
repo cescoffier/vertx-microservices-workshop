@@ -31,7 +31,7 @@ public class RestQuoteAPIVerticle extends AbstractVerticle {
     });
 
     // Create a HTTP server that returns the quotes
-    // The request handler returns a specific quote if the `symbol` parameter is set, or the whole map if none.
+    // The request handler returns a specific quote if the `name` parameter is set, or the whole map if none.
     // To write the response use: `request.response().end(content)`
     // Responses are returned as JSON, so don't forget the "content-type": "application/json" header.
     // If the symbol is set but not found, you should return 404.

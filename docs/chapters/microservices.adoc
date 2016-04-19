@@ -39,13 +39,11 @@ your components (ssh, ansible, puppet, docker, cloud, floppy disk).
 The last point is interesting, and often misunderstood. It's pretty cool to develop independent pieces of software
 that magically interact at runtime.... But actually, there is no magic (sorry). There is some _discovery_ happening.
 
-Before using a `service` provided by another component, it should find it. The location can be hard coded
+Before using a `service` provided by another component, it should find it. The location can be hardcoded
 in the code (but it's generally not a good idea), use a name resolved using a DNS lookup, or use more advanced
 frameworks.  Having a  discovery mechanism also provides a consolidated view of what's there. Being able to discover
 the different services, or resources available lets you implement some _transparency_, an inherent
-characteristic of distributed systems. Typically, when you enter an URL in your browser, you don't know which
-server is handling the request, and it may change if you refresh the page. It also lets your component being adaptable
- to meet the new _location_ of the different consumed services. It enables load-balancing (such as with a round robin),
+characteristic of distributed systems. For instance, it lets your components react smoothly to location changes. It enables load-balancing (such as with a round robin),
   fault-tolerance (by looking for another service provider) and so on.
 
 Even if not necessary per definition, microservice applications are generally distributed. This comes with all the
@@ -57,7 +55,7 @@ of independent components, there are also greenfield applications that can choos
 the same principles: a set of independent components interacting at runtime to deliver the _high-level_ service.
 
 There are a couple of points I would like to mention before going further. _Microservices_ are **not** new and is not
- rocket science... Academic papers form the 70's and 80's have defined (using different words) architectural styles very
+ rocket science... Academic papers from the 70's and 80's have defined (using different words) architectural styles very
   close to this. Another very important point to understand right away: microservices are not a silver bullet, it is
   going to increase the complexity of the whole system (because you become more distributed).
 

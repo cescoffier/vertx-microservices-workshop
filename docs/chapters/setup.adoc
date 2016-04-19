@@ -15,7 +15,7 @@ For Eclipse:
 2. Select the location where you cloned the sources
 3. Click _Finish_ and wait...
 
-You are going to see a couple of compilation error. This is because Eclipse does not mark the `src/main/generated`
+You are going to see a couple of compilation errors. This is because Eclipse does not mark the `src/main/generated`
 directories as _source root_ by default. Right-click on `portfolio-service/src/main/generated` and select _Build Path
 -> Use as Source Folder_.
 
@@ -38,14 +38,14 @@ Vert.x offers a discovery service. To let every component discover the services,
 _record_ in a location that every one can access.
 
 By default, Vert.x discovery service is going to use a distributed map accessible by all the members of the cluster.
-So, when you start your vert.x application and enable the cluster mode, it joins a cluster. This cluster lets nodes:
+So, when you start your Vert.x application and enable the cluster mode, it joins a cluster. This cluster lets nodes:
 
 * to come and go, and so manage member discovery
-* to share data such as distributed map, lock, counter...
+* to share data such as distributed maps, locks, counters...
 * to access the event bus
 
 In our context, nothing is required to configure it. Our docker images already start the Vert.x applications in
 cluster mode.
 
-In this lab, the cluster is built using Hazelcast and the member discovery uses _multicast_.
+In this lab, the cluster is built on top of Hazelcast and the member discovery uses _multicast_.
 

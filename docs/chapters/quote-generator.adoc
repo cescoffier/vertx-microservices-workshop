@@ -29,7 +29,7 @@ Let's start with the `pom.xml` file. This file specifies the Maven build:
 3. Build a docker container
 
 A _fat-jar_ is a convenient way to package a Vert.x application. It creates a _über-jar_ containing your application
-and all its dependencies, including vert.x. Then, to launch it, you just need to use `java -jar ....`, without having
+and all its dependencies, including Vert.x. Then, to launch it, you just need to use `java -jar ....`, without having
 to handle the `CLASSPATH`. Wait, I told you that Vert.x does not dictate a type of packaging. It's true, fat jars
 are convenient, but it's the the only way.
 
@@ -74,9 +74,7 @@ public void start() {
 ----
 
 Verticles can retrieve a configuration using the `config()` method. Here it gets the details about the company to
-simulate. The configuration is a `JsonObject`. Vert.x heavily uses JSON, so you are going to see a lot of Json during
- the lab. For each company found in the configuration, it deploys another verticle with the extracted configuration.
- Finally, it deploys another verticle providing a very simple HTTP API.
+simulate. The configuration is a `JsonObject`. Vert.x heavily uses JSON, so you are going to see a lot of JSON during the lab. For each company found in the configuration, it deploys another verticle with the extracted configuration. Finally, it deploys another verticle providing a very simple HTTP API.
 
 The last part of the method is about the discovery mentioned in the microservice section. This component generates
 quotes sent on the event bus. But to let other components discover where the messages are sent (_where_ means on which
@@ -89,7 +87,7 @@ Remember, Vert.x is promoting an asynchronous, non-blocking development model. P
  event loop, the method is asynchronous. Asynchronous methods have a `Handler` as last parameter that is invoked when
  the operation has been completed. This `Handler` is called with the same event loop as the one having called the async
  method. As the asynchronous operation can fail, the `Handler` receives as parameter an `AsyncResult` telling
- whether or not the operation has succeeded. You will see the following patterns a lot in Vert.x application:
+ whether or not the operation has succeeded. You will see the following patterns a lot in Vert.x applications:
 
 [source, java]
 ----
@@ -119,15 +117,15 @@ It's time for you to develop some parts of the application (I know you have pins
 `RestQuoteAPIVerticle`. It's a verticle class extending `AbstractVerticle`. In the `start` method you need to:
 
 1. Register an event bus consumer to collect the last quotations (in the `quotes` map)
-2. Handle HTTP request to return the list of quotes, or a single quote if the `name` param is set.
+2. Handle HTTP requests to return the list of quotes, or a single quote if the `name` (query) param is set.
 
 Let's do that....
 
 #### Implementing a Handler to receive events
 
-The first action is about creating a `Handler`, so a method that is invoked on event. Here the `Handler` is going to
+The first action is about creating a `Handler`, so a method that is invoked on event. Here, the `Handler` is going to
 be called for every messages sent on the event bus on a specific `address` (receiving each quote sent by the generator).
- In the `Handler` body write:
+ In the `Handler` body, write:
 
 [source, java]
 ----
@@ -135,7 +133,7 @@ JsonObject quote = message.body(); // 1
 quotes.put(quote.getString("name"), quote); // 2
 ----
 
-First, it retrieves the message body (1). It's a Json object, and stores it in the `quotes` map (2).
+First, it retrieves the message body (1). It's a JSON object, and stores it in the `quotes` map (2).
 
 #### Implementing a Handler to handle HTTP requests
 
@@ -170,15 +168,17 @@ if (company == null) {
     }
  }
 ----
-<1> Get the `response`object from the `request`
+<1> Get the `response` object from the `request`
 <2> Gets the `name` parameter (query parameter)
 <3> Encode the map to JSON
 <4> Write the response and flush it using `end(...)`
 <5> If the given name does not match a company, set the status code to `404`
 
 You may wonder why synchronization is not required. Indeed we write in the map and read from it without any
-synchronization constructs. Here is one of the main feature of vert.x: all this code is going to be executed by
+synchronization constructs. Here is one of the main feature of Vert.x: all this code is going to be executed by
 the **same** event loop, so it's always accessed by the **same** thread, never concurrently.
+
+TIP: The `Map<String, JsonObject>` could be replaced by a simple `JsonObject` as they behave as a `Map<String, Object>`.
 
 ### Time to start the quote generator
 
@@ -195,9 +195,9 @@ Then, open a new terminal and launch:
 docker run -p 8081:8080 --rm --name quote-generator vertx-microservice-workshop/quote-generator
 ----
 
-Let's analysis this docker command. It runs a container created from the image we just built
+Let's analyze this docker command. It runs a container created from the image we just built
 (`vertx-microservice-workshop/quote-generator`). We give it a name (`quote-generator`). The `-p` option configure the
-port forwarding. The port 8080 of the application is now exposed on the port 8081 of your machine (or the
+port forwarding. The port `8080` of the application is now exposed on the port `8081` of your machine (or the
 docker-machine). In our microservice world, it also means that the HTTP endpoint becomes discoverable.
 
 Let's now open a browser and have a look to http://dockerhost:8081.
@@ -236,7 +236,7 @@ It should return something like:
 }
 ----
 
-It gives the current details of each quotation. The data is updated every 3 seconds, so refresh your browser to get
+It gives the current details of each quotes. The data is updated every 3 seconds, so refresh your browser to get
 the latest data.
 
 Let's now launch the dashboard. In another terminal, navigate to `$project-home/trader-dashboard` and execute:
@@ -247,11 +247,11 @@ mvn clean package docker:build
 docker run -p 8083:8080 --rm --name dashboard vertx-microservice-workshop/trader-dashboard
 ----
 
-TIP: Docker is yelling with something like `Error response from daemon: Conflict. The name "/xyz" is
+TIP: If Docker is yelling with something like `Error response from daemon: Conflict. The name "/xyz" is
 already in use by container...`, no problem, let be more convincing and launch `docker rm -f xyz` and
 then relaunch the command.
 
-Then open your browser to http://dockerhost:8083. You should see:
+Then, open your browser to http://dockerhost:8083. You should see:
 
 image::dashboard-initial-state.png[Dashboard, 800]
 

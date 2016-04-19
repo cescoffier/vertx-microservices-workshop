@@ -7,9 +7,9 @@ The law is the law... The _Sarbanes–Oxley Act_ requires you to keep a track of
 ### Accessing data asynchronously
 
 As said previously, Vert.x is asynchronous and you must never block the event loop. And you know what's definitely
-blocking ? Database access and more particularly JDBC ! Fortunately, Vert.x provides a JDBC client that is asynchronous.
+blocking ? Database accesses and more particularly JDBC! Fortunately, Vert.x provides a JDBC client that is asynchronous.
 
-The principle is simple (and is applied to all client accessing blocking system):
+The principle is simple (and is applied to all clients accessing blocking systems):
 
 [plantuml, database-sequence, png]
 ----
@@ -31,22 +31,24 @@ Client -> Handler : The client invokes the handler \n(in the same thread as the 
 @enduml
 ----
 
-However, interacting with database is rarely a single operation, but a composition of operation. For example:
+NOTE: _Worker_ ? Yes, Vert.x has the notion of _workers_ (a separated thread pool) to execute blocking code. It can be a verticle marked as _worker_ or with the `vertx.executeBlocking` construct. However, even if possible, you should not abuse from these features as it reduces the scalability of the application.
+
+However, interactions with databases are rarely a single operation, but a composition of operations. For example:
 
 1. Get a connection
 2. Drop some tables
 3. Create some tables
 4. Close the connection
 
-So, we need a way to composite these operations, and report failures when required. This is what we are going to see
+So, we need a way to compose these operations, and report failures when required. This is what we are going to see
 in the Audit component.
 
 ### The Audit service
 
 The Audit service:
 
-1. Listens for the financial operation on the event bus
-2. Stores the receive operation in a database
+1. Listens for the financial operations on the event bus
+2. Stores the received operations in a database
 3. Exposes a REST API to get the last 10 operations
 
 Interactions with the database use the `vertx-jdbc-client`, an async version of JDBC. So expect to see some SQL code
@@ -55,7 +57,7 @@ Interactions with the database use the `vertx-jdbc-client`, an async version of 
 ### Initializing the audit service with Composite Future
 
 Open the `io.vertx.workshop.audit.impl.AuditVerticle` class. The first important detail of this verticle is its
-`start` method. The method is asynchronous, and report its completion in the given `Future` object:
+`start` method. As the `start` method from the Java trader, the method is asynchronous, and report its completion in the given `Future` object:
 
 [source, java]
 ----
@@ -65,7 +67,7 @@ public void start(Future<Void> future) {
 
      // TODO
      // ----
-     future.complete();
+     future.fail("not implemented yet");
      // ----
 }
 ----
@@ -106,7 +108,7 @@ compose all of them using the `CompositeFuture.all` operator. When all the actio
 handler that registers the message listener storing the operation in the database.
 
 To notify Vert.x that the start process is completed (or successfully or not), it calls `future.complete()` and
-`future.fail`.
+`future.fail(cause)`.
 
 ### Configure the HTTP server - async method pattern
 
@@ -120,7 +122,7 @@ void asyncMethod(a, b, Handler<R> handler);
 Future<R> asyncMethod(a, b);
 ----
 
-Indeed, the caller can attach a `Handler` on the returned `Future` object to be notified when the operaiton has
+Indeed, the caller can attach a `Handler` on the returned `Future` object to be notified when the operation has
 completed:
 
 [source, java]
@@ -153,11 +155,11 @@ private Future<HttpServer> configureTheHTTPServer() {
 }
 ----
 
-It creates a `Router`. The `Router` is an object from http://vertx.io/docs/vertx-web/java/[vert.x web] that ease the
-creation of REST API with vert.x. We won't go into too much details here, but if you want to implement REST API with
-vert.x, this is the way to go. On our `Router` we declare a _route_: when a request arrive on `/` call this method.
+It creates a `Router`. The `Router` is an object from http://vertx.io/docs/vertx-web/java/[Vert.x web] that ease the
+creation of REST API with Vert.x. We won't go into too much details here, but if you want to implement REST API with
+Vert.x, this is the way to go. On our `Router` we declare a _route_: when a request arrive on `/`, it calls this `Handler`.
 Then, we create the HTTP server. The `requestHandler` is a specific method of the `router`, and in the `listen`
-handler we pass `future.completer()`. This `completer` is roughly:
+handler we pass `future.completer()`. This `completer` is a sugar roughly doing:
 
 [source, java]
 ----
@@ -183,12 +185,12 @@ composition. This method:
 
 All these operations may fail.
 
-In the last paragraph we have seen methods returning `Future`. _Chains` are a composition of such functions:
+In the last paragraph we have seen methods returning `Future`. `Chains` are a composition of such functions:
 
 1. you have an input
 2. you execute a first `Function` taking the input from (1) and returning a `Future`
 3. you execute a second `Function` taking the input from (2) and returning a `Future`
-4 ....
+4. ....
 
 The completion of a chain is a `Future` object. If one of the chained operation fails, this `Future` is marked as
 failed, otherwise it is completed with the result of the last operation:
@@ -198,7 +200,7 @@ failed, otherwise it is completed with the result of the last operation:
 Future<X> chain = Chain.chain(input, function1, function2, function3);
 ----
 
-A chain can be triggered by a `Future` too, so will start its execution upon the successful completion of the given
+A chain can be triggered by a `Future` too, so is started upon the successful completion of the given
 `Future`.
 
 So do use the composition pattern, we just need a set of `Functions` and a `Future` that would trigger the chain.
@@ -266,8 +268,7 @@ Chain.chain(connectionRetrieved, dropTable, createTable)       // <1>
 
 In (1) we create the chain. The first parameter is the `Future` triggering the chain. The two other parameters are
 the chained functions. We attach a `Handler` to the returned `Future` that is executed when the chain has been
-executed with the result (2). In (3) we check whether we had a connection and close it. Finally, in (4) we complete
-the main `Future` (returned by the method).
+executed with the result (2). In (3), we check whether we have a connection and close it. Finally, in (4) we complete the main `Future` (returned by the method).
 
 ### Retrieve results from the database with callback-based composition
 
@@ -311,8 +312,7 @@ jdbc.getConnection(ar -> {
 });
 ----
 
-So obviously it's possible. But imagine when you have several asynchronous operation to chain, it become a callback
-hell very quickly. So, as a recommendation: use the vert.x composition operators.
+So obviously it's possible toi not use composition. But imagine when you have several asynchronous operation to chain, it become a callback hell very quickly. So, as a recommendation: use the Vert.x composition operators.
 
 IMPORTANT: All the composition operators (`all`, `compose`, `any`, `chain`...) are implemented on top of callbacks.
 The _pure_ async programming is using callbacks, `Future` and composition are there to provide a direct
@@ -332,14 +332,14 @@ cd audit-service
 mvn clean package docker:build
 ----
 
-Then you need to launch the container:
+Then, you need to launch the container:
 
 [source]
 ----
 docker run -p 8082:8080 --rm --name audit vertx-microservice-workshop/audit-service
 ----
 
-You need to restart the dashboard to get access to the REST endpoint we just published:
+You need to restart the dashboard to get access to the REST endpoint we just published (imported as a link):
 
 [source]
 ----

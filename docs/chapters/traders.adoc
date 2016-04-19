@@ -4,7 +4,7 @@ In the `portfolio` project we have implemented an event bus service to manage ou
 we send quotes on the event bus. Traders are components that consumes these two services with only one goal: getting
 rich (or not...)!
 
-In this section, we are going to develop 2 traders (following a stupid logic you can definitely improve):
+In this section, we are going to develop 2 traders (following a stupid logic you can definitely be improved):
 
 * the first trader is developed in Java
 * the second trader is developed in Groovy
@@ -14,7 +14,7 @@ In this section, we are going to develop 2 traders (following a stupid logic you
 Before seen how there are implemented, let's explain the absolutely illogic algorithm used by these traders:
 
 1. A compulsive trader is picking randomly one company name and a number of shares (`x`)
-2. Randomly it tries to buy or sell `x` shares of the company
+2. Randomly, it tries to buy or sell `x` shares of the company
 
 It does not check whether or not it has enough shares or money, it just tries... This logic is implemented in
 `io.vertx.workshop.trader.impl.TraderUtils`.
@@ -39,7 +39,7 @@ public void start() throws Exception {
 ----
 
 The `JavaCompulsiveTraderVerticle` is deployed with some `DeploymentOptions` (1). This one sets the _number of
-instances_ to 2. That means that vert.x is not instantiating this verticle once, with twice (2 different objects).
+instances_ to 2, so Vert.x is not instantiating this verticle once, with twice (2 different objects).
 So, the previous code deploys three traders.
 
 The Groovy verticle is deployed by passing the file name. The verticle file is in `src/main/resources` and will be
@@ -57,7 +57,9 @@ Open the `io.vertx.workshop.trader.impl.JavaCompulsiveTraderVerticle` class. In 
 
 #### 1. Initialize the trader
 
-To initialize the trader, write:
+First, look at the `start` method signature: `start(Future<Void> future)`. The `future` let us tell when the initialization has been completed and whether or not it has been successful. That means we have to `complete` or `fail` this `future` explicitly.
+
+To initialize the trader, remove the `future.fail` statement and write:
 
 [source, java]
 ----
@@ -91,12 +93,12 @@ CompositeFuture.all(marketFuture, portfolioFuture).setHandler(ar -> {           
 });
 ----
 
-First create the 2 `Future` objects that will receive the two services once retrieves (1). In (2) we retrieve the
+First create the 2 `Future` objects that will receive the two services once retrieved (1). In (2) we retrieve the
 message source service and use a special `Handler` to assign the `Future`. The `completer` is basically a `Handler`
 receiving the result and setting the value in the `Future` or mark it as failed. The same approach is used in (3) to
 retrieve the `Portfolio` service.
 
-Finally, in <4> we create a `CompositeFuture` that execute the attached `Handler` when all the listed `Futures` has
+Finally, in <4>, we create a `CompositeFuture` that execute the attached `Handler` when all the listed `Futures` has
 been assigned.
 
 #### 3. Applying the trading logic
@@ -106,7 +108,7 @@ Almost done! Where we had the `Next...`, write:
 [source, java]
 ----
 if (ar.failed()) {                                                               // <1>
-    System.err.println("One of the required service cannot " +
+    future.fail("One of the required service cannot " +
             "be retrieved: " + ar.cause());
 } else {
     // Our services:                                                             // <2>
@@ -118,12 +120,14 @@ if (ar.failed()) {                                                              
         JsonObject quote = message.body();
         TraderUtils.dumbTradingLogic(company, numberOfShares, portfolio, quote); // <4>
     });
+
+    future.complete();                                                           // <5>
 }
 ----
 
 First, we need to check if the service retrieval has been successful. This is made in (1). If so, we can unwrap the
 services from the `Future` objects (2). We set a `Handler` on the `marketConsumer` (the message source service)
-executing the trading logic (4).
+executing the trading logic (4). Finally, in (5), we complete the `future` given as parameter of the `start` method to notify of the completion of the initialization process. The `complete` method does not pass a _result_ as we just notify of the completion. Notice also the `future.fail` to denote an initialization issue.
 
 #### The code in one snippet
 
@@ -147,7 +151,7 @@ Here is the whole code:
     // When done (both services retrieved), execute the handler
     CompositeFuture.all(marketFuture, portfolioFuture).setHandler(ar -> {
       if (ar.failed()) {
-        System.err.println("One of the required service cannot " +
+        future.fail("One of the required service cannot " +
             "be retrieved: " + ar.cause());
       } else {
         // Our services:
@@ -159,6 +163,8 @@ Here is the whole code:
           JsonObject quote = message.body();
           TraderUtils.dumbTradingLogic(company, numberOfShares, portfolio, quote);
         });
+
+        future.complete();
       }
     });
 ----
@@ -245,7 +251,7 @@ As you can see the code if very close to the Java one. Let's spot the difference
 * `JsonObjects` are `Maps`. In Groovy, it makes more sense to use `Map` objects.
 
 When an interface is annotated with `@VertxGen`, Vert.x translates it to all the supported (and configured) languages
-. Each translation tries to be as close as possible to the languages idioms, that's why you have `Maps` in Groovy
+. Each translation tries to be as close as possible to the language idioms, that's why you have `Maps` in Groovy
 instead of `JsonObject`.
 
 This example has been developed in Groovy, but it would be similar in JavaScript, Ruby or Ceylon.

@@ -1,5 +1,6 @@
 # Vert.x - From zero to (micro)-hero
-v0.2, Apr 18, 2016
+Clement Escoffier, Julien Viet
+v0.2, Apr 19, 2016
 :toc:
 :toc-title: Table of Contents
 :toclevels: 4

@@ -15,7 +15,7 @@ import io.vertx.workshop.portfolio.PortfolioService;
 public class JavaCompulsiveTraderVerticle extends MicroServiceVerticle {
 
   @Override
-  public void start() {
+  public void start(Future<Void> future) {
     super.start();
 
     //----
@@ -34,7 +34,7 @@ public class JavaCompulsiveTraderVerticle extends MicroServiceVerticle {
     // When done (both services retrieved), execute the handler
     CompositeFuture.all(marketFuture, portfolioFuture).setHandler(ar -> {
       if (ar.failed()) {
-        System.err.println("One of the required service cannot " +
+        future.fail("One of the required service cannot " +
             "be retrieved: " + ar.cause());
       } else {
         // Our services:
@@ -46,6 +46,8 @@ public class JavaCompulsiveTraderVerticle extends MicroServiceVerticle {
           JsonObject quote = message.body();
           TraderUtils.dumbTradingLogic(company, numberOfShares, portfolio, quote);
         });
+
+        future.complete();
       }
     });
     // ----

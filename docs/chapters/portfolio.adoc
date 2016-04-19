@@ -6,9 +6,7 @@ In the quote generator we have seen the basics of Vert.x development:
 * Implementing `Handler`
 * Receiving messages from the event bus
 
-In the portfolio component, we are going to implement an _event bus service_.
-
-A `Portfolio` stores the different owned shares and the available cash.
+In the portfolio component, we are going to implement an _event bus service_. A `Portfolio` stores the owned shares and the available cash.
 
 ### RPC and Async RPC
 
@@ -34,7 +32,7 @@ Proxy -> Bob : "hello Bob"
 @enduml
 ----
 
-Such interactions has the advantages to introduce typing, and so is less error prone than raw messages. However, it also
+Such interactions has the advantages to introduce typing, and so is less error-prone than unstructured messages. However, it also
  introduces a tighter coupling between the caller and the callee. The caller knows how to call the callee:
 
 1. how the service is called
@@ -76,7 +74,7 @@ Such async-RPC has several advantages:
 
 * the caller is not blocked
 * it deals with failures
-* it avoids you to send messages on the event bus and manage object marshalling and unmarshalling for you.
+* it avoids you to send messages on the event bus and manages object marshalling and unmarshalling for you.
 
 ### Async service interface
 
@@ -98,7 +96,7 @@ void getPortfolio(Handler<AsyncResult<Portfolio>> resultHandler);
 This method lets you retrieve a `Portfolio` object. As explained above the method is asynchronous and so has a `Handler`
  parameter receiving an `AsyncResult<Portfolio>`. The other methods follows the same pattern.
 
-INFO: You may have also noticed the the package as a `package-info.java` class. This file is required to enable the
+NOTE: You may have also noticed the the package as a `package-info.java` class. This file is required to enable the
 service proxy generation.
 
 
@@ -140,7 +138,7 @@ resultHandler.handle(Future.succeededFuture(portfolio));
 
 Wow... one single line ? Let's dissect it:
 
-* `resultHandler.handle` : this is to invoke the `Handler`. `Handler<X>`s have a single method (`handle(X)`).
+* `resultHandler.handle` : this is to invoke the `Handler`. `Handler<X>` has a single method (`handle(X)`).
 * `Future.succeededFuture` : this is how we create an instance of `AsyncResult` denoting a success. The passed value
  is the result (`portfolio`)
 
@@ -155,7 +153,7 @@ that may, or may not, have occurred yet. The result may be `null` if the `Future
 * a success as shown before, it encapsulates the result
 * a failure, it encapsulates a `Throwable` instance
 
-INFO: Did you know that the term `Future` has been introduced in 1977, `Promise` in 1976... Not really new things.
+NOTE: Did you know that the term `Future` has been introduced in 1977, `Promise` in 1976... Not really new things.
 
 So, how does this work with our async RPC service, let's look at this sequence diagram:
 
@@ -243,7 +241,7 @@ HttpEndpoint.get(vertx, discovery, new JsonObject().put("name", "CONSOLIDATION")
  });
 ----
 <1> Get the HTTP Client for the requested service.
-<2> The client cannot be retrieve (service not found), report the failure
+<2> The client cannot be retrieved (service not found), report the failure
 <3> We have the client, let's continue...
 
 Let's now implement the `computeEvaluation` method:
@@ -284,27 +282,32 @@ Well, we just need the `getValueForCompany` method that call the service:
 ----
 private Future<Double> getValueForCompany(HttpClient client, String company, int numberOfShares) {
   // Create the future object that will  get the value once the value have been retrieved
-  Future<Double> future = Future.future();                                              // <1>
+  Future<Double> future = Future.future();                                           // <1>
 
-  client.getNow("/?name=" + encode(company), response -> {                              // <2>
+  client.get("/?name=" + encode(company), response -> {                              // <2>
+    response.exceptionHandler(future::fail);                                         // <3>
     if (response.statusCode() == 200) {
       response.bodyHandler(buffer -> {
         double v = numberOfShares * buffer.toJsonObject().getDouble("bid");
-        future.complete(v);                                                             // <3>
+        future.complete(v);                                                          // <4>
       });
     } else {
-      future.complete(0.0);                                                             // <4>
+      future.complete(0.0);                                                          // <5>
     }
-  });
+  })
+    .exceptionHandler(future::fail)                                                  // <6>
+    .end();                                                                          // <7>
 
   return future;
 }
 ----
 
 First, we create the `Future` object that will be returned by the method (1). Then, we use the HTTP client to retrieve
-the last quote of the company with the `getNow` method (2). The HTTP Client is already configured with the right IP and
-port (the discover manages this). When we get the response, we read the body and compute the evaluation. When done,
-we assigned a value to the `Future` (3). If the company cannot be found, we evaluate these shares to `0.0` (4).
+the last quote of the company with the `get` method (2). `get` prepares the request but does not emit it until `end` is called. The HTTP Client is already configured with the right IP and
+port (the discovery manages this). When we get the response, we have to register an `exceptionHandler` (3) to catch failures that may happen when receiving the response body. Then we can read the body and compute the evaluation. When done,
+we assigned a value to the `Future` (4). If the company cannot be found, we evaluate these shares to `0.0` (5).
+
+As the connection to the server may fail, we should also register an `exceptionHandler` on the client itself (6). Finally, we emit the request using the `end` method (7).
 
 
 === Publishing the service
@@ -400,8 +403,7 @@ the service records in the discovery infrastructure, so your application does no
 has been imported using a docker link, or published _manually_, or imported some other ways.
 
 NOTE: Could we have used the regular Vert.x publication to publish the _consolidation_ HTTP endpoint ? No, because
-even at runtime it does not know on which (public) IP and port it will be available. Indeed the code running in the
-container ignore these details.
+even at runtime it does not know on which (public) IP and (public) port it is accessible. Indeed the code running in the container ignore these details.
 
 Go back to the dashboard, and you should see some new services and the _cash_ should have been set in the top left
 corner.
@@ -410,7 +412,7 @@ NOTE: The dashboard is consuming the portfolio service using the async RPC mecha
 generated at compile time, and use SockJS to communicate. Behind the hood there is a bridge between the event bus and
  SockJS.
 
-Well, it's time ao buy and sell some shares no ? Let's do that in the next chapter.
+Well, it's time to buy and sell some shares no ? Let's do that in the next chapter.
 
 
 

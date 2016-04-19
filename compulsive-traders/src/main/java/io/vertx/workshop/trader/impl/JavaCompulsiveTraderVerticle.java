@@ -15,12 +15,12 @@ import io.vertx.workshop.portfolio.PortfolioService;
 public class JavaCompulsiveTraderVerticle extends MicroServiceVerticle {
 
   @Override
-  public void start() {
+  public void start(Future<Void> future) {
     super.start();
 
     //TODO
     //----
-
+    future.fail("no implemented yet...");
     // ----
   }
 
