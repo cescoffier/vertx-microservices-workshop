@@ -127,7 +127,7 @@ The first action is about creating a `Handler`, so a method that is invoked on e
 be called for every messages sent on the event bus on a specific `address` (receiving each quote sent by the generator).
  In the `Handler` body, write:
 
-[source, java]
+[source, java,role=assignment]
 ----
 JsonObject quote = message.body(); // 1
 quotes.put(quote.getString("name"), quote); // 2
@@ -150,7 +150,7 @@ vertx.createHttpServer()
 
 Replace the content of the `requestHandler` (a handler called on every incoming HTTP request) by:
 
-[source, java]
+[source, java, role=assignment]
 ----
 HttpServerResponse response = request.response()    // <1>
     .putHeader("content-type", "application/json");

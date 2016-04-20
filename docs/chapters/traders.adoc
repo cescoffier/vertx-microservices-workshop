@@ -61,7 +61,7 @@ First, look at the `start` method signature: `start(Future<Void> future)`. The `
 
 To initialize the trader, remove the `future.fail` statement and write:
 
-[source, java]
+[source, java, role=assignment]
 ----
 String company = TraderUtils.pickACompany();
 int numberOfShares = TraderUtils.pickANumber();
@@ -74,7 +74,7 @@ The trader needs the `Portfolio` service and the `market` service (the message s
 cannot start the trading logic before having retrieved both of them. Let's use the `Future` composition feature we
 have seen in the previous section.
 
-[source, java]
+[source, java, role=assignment]
 ----
 // We need to retrieve two services, create two futures object that
 // will get the services
@@ -105,7 +105,7 @@ been assigned.
 
 Almost done! Where we had the `Next...`, write:
 
-[source, java]
+[source, java, role=assignment]
 ----
 if (ar.failed()) {                                                               // <1>
     future.fail("One of the required service cannot " +
@@ -133,7 +133,7 @@ executing the trading logic (4). Finally, in (5), we complete the `future` given
 
 Here is the whole code:
 
-[source, java]
+[source, java, role=assignment]
 ----
     super.start();
 
@@ -198,7 +198,7 @@ the content is the `start` method of the verticle. Vert.x also supports Groovy c
 
 Copy the following code in the file:
 
-[source, groovy]
+[source, groovy, role=assignment]
 ----
 import io.vertx.groovy.core.CompositeFuture
 import io.vertx.groovy.core.Future

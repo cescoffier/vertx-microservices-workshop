@@ -83,3 +83,12 @@ code, kbd, pre, samp {
 sup.footnote {
     vertical-align: baseline;
 }
+
+.assignment::before {
+    content: "Spoiler Alert! You can decide whether or not you want to write this code by yourself or read it first.";
+    font-weight: bold;
+    font-size: larger;
+    height: 35px;
+    display: block;
+    color: #782b90;
+}

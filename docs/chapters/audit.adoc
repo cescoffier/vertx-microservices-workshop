@@ -84,7 +84,7 @@ Initializing the audit service includes:
 So, it's clearly 3 independent actions, but the audit service is started only when all of them has been completed.
 Replace the `TODO` block by:
 
-[source, java]
+[source, java, role=assignment]
 ----
 Future<HttpServer> httpEndpointReady = configureTheHTTPServer();
 Future<MessageConsumer<JsonObject>> messageListenerReady = retrieveThePortfolioMessageSource();
@@ -138,7 +138,7 @@ future.setHandler(ar -> {
 
 Let's implement the `configureTheHTTPServer` method following this pattern:
 
-[source, java]
+[source, java, role=assignment]
 ----
 private Future<HttpServer> configureTheHTTPServer() {
     Future<HttpServer> future = Future.future();
@@ -285,7 +285,7 @@ You may ask why we do such kind of composition. Let's implement a method without
 The step (1) and (2) are asynchronous. (5) is asynchronous too, but we don't have to wait for the completion. In this
  code, don't use composition (that's the purpose of this exercise). In `retrieveOperations`, write:
 
-[source, java]
+[source, java, role=assignment]
 ----
 // 1 - we retrieve the connection
 jdbc.getConnection(ar -> {

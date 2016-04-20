@@ -131,7 +131,7 @@ implement the `getPortfolio` method:
 
 In `io.vertx.workshop.portfolio.impl.PortfolioServiceImpl`, replace the body of `getPortfolio` by:
 
-[source]
+[source, java, role=assignment]
 ----
 resultHandler.handle(Future.succeededFuture(portfolio));
 ----
@@ -195,7 +195,7 @@ Ok, back to our code. We have provided the `buy` and `sell` methods, that are ju
 
 In the `sendActionOnTheEventBus` method, write:
 
-[source, java]
+[source, java, role=assignment]
 ----
 vertx.eventBus().publish(EVENT_ADDRESS, new JsonObject()
     .put("action", action)
@@ -366,7 +366,7 @@ when we buy or sell shares. This is also a service (a message source service to 
 
 At the end of the `start` method, add:
 
-[source, java]
+[source, java, role=assignment]
 ----
 publishMessageSource("portfolio-events", EVENT_ADDRESS, ar -> {
   if (ar.failed()) {
