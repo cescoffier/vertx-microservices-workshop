@@ -1,19 +1,18 @@
-## Event Bus服务 - 投资组合服务
+## Event Bus 服务 - 投资组合服务
 
-In the quote generator we have seen the basics of Vert.x development:
+在报价生成器部分，我们已经了解了一些Vert.x开发的基础：
 
-* Asynchronous API and `AsyncResult`
-* Implementing `Handler`
-* Receiving messages from the event bus
+* 异步API与 `AsyncResult`
+* 实现 `Handler`
+* 从Event Bus接收消息
 
-In the portfolio component, we are going to implement an _event bus service_. A `Portfolio` stores the owned shares and the available cash.
+在投资组合组件中，我们将要实现一个 _Event Bus 服务_ 。一个 `Portfolio` 储存着用户买入的股票以及可用的现金数量。
 
-### RPC and Async RPC
+### RPC与异步RPC
 
-Microservices are not only about REST. They can be exposed using any types of interactions, and _Remote Procedure Calls_
-is one of them. With RPC, a component can effectively send a request to another component by doing a local procedure
-call, which results in the request being packaged in a message and sent to the callee. Likewise, the result is sent back
- and returned to the caller component as the result of the procedure call:
+微服务不仅仅是REST风格的，它们可以通过任何类型的协议进行通信，其中**远端过程调用(RPC)**就是其中之一。有了RPC，一个组件就可以有效地通过本地过程调用(LPC)
+将请求发送至另一个组件。在这个过程中，请求被包装到一条消息中，并随之发送至被调用端。同样，被调用端也可以通过这种方式将结果传回调用端。
+
 
 [plantuml, rpc-sequence, png]
 ----
@@ -32,6 +31,7 @@ Proxy -> Bob : "hello Bob"
 @enduml
 ----
 
+这种通信有着
 Such interactions has the advantages to introduce typing, and so is less error-prone than unstructured messages. However, it also
  introduces a tighter coupling between the caller and the callee. The caller knows how to call the callee:
 
@@ -76,7 +76,7 @@ Such async-RPC has several advantages:
 * it deals with failures
 * it avoids you to send messages on the event bus and manages object marshalling and unmarshalling for you.
 
-### Async service interface
+### 异步服务接口
 
 To create an async RPC service, or event bus service, or service proxies, you first need a Java interface declaring the
  async methods. Open the `io.vertx.workshop.portfolio.PortfolioService` class.
@@ -100,7 +100,7 @@ NOTE: You may have also noticed the the package as a `package-info.java` class. 
 service proxy generation.
 
 
-=== Data objects
+=== 数据实体对象
 
 The `Portfolio` object is a data object. Event bus proxies support a limited set of types, and for non-supported types,
 it must use _data objects_ (please check the http://vertx.io/docs/vertx-service-proxy/[documentation] for the whole list
@@ -114,7 +114,7 @@ it must use _data objects_ (please check the http://vertx.io/docs/vertx-service-
 Let's open the `io.vertx.workshop.portfolio.Portfolio` class to see how it looks like. As you can see, all the JSON
 handling is managed by `converters` that are automatically generated, so a data object is very close to a simple _bean_.
 
-=== Implementing the service
+=== 实现服务
 
 It's nice to have an async interface for our service, but it's time to implement it. We are going to implement two
 methods in this service:
@@ -123,7 +123,7 @@ methods in this service:
 * `sendActionOnTheEventBus` to see how to send messages on the event bus
 * `evaluate` computing the current value of the portfolio
 
-==== Creating AsyncResult
+==== 生成AsyncResult
 
 As we have seen above, our async service have `Handler<AsyncResult<Portfolio>>` parameter. So when we implement this
 service, we would need to call the `Handler` with an instance of `AsyncResult`. To see how this works, let's
@@ -177,7 +177,7 @@ So, how does this work with our async RPC service, let's look at this sequence d
  @enduml
 ----
 
-==== Sending event on the event bus
+==== 将事件发送至Event Bus
 
 In the previous chapter, we have registered a consumer receiving event bus services, it's time to see how to send
 messages on the event bus. You access the event bus using `vertx.eventBus()`. From this object you can:
@@ -310,7 +310,7 @@ we assigned a value to the `Future` (4). If the company cannot be found, we eval
 As the connection to the server may fail, we should also register an `exceptionHandler` on the client itself (6). Finally, we emit the request using the `end` method (7).
 
 
-=== Publishing the service
+=== 发布服务
 
 Now that the service implementation is complete, let's publish it ! First we need a `verticle` that creates the actual
  service object, registers the service on the event bus and publishes the service in the discovery infrastructure.
@@ -382,7 +382,7 @@ publishMessageSource("portfolio-events", EVENT_ADDRESS, ar -> {
 Now we are done, and it's time to build and run this service.
 
 
-=== Run time !
+=== 启动服务！
 
 To build the project launch:
 
@@ -412,5 +412,5 @@ NOTE: The dashboard is consuming the portfolio service using the async RPC mecha
 generated at compile time, and use SockJS to communicate. Behind the hood there is a bridge between the event bus and
  SockJS.
 
-Well, it's time to buy and sell some shares no ? Let's do that in the next chapter.
+哈，是时候买入或卖出一些股票了，不是吗？我们将在下一章节实现它。
 

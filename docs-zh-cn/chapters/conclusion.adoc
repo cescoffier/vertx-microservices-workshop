@@ -12,7 +12,7 @@ using it the right way to use it to its whole power.
 
 If you want, and I hope so, to go further here are some references:
 
-* http://vertx.io[The Vert.x web site]
-* http://vertx.io/blog/posts/introduction-to-vertx.html[A blog post series to start developing with Vert.x]
-* https://github.com/vert-x3/vertx-microservice-toolbox[a set of building blocks for microservice-based applications]
+* http://vertx.io[Vert.x 官方网站]
+* http://vertx.io/blog/posts/introduction-to-vertx.html[一系列介绍Vert.x开发入门的博客文章]
+* https://github.com/vert-x3/vertx-microservice-toolbox[一些构建基于微服务应用的组件]
 

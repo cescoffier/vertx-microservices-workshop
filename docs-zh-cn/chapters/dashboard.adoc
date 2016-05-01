@@ -1,38 +1,35 @@
 ## 仪表板(Dashboard)详解
 
-This section is about the dashboard. You won't have to write any code. It just explains how it works:
+这一部分是关于Dashboard的内容。在这一部分中你不需要写任何代码。这一部分只是解释Dashboard的一些工作原理：
 
-1. How to configure configure Vert.x web to expose static resources
-2. How to configure the SockJS - Eventbus bridge
+1. 如何配置Vert.x Web以便访问静态资源
+2. 如何配置SockJS - Eventbus bridge
 3. How to implement a REST endpoint delegating to another REST endpoint (proxy pattern)
-4. How can you consume an event bus proxy from the browser
+4. 如何在浏览器端消费Event Bus代理
 
-The dashboard is a single verticle (`io.vertx.workshop.dashboard.DashboardVerticle`).
+Dashboard部分是一个单独的Verticle (`io.vertx.workshop.dashboard.DashboardVerticle`)。
 
-### Vert.x Web and static files
+### Vert.x Web与静态文件
 
-As mentioned in the previous section, Vert.x web is a Vert.x component to build web application. Its whole
-architecture is centered on the `Router` object. You create this router and configure the _routes_. For each route
-you configure the _HTTP verb_ and the _path_ and associate the `Handler` that is called when a matching request is
-received. The `router` is creates a follows:
+正如我们之前所提到的那样，Vert.x Web是一个用于构建Web应用的Vert.x组件。整个架构的核心是 `Router` 对象（路由）。
+你可以创建并配置**路由**。对每一个路由，你都需要配置其 _HTTP Method_ 与 _URL路径_ ，并与对应的 `Handler` 相结合。
+`router` 对象可以通过下面的代码进行创建：
 
 [source, java]
 ----
 Router router = Router.router(vertx);
 ----
 
-Vert.x web provides a set of `Handler` for common tasks such as serving static files:
+Vert.x Web提供了一系列的 `Handler` 用于处理各种请求，比如访问静态资源：
 
 [source, java]
 ----
-// Static content
+// 静态内容
 router.route("/*").handler(StaticHandler.create());
 ----
 
-It serves all files from the `webroot` directory (default) or the server root. For example, `webroot/index.html` is
-served using the `http://0.0.0.0:8080/index.html` url.
 
-Once the router is configured, you need a HTTP server and use the router to handle the requests:
+当路由配置完毕后，你需要创建一个HTTP服务端并使用路由来处理HTTP请求：
 
 [source, java]
 ----

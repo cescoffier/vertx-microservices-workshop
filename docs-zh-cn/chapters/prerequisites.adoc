@@ -4,8 +4,8 @@
 
 ### 硬件要求
 
-* 操作系统: Mac OS X (10.8+), Windows 7+, Ubuntu 12+, CentOS 7+, Fedora 22+
-* 内存: 最少4 GB+，推荐8 GB+
+* 操作系统：Mac OS X (10.8+), Windows 7+, Ubuntu 12+, CentOS 7+, Fedora 22+
+* 内存：最少4 GB，推荐8 GB以上
 
 ### Docker
 
@@ -46,42 +46,38 @@ docker-machine ip default
 
 IMPORTANT: 将 `default` 替换为你的Docker Machine名。
 
-This will provide the IP address associated with the Docker Machine created earlier.
-
-Edit `/etc/hosts` (Mac OS) or `C:\Windows\System32\drivers\etc\hosts` (Windows) and add:
+然后编辑 `/etc/hosts` (Mac OS X) 或 `C:\Windows\System32\drivers\etc\hosts` (Windows)文件，添加一行：
 
 [source, text]
 ----
 <IP ADDRESS>  dockerhost
 ----
 
-On Linux (and for the lucky people having access to the native version of docker for Windows and Mac), `dockerhost`
- is `localhost` (as it runs natively). You would need to replace every reference to `dockerhost` by `localhost`.
+对Linux用户来说， `dockerhost` 与 `localhost` 相同（因为Docker可以原生运行）。你需要将上面对应的 `dockerhost` 替换成 `localhost`。
 
 ### JDK
 
-You need a JDK 8 installed on your machine. Install is from:
+你需要在电脑上安装JDK 8。可以从官网下载并安装：
 
 * http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html[Oracle JDK 8]
 
 ### Maven
 
-* Download Apache Maven from https://maven.apache.org/download.cgi.
-* Unzip to a directory of your choice and add it to the `PATH`.
+* 从 https://maven.apache.org/download.cgi 下载 Apache Maven。
+* 解压压缩包，并且设置环境变量 `PATH` 。
 
 ### IDE
 
-We recommend you to use an IDE. You can use Eclipse, IntelliJ or Netbeans.
+我们推荐你用IDE进行编程，比如Eclipse、IntelliJ IDEA或者Netbeans。
 
 #### 没有IDE ?
 
-If you don't have an IDE, here are the step to get started with Eclipse.
+如果你电脑里没有安装IDE，你可以根据下面的指示安装Eclipse：
 
-1. First download Eclipse from https://www.eclipse.org/downloads/[the download page].
-2. In the _Eclipse Package_ list, select _Eclipse IDE for Java Developers_. It brings you to a download page with a
-`Download` button.
-3. Once downloaded, unzip it.
-4. In the destination directory, you should find an `Eclipse` binary that you can execute.
-5. Eclipse asks you to create a workspace.
-6. Once launched, click on the _Workbench_ arrow (top right corner).
+1. 首先进入 https://www.eclipse.org/downloads/[下载页] 。
+2. 在 _Eclipse Package_ 列表里选择 _Eclipse IDE for Java Developers_ 这一项。它会指引你下载。
+3. 下载完以后，解压压缩包。
+4. 在解压好的文件夹中，你可以找到 `Eclipse` 对应的可执行文件。
+5. Eclipse指引你创建一个工作空间(workspace)。
+6. 启动Eclipse以后，点击 _Workbench_ 箭头 (右上角)。
 

@@ -1,7 +1,6 @@
 ## 引用
 
-Some recommended reading. Nothing especially about microservices or Vert.x because the concepts are broader than
-these two topics.
+这是我们推荐的一些阅读材料，它们不局限于Vert.x和微服务这两个话题。
 
 [bibliography]
 - A. S. Tanenbaum, M Van Steam. Distributed Systems - Principles and Paradigms. 2003

@@ -99,27 +99,23 @@ Verticle可以通过 `config()` 方法来获取配置信息。我们的服务就
  }
 ----
 
+如果你还记得我们应用的架构的话，报价生成器也会提供一个HTTP端点，返回最近的报价值（这需要你去实现咯）。我们会用Docker去“发布”这个服务
+（不需要写代码，Docker会对其进行发布）。
 
+### 合并端点(The consolidation endpoint)
 
-If you remember the architecture, the quote generator also provides a HTTP endpoint returning the last values of the
-quotes (but, you are going to work on it). This _service_ is not published, as we are going to "publish" it using
-Docker (no code required, Docker publishes it).
+现在到了你动手实现应用的部分功能的时间了（我知道你的手指已经如坐针毡了）。打开 `RestQuoteAPIVerticle` 类的代码。它是一个继承了 `AbstractVerticle` 的类。
+在 `start` 方法中，你需要实现以下功能：
 
-### The consolidation endpoint
+1. 注册一个Event Bus消费者来收集最新的报价数据（收集到 `quotes` map中）
+2. 处理HTTP请求并且返回报价列表；如果提供了 `name`（查询）参数的话，返回对应的报价
 
-It's time for you to develop some parts of the application (I know you have pins and needles in your fingers). Open the
-`RestQuoteAPIVerticle`. It's a verticle class extending `AbstractVerticle`. In the `start` method you need to:
+让我们来动手实践吧！
 
-1. Register an event bus consumer to collect the last quotations (in the `quotes` map)
-2. Handle HTTP requests to return the list of quotes, or a single quote if the `name` (query) param is set.
+#### 实现接收事件的Handler
 
-Let's do that....
-
-#### Implementing a Handler to receive events
-
-The first action is about creating a `Handler`, so a method that is invoked on event. Here, the `Handler` is going to
-be called for every messages sent on the event bus on a specific `address` (receiving each quote sent by the generator).
- In the `Handler` body, write:
+第一个操作就是要创建一个 `Handler`，也就是在事件发生时被调用的方法。在这里，此 `Handler` 将会在每个消息被发送到Event Bus上特定的 `地址`
+（接收生成器生成的每一个报价）时被调用。我们在Handler的方法部分进行如下的编码：
 
 [source, java,role=assignment]
 ----
@@ -127,12 +123,11 @@ JsonObject quote = message.body(); // 1
 quotes.put(quote.getString("name"), quote); // 2
 ----
 
-First, it retrieves the message body (1). It's a JSON object, and stores it in the `quotes` map (2).
+首先，它会获取消息的正文(body) (1)，它是一个JSON对象。然后我们将它储存到 `quotes` map中 (2)。
 
-#### Implementing a Handler to handle HTTP requests
+#### 实现处理HTTP请求的Handler
 
-Let's now implement the second point.  To handle the HTTP requests, we need a HTTP server. Fortunately, Vert.x lets
-you create HTTP servers using:
+现在我们来实现第二个功能。我们需要HTTP服务端以便处理HTTP请求。还好，Vert.x可以让你方便地创建HTTP服务端：
 
 [source, java]
 ----
@@ -142,7 +137,7 @@ vertx.createHttpServer()
 ----
 
 
-Replace the content of the `requestHandler` (a handler called on every incoming HTTP request) by:
+将 `requestHandler` （当收到每个HTTP请求时调用）的方法部分替换为：
 
 [source, java, role=assignment]
 ----
@@ -162,41 +157,38 @@ if (company == null) {
     }
  }
 ----
-<1> Get the `response` object from the `request`
-<2> Gets the `name` parameter (query parameter)
-<3> Encode the map to JSON
-<4> Write the response and flush it using `end(...)`
-<5> If the given name does not match a company, set the status code to `404`
+<1> 从 `request` 对象中获取 `response` 对象
+<2> 获取 `name` 参数（查询参数）
+<3> 将map转化为JSON格式的数据
+<4> 编写HTTP响应并且通过 `end(...)` 方法刷新数据流。
+<5> 如果给定的查询参数没有对应的公司，返回 `404` 状态码
 
-You may wonder why synchronization is not required. Indeed we write in the map and read from it without any
-synchronization constructs. Here is one of the main feature of Vert.x: all this code is going to be executed by
-the **same** event loop, so it's always accessed by the **same** thread, never concurrently.
+你可能想知道为什么这里用不到同步(synchronization)。的确，我们往map中读写数据的时候不需要加任何的锁。这也是Vert.x
+的主要特性之一：这些代码都会在**同一个**Event Loop线程中执行，因此它们总是被**相同的线程**读取，而不是并发读取。
 
-TIP: The `Map<String, JsonObject>` could be replaced by a simple `JsonObject` as they behave as a `Map<String, Object>`.
+TIP: `Map<String, JsonObject>` 对象可以简化为一个 `JsonObject` 对象，因为它们两个的本质相似。
 
-### Time to start the quote generator
+### 是时候启动报价生成器了
 
-First, let's build the docker image. In the terminal, execute:
+首先，我们来构建Docker镜像。在终端中执行以下命令：
 
 ----
 cd quote-generator
 mvn package docker:build
 ----
 
-Then, open a new terminal and launch:
+然后，打开一个新终端，然后启动容器：
 
 ----
 docker run -p 8081:8080 --rm --name quote-generator vertx-microservice-workshop/quote-generator
 ----
 
-Let's analyze this docker command. It runs a container created from the image we just built
-(`vertx-microservice-workshop/quote-generator`). We give it a name (`quote-generator`). The `-p` option configure the
-port forwarding. The port `8080` of the application is now exposed on the port `8081` of your machine (or the
-docker-machine). In our microservice world, it also means that the HTTP endpoint becomes discoverable.
+我们来分析一下这个Docker命令。它用于运行一个容器，这个容器产生于我们刚刚构建好的镜像(`vertx-microservice-workshop/quote-generator`)。
+其中 `-p` 选项用于配置端口。报价生成器应用的 `8080` 端口会映射到你本机的 `8081` 端口。在我们微服务的世界里，这也意味着HTTP端点能够被发现。
 
-Let's now open a browser and have a look to http://dockerhost:8081.
+我们打开浏览器，访问一下 http://dockerhost:8081 。
 
-It should return something like:
+此地址将会返回类似于以下的JSON数据：
 
 ----
 {
@@ -230,10 +222,9 @@ It should return something like:
 }
 ----
 
-It gives the current details of each quotes. The data is updated every 3 seconds, so refresh your browser to get
-the latest data.
+返回的数据给出了当前每个报价的详细信息。数据每3秒更新一次，所以你需要刷新来获取最新的数据。
 
-Let's now launch the dashboard. In another terminal, navigate to `$project-home/trader-dashboard` and execute:
+下面我们来启动仪表盘(Dashboard)。在另一个终端中，定位到 `$project-home/trader-dashboard` 目录中并且执行以下命令：
 
 [source]
 ----
@@ -241,26 +232,25 @@ mvn clean package docker:build
 docker run -p 8083:8080 --rm --name dashboard vertx-microservice-workshop/trader-dashboard
 ----
 
-TIP: If Docker is yelling with something like `Error response from daemon: Conflict. The name "/xyz" is
-already in use by container...`, no problem, let be more convincing and launch `docker rm -f xyz` and
-then relaunch the command.
+TIP: 如果Docker报出类似于 `Error response from daemon: Conflict. The name "/xyz" is
+already in use by container...` 这样的错误，没关系。执行 `docker rm -f xyz` 命令删除容器然后重新执行上述启动命令即可。
 
-Then, open your browser to http://dockerhost:8083. You should see:
+然后，访问 http://dockerhost:8083 地址。你应该会看到如下界面：
 
 image::dashboard-initial-state.png[Dashboard, 800]
 
-Some parts have no _content_, and it's normal as it's just the beginning...
+有些部分可能暂时没有内容，这是因为我们才刚刚开始。。。
 
-### You are not a financial expert ?
+### 并非一个金融学专家？
 
-So maybe you are not used to the financial world and words... I'm not too, and this is a overly simplified version.
-Let's define the important fields:
+你可能不习惯很多金融学的名词。。。我也不习惯，但这个系统已经做了很大的简化了。我们来了解一些重要的金融学名词：
 
-* `name` : the company name
-* `symbol` : short name
-* `shares` : the number of stock that can be bought
-* `open` : the stock price when the session opened
-* `ask` : the price of the stock when you buy them (seller price)
-* `bid` : the price of the stock when you sell them (buyer price)
+* `name` : 公司名称
+* `symbol` : 公司缩写名称
+* `shares` : 可以购买的股票数量
+* `open` : 开盘时股票的价格
+* `ask` : 买方购买股票时的价格(卖出价)
+* `bid` : 由买方报出表示愿意按此水平买入的一个价格(买入价)
 
-You can check https://en.wikipedia.org/wiki/Financial_quote[Wikipedia] for more details.
+更多信息请见 https://en.wikipedia.org/wiki/Financial_quote[维基百科]。
+
