@@ -1,0 +1,355 @@
+## 审计服务
+
+The law is the law... The _Sarbanes–Oxley Act_ requires you to keep a track of every transaction you do on a
+ financial market. The audit service records the shares you buy and sell in a database. It's going to be a HSQL
+ database, but is would be similar with another database, even no-sql database.
+
+### 以异步方式获取数据
+
+As said previously, Vert.x is asynchronous and you must never block the event loop. And you know what's definitely
+blocking ? Database accesses and more particularly JDBC! Fortunately, Vert.x provides a JDBC client that is asynchronous.
+
+The principle is simple (and is applied to all clients accessing blocking systems):
+
+[plantuml, database-sequence, png]
+----
+@startuml
+autonumber
+participant Application
+participant Handler
+participant Client
+control Worker
+database Database
+
+Application -> Client : The application send the query, instruction,\n statement to the client; with a Handler
+Client -> Worker : The client enqueue in a Worker the task to be done
+Client -> Application : The client returns immediately
+Worker -> Database : The worker executes the task on the database
+Worker -> Client : When done, the worker notify the client
+Client -> Handler : The client invokes the handler \n(in the same thread as the interaction (1))\n with the operation result.
+
+@enduml
+----
+
+NOTE: _Worker_ ? Yes, Vert.x has the notion of _workers_ (a separated thread pool) to execute blocking code. It can be a verticle marked as _worker_ or with the `vertx.executeBlocking` construct. However, even if possible, you should not abuse from these features as it reduces the scalability of the application.
+
+However, interactions with databases are rarely a single operation, but a composition of operations. For example:
+
+1. Get a connection
+2. Drop some tables
+3. Create some tables
+4. Close the connection
+
+So, we need a way to compose these operations, and report failures when required. This is what we are going to see
+in the Audit component.
+
+### 审计服务
+
+The Audit service:
+
+1. Listens for the financial operations on the event bus
+2. Stores the received operations in a database
+3. Exposes a REST API to get the last 10 operations
+
+Interactions with the database use the `vertx-jdbc-client`, an async version of JDBC. So expect to see some SQL code
+(I know you love it).
+
+### Initializing the audit service with Composite Future
+
+Open the `io.vertx.workshop.audit.impl.AuditVerticle` class. The first important detail of this verticle is its
+`start` method. As the `start` method from the Java trader, the method is asynchronous, and report its completion in the given `Future` object:
+
+[source, java]
+----
+public void start(Future<Void> future) {
+     // creates the jdbc client.
+     jdbc = JDBCClient.createNonShared(vertx, config());
+
+     // TODO
+     // ----
+     future.fail("not implemented yet");
+     // ----
+}
+----
+
+Vert.x would consider the verticle deploy when the `Future` is valuated. It may also report a failure if the verticle
+ cannot be started correctly.
+
+Initializing the audit service includes:
+
+* prepare the database (table)
+* start the HTTP service and expose the REST API
+* retrieve the message source on which the operation are sent
+
+So, it's clearly 3 independent actions, but the audit service is started only when all of them has been completed.
+Replace the `TODO` block by:
+
+[source, java, role=assignment]
+----
+Future<HttpServer> httpEndpointReady = configureTheHTTPServer();
+Future<MessageConsumer<JsonObject>> messageListenerReady = retrieveThePortfolioMessageSource();
+Future<Void> databaseReady = initializeDatabase(config().getBoolean("drop", false));
+
+CompositeFuture.all(httpEndpointReady, databaseReady, messageListenerReady)
+    .setHandler(ar -> {
+      if (ar.succeeded()) {
+        // Register the handle called on messages
+        messageListenerReady.result().handler(message -> storeInDatabase(message.body()));
+        // Notify the completion
+        future.complete();
+      } else {
+        future.fail(ar.cause());
+      }
+    });
+----
+
+First we create 3 `Futures`, one per action to execute. We are going to see how they are created in a minute. Then we
+compose all of them using the `CompositeFuture.all` operator. When all the actions are completed, it calls the given
+handler that registers the message listener storing the operation in the database.
+
+To notify Vert.x that the start process is completed (or successfully or not), it calls `future.complete()` and
+`future.fail(cause)`.
+
+### Configure the HTTP server - async method pattern
+
+We have mentioned that async method have a signature with a `Handler` as last parameter. There is an equivalent syntax
+that returns a `Future` object when the operations they are executing are completed:
+
+[source, java]
+----
+void asyncMethod(a, b, Handler<R> handler);
+// is equivalent to
+Future<R> asyncMethod(a, b);
+----
+
+Indeed, the caller can attach a `Handler` on the returned `Future` object to be notified when the operation has
+completed:
+
+[source, java]
+----
+Future<R> future = asyncMethod(a, b);
+future.setHandler(ar -> {
+  if (ar.failed()) { /* the operaiton has failed */ }
+  else {
+    // Do something with the result
+  }
+});
+----
+
+Let's implement the `configureTheHTTPServer` method following this pattern:
+
+[source, java, role=assignment]
+----
+private Future<HttpServer> configureTheHTTPServer() {
+    Future<HttpServer> future = Future.future();
+
+    // Use a Vert.x Web router for this REST API.
+    Router router = Router.router(vertx);
+    router.get("/").handler(this::retrieveOperations);
+
+    vertx.createHttpServer()
+        .requestHandler(router::accept)
+        .listen(8080, future.completer());
+
+    return future;
+}
+----
+
+It creates a `Router`. The `Router` is an object from http://vertx.io/docs/vertx-web/java/[Vert.x web] that ease the
+creation of REST API with Vert.x. We won't go into too much details here, but if you want to implement REST API with
+Vert.x, this is the way to go. On our `Router` we declare a _route_: when a request arrive on `/`, it calls this `Handler`.
+Then, we create the HTTP server. The `requestHandler` is a specific method of the `router`, and in the `listen`
+handler we pass `future.completer()`. This `completer` is a sugar roughly doing:
+
+[source, java]
+----
+if (ar.failed()) { future.fail(ar.cause()); }
+else { future.complete(ar.result()); }
+----
+
+So, the caller can call this method and get a `Future`. It can register a `Handler` on it that is called when the
+`Future` receives a value (or a failure).
+
+If you look at the `retrieveThePortfolioMessageSource`, you would see the very same pattern.
+
+
+### Initializing the database with chain composition
+
+In the `start` method, we are calling `initializeDatabase`. Let's look at this method using another type of action
+composition. This method:
+
+* get a connection to the database
+* drop the table
+* create the table
+* close the connection (whatever the result of the two last operations)
+
+All these operations may fail.
+
+In the last paragraph we have seen methods returning `Future`. `Chains` are a composition of such functions:
+
+1. you have an input
+2. you execute a first `Function` taking the input from (1) and returning a `Future`
+3. you execute a second `Function` taking the input from (2) and returning a `Future`
+4. ....
+
+The completion of a chain is a `Future` object. If one of the chained operation fails, this `Future` is marked as
+failed, otherwise it is completed with the result of the last operation:
+
+[source, code]
+----
+Future<X> chain = Chain.chain(input, function1, function2, function3);
+----
+
+A chain can be triggered by a `Future` too, so is started upon the successful completion of the given
+`Future`.
+
+So do use the composition pattern, we just need a set of `Functions` and a `Future` that would trigger the chain.
+Let's create this `Future` first:
+
+[source, java]
+----
+// This future will be assigned when the connection with the database is established.
+// We are going to use this future as a reference on the connection to close it.
+Future<SQLConnection> connectionRetrieved = Future.future();
+// Retrieve a connection with the database, report on the databaseReady if failed, or
+// assign the connectionRetrieved future.
+jdbc.getConnection(connectionRetrieved.completer());
+----
+
+Then, we need two functions taking a `SQLConnection` as parameter
+
+1. The first function drops the table if needed
+2. The second function creates the table
+
+[source,java]
+----
+// When the connection is retrieved, we want to drop the table (if drop is set to true)
+Function<SQLConnection, Future<SQLConnection>> dropTable = connection -> {
+  Future<SQLConnection> future = Future.future();
+  if (!drop) {
+    future.complete(connection); // Immediate completion.
+  } else {
+    connection.execute(DROP_STATEMENT, completer(future, connection));
+  }
+  return future;
+};
+
+// When the table is dropped, we recreate it
+Function<SQLConnection, Future<Void>> createTable = connection -> {
+  Future<Void> future = Future.future();
+  connection.execute(CREATE_TABLE_STATEMENT, future.completer());
+  return future;
+};
+----
+
+As explained above, both function returns a `Future` object. The result of the first function is used as input of the
+ second function.
+
+It's now time to build the chain:
+
+[source, java]
+----
+// Ok, now it's time to chain all these actions:
+// connectionRetrieved -> dropTable -> createTable -> in all case
+// close the connection
+
+Chain.chain(connectionRetrieved, dropTable, createTable)       // <1>
+    .setHandler(ar -> {                                        // <2>
+      // Whatever the result, if the connection has been
+      // retrieved, close it
+      if (connectionRetrieved.result() != null) {               // <3>
+        connectionRetrieved.result().close();
+      }
+
+      // Complete the main future with the result.
+      databaseReady.completer().handle(ar);                     // <4>
+    });
+----
+
+In (1) we create the chain. The first parameter is the `Future` triggering the chain. The two other parameters are
+the chained functions. We attach a `Handler` to the returned `Future` that is executed when the chain has been
+executed with the result (2). In (3), we check whether we have a connection and close it. Finally, in (4) we complete the main `Future` (returned by the method).
+
+### Retrieve results from the database with callback-based composition
+
+You may ask why we do such kind of composition. Let's implement a method without any composition operator (just using
+ callbacks). The `retrieveOperations` method is called when a HTTP request arrives and should return a JSON object
+ containing the last 10 operations. So, in other words:
+
+1. Get a connection to the database
+2. Query the database
+3. Iterate over the result to get the list
+4. Write the list in the HTTP response
+5. Close the database
+
+The step (1) and (2) are asynchronous. (5) is asynchronous too, but we don't have to wait for the completion. In this
+ code, don't use composition (that's the purpose of this exercise). In `retrieveOperations`, write:
+
+[source, java, role=assignment]
+----
+// 1 - we retrieve the connection
+jdbc.getConnection(ar -> {
+  SQLConnection connection = ar.result();
+  if (ar.failed()) {
+    context.fail(ar.cause());
+  } else {
+    // 2. we execute the query
+    connection.query(SELECT_STATEMENT, result -> {
+      ResultSet set = result.result();
+
+      // 3. Build the list of operations
+      List<JsonObject> operations = set.getRows().stream()
+          .map(json -> new JsonObject(json.getString("OPERATION")))
+          .collect(Collectors.toList());
+
+      // 4. Send the list to the response
+      context.response().setStatusCode(200).end(Json.encodePrettily(operations));
+
+      // 5. Close the connection
+      connection.close();
+    });
+  }
+});
+----
+
+So obviously it's possible toi not use composition. But imagine when you have several asynchronous operation to chain, it become a callback hell very quickly. So, as a recommendation: use the Vert.x composition operators.
+
+IMPORTANT: All the composition operators (`all`, `compose`, `any`, `chain`...) are implemented on top of callbacks.
+The _pure_ async programming is using callbacks, `Future` and composition are there to provide a direct
+correspondence between synchronous functions and asynchronous operations and so ease the implementation of complex
+processes.
+
+
+### Show time !
+
+Let's see how this works.
+
+First you need to built it:
+
+[source]
+----
+cd audit-service
+mvn clean package docker:build
+----
+
+Then, you need to launch the container:
+
+[source]
+----
+docker run -p 8082:8080 --rm --name audit vertx-microservice-workshop/audit-service
+----
+
+You need to restart the dashboard to get access to the REST endpoint we just published (imported as a link):
+
+[source]
+----
+docker stop dashboard
+docker run -p 8083:8080 --rm --name dashboard --link audit:AUDIT vertx-microservice-workshop/trader-dashboard
+----
+
+Refresh the dashboard, and you should see the operations in the top right corner!
+
+
+
+
+

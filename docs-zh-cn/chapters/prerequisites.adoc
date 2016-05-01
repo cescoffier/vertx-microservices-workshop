@@ -1,0 +1,87 @@
+## 环境准备
+
+现在是你开始实践的时候了！在我们开始之前，我们要先配好环境。
+
+### 硬件要求
+
+* 操作系统: Mac OS X (10.8+), Windows 7+, Ubuntu 12+, CentOS 7+, Fedora 22+
+* 内存: 最少4 GB+，推荐8 GB+
+
+### Docker
+
+#### Docker工具箱或安装包
+
+Docker可以原生运行于Linux下。因为Docker底层使用了Linux内核的某些特性，因此目前你还不能在Windows或OS X下直接运行Docker
+（Docker团队正致力于其原生运行）。所以，你需要使用 `docker-machine` 来创建一个虚拟机(VM)。这个虚拟机里运行着Linux系统，可以通过它
+来运行Docker。利用 https://www.docker.com/docker-toolbox[Docker Toolbox]，你可以很方便地安装Docker环境。
+
+你可以按照以下指示来安装Docker：
+
+* https://github.com/docker/toolbox/releases/download/v1.10.3/DockerToolbox-1.10.3.pkg[Docker Tool Box 1.10.3 for Mac]
+* https://github.com/docker/toolbox/releases/download/v1.10.3/DockerToolbox-1.10.3.exe[Docker Toolbox 1.10.3 for
+Windows]
+* http://docs.docker.com/engine/installation/ubuntulinux/[Docker on Ubuntu]
+* http://docs.docker.com/engine/installation/centos/[Docker on Centos]
+* http://docs.docker.com/engine/installation/fedora/[Docker on Fedora]
+
+完整的操作系统列表可以在 http://docs.docker.com/engine/installation/[Install Docker Engine] 找到。
+
+#### 镜像
+
+为了避免在实现应用的时候等待下载Docker镜像，你需要提前下载好镜像：
+
+[source]
+docker pull library/java
+
+#### 创建Docker主机映射
+
+如果你在使用Docker Machine，为了可以更容易地启动/结束容器，你需要在hosts文件里加一条记录。
+
+查询你的电脑目前的IP地址：
+
+[source]
+----
+docker-machine ip default
+----
+
+IMPORTANT: 将 `default` 替换为你的Docker Machine名。
+
+This will provide the IP address associated with the Docker Machine created earlier.
+
+Edit `/etc/hosts` (Mac OS) or `C:\Windows\System32\drivers\etc\hosts` (Windows) and add:
+
+[source, text]
+----
+<IP ADDRESS>  dockerhost
+----
+
+On Linux (and for the lucky people having access to the native version of docker for Windows and Mac), `dockerhost`
+ is `localhost` (as it runs natively). You would need to replace every reference to `dockerhost` by `localhost`.
+
+### JDK
+
+You need a JDK 8 installed on your machine. Install is from:
+
+* http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html[Oracle JDK 8]
+
+### Maven
+
+* Download Apache Maven from https://maven.apache.org/download.cgi.
+* Unzip to a directory of your choice and add it to the `PATH`.
+
+### IDE
+
+We recommend you to use an IDE. You can use Eclipse, IntelliJ or Netbeans.
+
+#### 没有IDE ?
+
+If you don't have an IDE, here are the step to get started with Eclipse.
+
+1. First download Eclipse from https://www.eclipse.org/downloads/[the download page].
+2. In the _Eclipse Package_ list, select _Eclipse IDE for Java Developers_. It brings you to a download page with a
+`Download` button.
+3. Once downloaded, unzip it.
+4. In the destination directory, you should find an `Eclipse` binary that you can execute.
+5. Eclipse asks you to create a workspace.
+6. Once launched, click on the _Workbench_ arrow (top right corner).
+

@@ -1,0 +1,416 @@
+## Event Bus服务 - 投资组合服务
+
+In the quote generator we have seen the basics of Vert.x development:
+
+* Asynchronous API and `AsyncResult`
+* Implementing `Handler`
+* Receiving messages from the event bus
+
+In the portfolio component, we are going to implement an _event bus service_. A `Portfolio` stores the owned shares and the available cash.
+
+### RPC and Async RPC
+
+Microservices are not only about REST. They can be exposed using any types of interactions, and _Remote Procedure Calls_
+is one of them. With RPC, a component can effectively send a request to another component by doing a local procedure
+call, which results in the request being packaged in a message and sent to the callee. Likewise, the result is sent back
+ and returned to the caller component as the result of the procedure call:
+
+[plantuml, rpc-sequence, png]
+----
+@startuml
+autonumber
+Bob -> Proxy: hello("Bob")
+hnote over Bob : blocked
+Proxy -> Proxy: Encapsulate the call in a network message
+Proxy ->o Server: Network Communication
+Server -> Server: Unpack the message
+Server -> Alice: hello("Bob")
+Server -> Server: Encapsulate the result in a network message
+Server ->o Proxy: Network Communication
+Proxy -> Proxy: Unpack the message
+Proxy -> Bob : "hello Bob"
+@enduml
+----
+
+Such interactions has the advantages to introduce typing, and so is less error-prone than unstructured messages. However, it also
+ introduces a tighter coupling between the caller and the callee. The caller knows how to call the callee:
+
+1. how the service is called
+2. where the service is living (location)
+
+Traditional RPC exhibits an annoying drawback: the caller waits until the response has been received. This is
+definitely a blocking call, as it involves at least two network messages. In addition, it is not really designed for
+failures while distributed communications have many reasons to fail (`RemoteException` I'm thinking about you...).
+
+Fortunately, Vert.x proposes a different form of RPC: Async RPC. Async RPC follows the same principles as RPC, but
+instead of _waiting_ for the response, it passes a `Handler<AsyncResult<X>` called when the result is received.
+
+[plantuml, async-rpc-sequence, png]
+----
+ @startuml
+ autonumber
+ participant Bob
+ participant Handler
+ participant Proxy
+ participant Server
+ participant Alice
+ Bob -> Proxy: hello("Bob", handler)
+ hnote over Bob : not blocked
+ Proxy -> Proxy: Encapsulate the call in a network message
+ Proxy ->o Server: Network Communication (event bus message)
+ Server -> Server: Unpack the message
+ Server -> Alice: hello("Bob")
+ Server -> Server: Encapsulate the result in a network message
+ Server ->o Proxy: Network Communication (event bus message reply)
+ Proxy -> Proxy: Unpack the message
+ Proxy -> Handler : AsyncResult("hello Bob")
+ @enduml
+----
+
+The `AsyncResult` notifies the `Handler` whether the invocation succeeded or failed. Upon success, the handler can
+ retrieve the result.
+
+Such async-RPC has several advantages:
+
+* the caller is not blocked
+* it deals with failures
+* it avoids you to send messages on the event bus and manages object marshalling and unmarshalling for you.
+
+### Async service interface
+
+To create an async RPC service, or event bus service, or service proxies, you first need a Java interface declaring the
+ async methods. Open the `io.vertx.workshop.portfolio.PortfolioService` class.
+
+The class is annotated with:
+
+* `ProxyGen` - enables the event bus service proxy and server generation
+* `VertxGen`  - enables the creation of the proxy in the different language supported by Vert.x
+
+Let's have a look at the first method:
+
+[source]
+----
+void getPortfolio(Handler<AsyncResult<Portfolio>> resultHandler);
+----
+
+This method lets you retrieve a `Portfolio` object. As explained above the method is asynchronous and so has a `Handler`
+ parameter receiving an `AsyncResult<Portfolio>`. The other methods follows the same pattern.
+
+NOTE: You may have also noticed the the package as a `package-info.java` class. This file is required to enable the
+service proxy generation.
+
+
+=== Data objects
+
+The `Portfolio` object is a data object. Event bus proxies support a limited set of types, and for non-supported types,
+it must use _data objects_ (please check the http://vertx.io/docs/vertx-service-proxy/[documentation] for the whole list
+ of supported types). Data objects are Java classes obeying to a set of constraints:
+
+* It must be annotated with `DataObject`
+* It must have an empty constructor, a copy constructor and a constructor taking a `JsonObject` as parameter
+* It must have a `toJson` method building a `JsonObject` representing the current object
+* Fields must be _property_ with (getters and setters)
+
+Let's open the `io.vertx.workshop.portfolio.Portfolio` class to see how it looks like. As you can see, all the JSON
+handling is managed by `converters` that are automatically generated, so a data object is very close to a simple _bean_.
+
+=== Implementing the service
+
+It's nice to have an async interface for our service, but it's time to implement it. We are going to implement two
+methods in this service:
+
+* `getPortfolio` to understand how to create `AsyncResult` objects
+* `sendActionOnTheEventBus` to see how to send messages on the event bus
+* `evaluate` computing the current value of the portfolio
+
+==== Creating AsyncResult
+
+As we have seen above, our async service have `Handler<AsyncResult<Portfolio>>` parameter. So when we implement this
+service, we would need to call the `Handler` with an instance of `AsyncResult`. To see how this works, let's
+implement the `getPortfolio` method:
+
+In `io.vertx.workshop.portfolio.impl.PortfolioServiceImpl`, replace the body of `getPortfolio` by:
+
+[source, java, role=assignment]
+----
+resultHandler.handle(Future.succeededFuture(portfolio));
+----
+
+Wow... one single line ? Let's dissect it:
+
+* `resultHandler.handle` : this is to invoke the `Handler`. `Handler<X>` has a single method (`handle(X)`).
+* `Future.succeededFuture` : this is how we create an instance of `AsyncResult` denoting a success. The passed value
+ is the result (`portfolio`)
+
+But, wait, what is the relationship between `AsyncResult` and `Future` ? A `Future` represents the result of an action
+that may, or may not, have occurred yet. The result may be `null` if the `Future` is used to detect the completion of
+ an operation. The operation behind a `Future` object may succeed or fail. `AsyncResult` is a structure describing the
+  success of the failure of an operation. So, `Future` are `AsyncResult`. In Vert.x `AsyncResult` instances are
+  created from the `Future` class.
+
+`AsyncResult` describes:
+
+* a success as shown before, it encapsulates the result
+* a failure, it encapsulates a `Throwable` instance
+
+NOTE: Did you know that the term `Future` has been introduced in 1977, `Promise` in 1976... Not really new things.
+
+So, how does this work with our async RPC service, let's look at this sequence diagram:
+
+[plantuml, portfolio-sequence, png]
+----
+ @startuml
+ autonumber
+ participant user
+ participant handler
+ participant proxy
+ user -> proxy: proxy.getPorfolio(handler)
+ proxy -> proxy: Encapsulate the call in a network message
+ proxy ->o server: Network Communication (event bus message)
+ server -> server: Unpack the message
+ server -> PortfolioServiceImpl_instance: getPortfolio(another-handler)
+ PortfolioServiceImpl_instance -> PortfolioServiceImpl_instance: another-handler.handle(Future.succeededFuture(portfolio));
+ server -> server : Encapsulate the result in a network message
+ server ->o proxy: Network Communication (event bus message reply)
+ proxy -> proxy: Unpack the message
+ proxy -> handler : resultHandler.handle(Future.succeededFuture(portfolio))
+ @enduml
+----
+
+==== Sending event on the event bus
+
+In the previous chapter, we have registered a consumer receiving event bus services, it's time to see how to send
+messages on the event bus. You access the event bus using `vertx.eventBus()`. From this object you can:
+
+* `send` : send a message in point to point mode
+* `publish` : broadcast a message to all consumers registered on the address
+* `send` with a `Handler<AsyncResult<Message>>>`: send a message in point to point mode and expect a reply
+
+In the last point, notice the `AsyncResult<Message>`. It's an async result as the reply may never arrive (and so will
+ be considered as a failure).
+
+Ok, back to our code. We have provided the `buy` and `sell` methods, that are just doing some checks before buying or
+ selling shares. Once the action is _emitted_, we send a message on the event bus that will be consumed by the `Audit
+  Service` and the `Dashboard`. So, we are going to use the `publish` method.
+
+In the `sendActionOnTheEventBus` method, write:
+
+[source, java, role=assignment]
+----
+vertx.eventBus().publish(EVENT_ADDRESS, new JsonObject()
+    .put("action", action)
+    .put("quote", quote)
+    .put("date", System.currentTimeMillis())
+    .put("amount", amount)
+    .put("owned", newAmount));
+----
+
+Let's have a deeper look:
+
+1. it gets the `EventBus` instance and call `publish` on it. The first parameter in the _address_ on which the
+message is sent
+2. the body is a `JsonObject` containing the different information on the action (buy or sell, the quote (another
+json object), the date...
+
+==== Coordinating async methods and consuming HTTP endpoints - Portfolio value evaluation
+
+The last method to implement is the `evaluate` method. This method computes the current value of the portfolio.
+However, for this it needs to access the "current" value of the stock (so the last quote). It is going to consume
+the HTTP endpoint we have implemented in the quote generator. For this, we are going to:
+
+* discover the service
+* call the service for each company we own some shares
+* when all calls are done, compute the value and send it back to the caller
+
+That's a bit more tricky, so let's do it step by step. First, in the `evaluate`, we need to retrieve the HTTP
+endpoint (service) provided by the quote generator. This service is named `CONSOLIDATION`, and will be imported by
+Docker. We are going to see this in details in 5 minutes. So, let's start to get this service:
+
+[source, java]
+----
+HttpEndpoint.get(vertx, discovery, new JsonObject().put("name", "CONSOLIDATION"), // <1>
+  client -> {
+       if (client.failed()) {                                                     // <2>
+         // It failed...
+         resultHandler.handle(Future.failedFuture(client.cause()));
+       } else {
+         // We have the client
+         HttpClient httpClient = client.result();                                 // <3>
+         computeEvaluation(httpClient, resultHandler);
+       }
+ });
+----
+<1> Get the HTTP Client for the requested service.
+<2> The client cannot be retrieved (service not found), report the failure
+<3> We have the client, let's continue...
+
+Let's now implement the `computeEvaluation` method:
+
+[source, java]
+----
+private void computeEvaluation(HttpClient httpClient, Handler<AsyncResult<Double>> resultHandler) {
+    // We need to call the service for each company we own shares
+    List<Future> results = portfolio.getShares().entrySet().stream()
+        .map(entry -> getValueForCompany(httpClient, entry.getKey(), entry.getValue()))    // <1>
+        .collect(Collectors.toList());
+
+    if (results.isEmpty()) {
+      // We don't own anything
+      resultHandler.handle(Future.succeededFuture(0.0));
+    } else {
+      // We need to return only when we have all results, for this we create a composite future.
+      // The set handler is called when all the futures has been assigned.
+      CompositeFuture.all(results).setHandler(                                              // <2>
+          ar -> {
+            double sum = results.stream().mapToDouble(fut -> (double) fut.result()).sum();  // <3>
+            resultHandler.handle(Future.succeededFuture(sum));                              // <4>
+          });
+    }
+}
+----
+
+First, we need to get a list of `Future` that would receive the different evaluations (one per company) (1). This
+evaluation is asynchronous (as it involves a HTTP call to get the latest value). We don't know when these `Future`
+will be all valuated (or assigned). Fortunately, Vert.x provides `CompositeFuture` for this very purpose (2).
+`CompositeFuture.all` calls its assigned handler when all the given `Futures` are assigned. So when the handler is
+executed, we knows all the futures has received a value, and so we can compute the sum (3). Finally, we send this
+result to the client by calling the `resultHandler` (4).
+
+Well, we just need the `getValueForCompany` method that call the service:
+
+[source, java]
+----
+private Future<Double> getValueForCompany(HttpClient client, String company, int numberOfShares) {
+  // Create the future object that will  get the value once the value have been retrieved
+  Future<Double> future = Future.future();                                           // <1>
+
+  client.get("/?name=" + encode(company), response -> {                              // <2>
+    response.exceptionHandler(future::fail);                                         // <3>
+    if (response.statusCode() == 200) {
+      response.bodyHandler(buffer -> {
+        double v = numberOfShares * buffer.toJsonObject().getDouble("bid");
+        future.complete(v);                                                          // <4>
+      });
+    } else {
+      future.complete(0.0);                                                          // <5>
+    }
+  })
+    .exceptionHandler(future::fail)                                                  // <6>
+    .end();                                                                          // <7>
+
+  return future;
+}
+----
+
+First, we create the `Future` object that will be returned by the method (1). Then, we use the HTTP client to retrieve
+the last quote of the company with the `get` method (2). `get` prepares the request but does not emit it until `end` is called. The HTTP Client is already configured with the right IP and
+port (the discovery manages this). When we get the response, we have to register an `exceptionHandler` (3) to catch failures that may happen when receiving the response body. Then we can read the body and compute the evaluation. When done,
+we assigned a value to the `Future` (4). If the company cannot be found, we evaluate these shares to `0.0` (5).
+
+As the connection to the server may fail, we should also register an `exceptionHandler` on the client itself (6). Finally, we emit the request using the `end` method (7).
+
+
+=== Publishing the service
+
+Now that the service implementation is complete, let's publish it ! First we need a `verticle` that creates the actual
+ service object, registers the service on the event bus and publishes the service in the discovery infrastructure.
+
+Open the `io.vertx.workshop.portfolio.impl.PortfolioVerticle` class. In its `start` method is does what we just say:
+
+1) Create the service object with:
+
+[source, java]
+----
+PortfolioServiceImpl service = new PortfolioServiceImpl(vertx, discovery, config().getDouble("money", 10000.00));
+----
+
+2) Register it on the event bus using the `ProxyHelper` class:
+
+[source, java]
+----
+ProxyHelper.registerService(PortfolioService.class, vertx, service, ADDRESS);
+----
+
+3) Publish the service in the discovery infrastructure to make it discoverable:
+
+[source, java]
+----
+publishEventBusService("portfolio", ADDRESS, PortfolioService.class, ar -> {
+  if (ar.failed()) {
+    ar.cause().printStackTrace();
+  } else {
+    System.out.println("Portfolio service published : " + ar.succeeded());
+  }
+});
+----
+
+The `publishEventBusService` is implemented as follows:
+
+[source, java]
+----
+// Create the service record:
+Record record = EventBusService.createRecord(name, address, serviceClass);
+// Publish it using the discovery service
+discovery.publish(record, ar -> {
+  if (ar.succeeded()) {
+    registeredRecords.add(record);
+    completionHandler.handle(Future.succeededFuture());
+  } else {
+    completionHandler.handle(Future.failedFuture(ar.cause()));
+  }
+});
+----
+
+Are we done ? No.... We have a second service to publish. Remember, we are also sending messages on the event bus
+when we buy or sell shares. This is also a service (a message source service to be exact).
+
+At the end of the `start` method, add:
+
+[source, java, role=assignment]
+----
+publishMessageSource("portfolio-events", EVENT_ADDRESS, ar -> {
+  if (ar.failed()) {
+    ar.cause().printStackTrace();
+  } else {
+    System.out.println("Portfolio Events service published : " + ar.succeeded());
+  }
+});
+----
+
+`portfolio-events` is the service name, `EVENT_ADDRESS` is the event bus address.
+
+Now we are done, and it's time to build and run this service.
+
+
+=== Run time !
+
+To build the project launch:
+
+----
+cd portfolio-service
+mvn clean package docker:build
+----
+
+Then, launch it, in another terminal with:
+
+----
+docker run --name portfolio --rm --link quote-generator:CONSOLIDATION vertx-microservice-workshop/portfolio-service
+----
+
+`link` ? What's this ? It instructs Docker to link this container with the `quote-generator` container we started
+before. This link will be named `CONSOLIDATION`. Vert.x discovery service detects these links and imports
+the service records in the discovery infrastructure, so your application does not have to know whether the service
+has been imported using a docker link, or published _manually_, or imported some other ways.
+
+NOTE: Could we have used the regular Vert.x publication to publish the _consolidation_ HTTP endpoint ? No, because
+even at runtime it does not know on which (public) IP and (public) port it is accessible. Indeed the code running in the container ignore these details.
+
+Go back to the dashboard, and you should see some new services and the _cash_ should have been set in the top left
+corner.
+
+NOTE: The dashboard is consuming the portfolio service using the async RPC mechanism. A client for JavaScript is
+generated at compile time, and use SockJS to communicate. Behind the hood there is a bridge between the event bus and
+ SockJS.
+
+Well, it's time to buy and sell some shares no ? Let's do that in the next chapter.
+

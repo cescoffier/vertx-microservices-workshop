@@ -1,5 +1,6 @@
 ### Asciidoctor output
 /docs/output
+/docs-zh-cn/output
 
 ### Maven template
 =======

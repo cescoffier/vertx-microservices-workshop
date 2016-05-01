@@ -1,0 +1,42 @@
+## 开始！
+
+### 获取源码
+
+[source]
+----
+git clone https://github.com/cescoffier/vertx-microservices-workshop
+----
+
+你可以将项目作为一个Maven项目导入到IDE中。参考对应的IDE文档来了解如何导入Maven项目。
+
+你可能会遇到一堆编译错误，这是因为您的IDE默认没有将 `src/main/generated` 目录标记为**源码目录**。
+将 `portfolio-service/src/main/generated` 文件夹标记为源码目录即可。
+
+TIP: 在 `solution` 文件夹中有完整的解决方案。
+
+### 构建
+
+我们的项目采用Apache Maven构建。可以通过以下命令编译所有代码：
+
+[source]
+----
+cd vertx-microservices-workshop
+mvn clean install
+----
+
+### 集群与服务发现架构
+
+是时候开始咯～如果你还记得微服务章节的内容的话，应该知道我们需要服务发现机制。还好，Vert.x提供了一种服务发现机制。
+为了让每一个组件都能发现服务，Vert.x需要在一个所有组件都能访问的地方存储 _服务记录(record)_。
+
+默认情况下，Vert.x的服务发现机制会使用一个分布式的映射(distributed map)来进行存储，所有集群内的成员都可以访问它。
+所以，当你启动一个Vert.x应用，并且开启集群模式的时候，它会加入（或创建）一个集群。这个集群允许节点：
+
+* 来去自由（加入或注销），也就是说可以管理成员发现(member discovery)
+* 共享数据，比如分布式映射、锁、计数器等等
+* 访问Event Bus
+
+在我们的上下文中，我们不需要去手动配置集群。Docker镜像会自动以集群模式启动Vert.x应用。
+
+在这个实验中，我们的集群是基于Hazelcast搭建的，并且使用**多点传送**(multicast)作为成员发现机制。
+

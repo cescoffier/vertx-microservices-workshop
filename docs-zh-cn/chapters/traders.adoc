@@ -1,0 +1,279 @@
+## 交易者服务
+
+In the `portfolio` project we have implemented an event bus service to manage our portfolio. In the quote-generator
+we send quotes on the event bus. Traders are components that consumes these two services with only one goal: getting
+rich (or not...)!
+
+In this section, we are going to develop 2 traders (following a stupid logic you can definitely be improved):
+
+* the first trader is developed in Java
+* the second trader is developed in Groovy
+
+### Compulsive and dumb traders
+
+Before seen how there are implemented, let's explain the absolutely illogic algorithm used by these traders:
+
+1. A compulsive trader is picking randomly one company name and a number of shares (`x`)
+2. Randomly, it tries to buy or sell `x` shares of the company
+
+It does not check whether or not it has enough shares or money, it just tries... This logic is implemented in
+`io.vertx.workshop.trader.impl.TraderUtils`.
+
+### Deploying several instance and polyglot verticles.
+
+The `compulsive-trader` project contains a _main-verticle_ (`io.vertx.workshop.trader.impl.MainVerticle`) that is
+going to configure and deploy the traders:
+
+[source]
+----
+@Override
+public void start() throws Exception {
+
+    // Java traders
+    vertx.deployVerticle(JavaCompulsiveTraderVerticle.class.getName(),
+        new DeploymentOptions().setInstances(2));                           // <1>
+
+    // Groovy traders...
+    vertx.deployVerticle("GroovyCompulsiveTraderVerticle.groovy");          // <2>
+}
+----
+
+The `JavaCompulsiveTraderVerticle` is deployed with some `DeploymentOptions` (1). This one sets the _number of
+instances_ to 2, so Vert.x is not instantiating this verticle once, with twice (2 different objects).
+So, the previous code deploys three traders.
+
+The Groovy verticle is deployed by passing the file name. The verticle file is in `src/main/resources` and will be
+located at the root of the fat-jar.
+
+It's now time to implement these verticles
+
+### The Java Trader
+
+Open the `io.vertx.workshop.trader.impl.JavaCompulsiveTraderVerticle` class. In the place of the `TODO` we need:
+
+1. Initialize the trader
+2. Retrieve the 2 services we use
+3. When both have been retrieve, apply the trading logic on every new market data.
+
+#### 1. Initialize the trader
+
+First, look at the `start` method signature: `start(Future<Void> future)`. The `future` let us tell when the initialization has been completed and whether or not it has been successful. That means we have to `complete` or `fail` this `future` explicitly.
+
+To initialize the trader, remove the `future.fail` statement and write:
+
+[source, java, role=assignment]
+----
+String company = TraderUtils.pickACompany();
+int numberOfShares = TraderUtils.pickANumber();
+System.out.println("Java compulsive trader configured for company " + company + " and shares: " + numberOfShares);
+----
+
+#### 2. Retrieve the 2 services
+
+The trader needs the `Portfolio` service and the `market` service (the message source sending the market data). We
+cannot start the trading logic before having retrieved both of them. Let's use the `Future` composition feature we
+have seen in the previous section.
+
+[source, java, role=assignment]
+----
+// We need to retrieve two services, create two futures object that
+// will get the services
+Future<MessageConsumer<JsonObject>> marketFuture = Future.future();             // <1>
+Future<PortfolioService> portfolioFuture = Future.future();
+
+// Retrieve the services, use the "special" completed to assign the future
+MessageSource.get(vertx, discovery, new JsonObject().put("name", "market-data"),
+    marketFuture.completer());                                                  // <2>
+EventBusService.get(vertx, discovery, PortfolioService.class,
+    portfolioFuture.completer());                                               // <3>
+
+// When done (both services retrieved), execute the handler
+CompositeFuture.all(marketFuture, portfolioFuture).setHandler(ar -> {           // <4>
+   // Next....
+});
+----
+
+First create the 2 `Future` objects that will receive the two services once retrieved (1). In (2) we retrieve the
+message source service and use a special `Handler` to assign the `Future`. The `completer` is basically a `Handler`
+receiving the result and setting the value in the `Future` or mark it as failed. The same approach is used in (3) to
+retrieve the `Portfolio` service.
+
+Finally, in <4>, we create a `CompositeFuture` that execute the attached `Handler` when all the listed `Futures` has
+been assigned.
+
+#### 3. Applying the trading logic
+
+Almost done! Where we had the `Next...`, write:
+
+[source, java, role=assignment]
+----
+if (ar.failed()) {                                                               // <1>
+    future.fail("One of the required service cannot " +
+            "be retrieved: " + ar.cause());
+} else {
+    // Our services:                                                             // <2>
+    PortfolioService portfolio = portfolioFuture.result();
+    MessageConsumer<JsonObject> marketConsumer = marketFuture.result();
+
+    // Listen the market...
+    marketConsumer.handler(message -> {                                          // <3>
+        JsonObject quote = message.body();
+        TraderUtils.dumbTradingLogic(company, numberOfShares, portfolio, quote); // <4>
+    });
+
+    future.complete();                                                           // <5>
+}
+----
+
+First, we need to check if the service retrieval has been successful. This is made in (1). If so, we can unwrap the
+services from the `Future` objects (2). We set a `Handler` on the `marketConsumer` (the message source service)
+executing the trading logic (4). Finally, in (5), we complete the `future` given as parameter of the `start` method to notify of the completion of the initialization process. The `complete` method does not pass a _result_ as we just notify of the completion. Notice also the `future.fail` to denote an initialization issue.
+
+#### The code in one snippet
+
+Here is the whole code:
+
+[source, java, role=assignment]
+----
+    super.start();
+
+    String company = TraderUtils.pickACompany();
+    int numberOfShares = TraderUtils.pickANumber();
+    System.out.println("Java compulsive trader configured for company " + company + " and shares: " + numberOfShares);
+
+    // We need to retrieve two services, create two futures object that will get the services
+    Future<MessageConsumer<JsonObject>> marketFuture = Future.future();
+    Future<PortfolioService> portfolioFuture = Future.future();
+    // Retrieve the services, use the "special" completed to assign the future
+    MessageSource.get(vertx, discovery, new JsonObject().put("name", "market-data"), marketFuture.completer());
+    EventBusService.get(vertx, discovery, PortfolioService.class, portfolioFuture.completer());
+
+    // When done (both services retrieved), execute the handler
+    CompositeFuture.all(marketFuture, portfolioFuture).setHandler(ar -> {
+      if (ar.failed()) {
+        future.fail("One of the required service cannot " +
+            "be retrieved: " + ar.cause());
+      } else {
+        // Our services:
+        PortfolioService portfolio = portfolioFuture.result();
+        MessageConsumer<JsonObject> marketConsumer = marketFuture.result();
+
+        // Listen the market...
+        marketConsumer.handler(message -> {
+          JsonObject quote = message.body();
+          TraderUtils.dumbTradingLogic(company, numberOfShares, portfolio, quote);
+        });
+
+        future.complete();
+      }
+    });
+----
+
+#### Run this trader
+
+We can already run this trader and see if it makes educated actions on the market. Package it using:
+
+[source]
+----
+cd compulsive-traders
+mvn clean package docker:build
+----
+
+Then launch the docker container with:
+
+[source]
+----
+docker run --rm --name traders vertx-microservice-workshop/compulsive-traders
+----
+
+If you go back to the dashboard, you may start seen some moves on your portfolio.
+
+### The Groovy Trader
+
+The Groovy trader is using the same trading logic, but this verticle is going to be developed in Groovy. To ease the
+understanding, the code is going to be very close to the Java version.
+
+Open `src/main/resources/GroovyCompulsiveTraderVerticle.groovy`. This verticle is going to be a _Groovy Script_. So
+the content is the `start` method of the verticle. Vert.x also supports Groovy classes.
+
+Copy the following code in the file:
+
+[source, groovy, role=assignment]
+----
+import io.vertx.groovy.core.CompositeFuture
+import io.vertx.groovy.core.Future
+import io.vertx.groovy.core.eventbus.MessageConsumer
+import io.vertx.ext.discovery.groovy.DiscoveryService
+import io.vertx.ext.discovery.groovy.types.EventBusService
+import io.vertx.ext.discovery.groovy.types.MessageSource
+import io.vertx.workshop.portfolio.PortfolioService
+import io.vertx.workshop.trader.impl.TraderUtils
+
+def company = TraderUtils.pickACompany();
+def numberOfShares = TraderUtils.pickANumber();
+
+println("Groovy compulsive trader configured for company " + company + " and shares: " + numberOfShares);
+
+// We create the discovery service object.
+def discovery = DiscoveryService.create(vertx);
+
+Future<MessageConsumer<Map>> marketFuture = Future.future();
+Future<PortfolioService> portfolioFuture = Future.future();
+
+MessageSource.get(vertx, discovery,
+        ["name" : "market-data"], marketFuture.completer());
+EventBusService.get(vertx, discovery,
+        "io.vertx.workshop.portfolio.PortfolioService", portfolioFuture.completer());
+
+// When done (both services retrieved), execute the handler
+CompositeFuture.all(marketFuture, portfolioFuture).setHandler( { ar ->
+  if (ar.failed()) {
+    System.err.println("One of the required service cannot be retrieved: " + ar.cause());
+  } else {
+    // Our services:
+    PortfolioService portfolio = portfolioFuture.result();
+    MessageConsumer<Map> marketConsumer = marketFuture.result();
+
+    // Listen the market...
+    marketConsumer.handler( { message ->
+      Map quote = message.body();
+      TraderUtils.dumbTradingLogic(company, numberOfShares, portfolio, quote);
+    });
+  }
+});
+----
+
+As you can see the code if very close to the Java one. Let's spot the differences:
+
+* Well, it's in Groovy
+* On the `import` statements, you can see it does import `groovy` version of the packages.
+* We have to create the discovery service (as before it was made by a parent class)
+* `JsonObjects` are `Maps`. In Groovy, it makes more sense to use `Map` objects.
+
+When an interface is annotated with `@VertxGen`, Vert.x translates it to all the supported (and configured) languages
+. Each translation tries to be as close as possible to the language idioms, that's why you have `Maps` in Groovy
+instead of `JsonObject`.
+
+This example has been developed in Groovy, but it would be similar in JavaScript, Ruby or Ceylon.
+
+It's time to rebuild and restart our traders. Hit `CTRL+C` to stop the running trader (or launch `docker stop
+traders`). Then, rebuild with:
+
+[source]
+----
+mvn clean package docker:build
+----
+
+And launch the docker container with:
+
+[source]
+----
+docker run --rm --name traders vertx-microservice-workshop/compulsive-traders
+----
+
+If you go back to the dashboard, you may start seen some moves on your portfolio. Now 3 traders are trying to make
+you (virtually) rich.
+
+
+
+

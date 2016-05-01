@@ -1,0 +1,18 @@
+## 终
+
+You made it ! Or you jumped to this section. Anyway, congratulations. We hope you enjoy this lab and learn some
+_stuff_. There is many other things Vert.x can do and that was not illustrated here.
+
+Don't forget that reactive systems and so Vert.x requires a mind-shift:
+
+* Vert.x is a toolkit
+* Asynchronous, non-blocking development model can be hard to understand at the first glance, but it becomes very
+convenient very quickly. Don't also forget, computers are asynchronous, so using such development model is
+using it the right way to use it to its whole power.
+
+If you want, and I hope so, to go further here are some references:
+
+* http://vertx.io[The Vert.x web site]
+* http://vertx.io/blog/posts/introduction-to-vertx.html[A blog post series to start developing with Vert.x]
+* https://github.com/vert-x3/vertx-microservice-toolbox[a set of building blocks for microservice-based applications]
+

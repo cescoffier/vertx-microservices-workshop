@@ -1,0 +1,14 @@
+## 引用
+
+Some recommended reading. Nothing especially about microservices or Vert.x because the concepts are broader than
+these two topics.
+
+[bibliography]
+- A. S. Tanenbaum, M Van Steam. Distributed Systems - Principles and Paradigms. 2003
+- L. Bass, I. Weber, L. Zhu. Devops, A software Architect's Perspective. 2015
+- P. Clements, F. Bachmann, L Bass, D. Garlan, J. Ivers, R. Little, P. Merson, R. Nord, J.
+Stafford. Documenting Software Architecture. 2010
+- S. Krakowiak. Middleware Architecture with Patterns and Frameworks. 2009 (unfinished),
+http://lig-membres.imag.fr/krakowia/Files/MW-Book/Chapters/Preface/preface.html
+- J. Lewis, M. Fowler. Microservices - a definition of this new architectural term, 2014,
+http://martinfowler.com/articles/microservices.html
