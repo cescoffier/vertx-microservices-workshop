@@ -9,7 +9,7 @@
 
 ### Docker
 
-#### Docker工具箱或安装包
+#### Docker工具箱/安装包
 
 Docker可以原生运行于Linux下。因为Docker底层使用了Linux内核的某些特性，因此目前你还不能在Windows或OS X下直接运行Docker
 （Docker团队正致力于其原生运行）。所以，你需要使用 `docker-machine` 来创建一个虚拟机(VM)。这个虚拟机里运行着Linux系统，可以通过它
@@ -37,7 +37,7 @@ docker pull library/java
 
 如果你在使用Docker Machine，为了可以更容易地启动/结束容器，你需要在hosts文件里加一条记录。
 
-查询你的电脑目前的IP地址：
+首先查询你的电脑目前的IP地址：
 
 [source]
 ----
@@ -70,7 +70,7 @@ IMPORTANT: 将 `default` 替换为你的Docker Machine名。
 
 我们推荐你用IDE进行编程，比如Eclipse、IntelliJ IDEA或者Netbeans。
 
-#### 没有IDE ?
+#### 没有安装IDE ?
 
 如果你电脑里没有安装IDE，你可以根据下面的指示安装Eclipse：
 
