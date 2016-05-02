@@ -25,7 +25,7 @@ image::workshop-application.png[Micro-Trader Architecture, 800]
 我们的金融系统使用了几种类型的服务：
 
 * HTTP端点 (例如 REST API) —— 这种服务通过URL进行定位。
-* 服务代理 —— 这是一种通过RPC交互展现于Event Bus上的异步服务。这种服务通过地址进行定位。
+* 服务代理 —— 这是一种通过RPC通信暴露于Event Bus上的异步服务。这种服务通过地址进行定位。
 * 消息源(message sources) —— 这是一种往Event Bus上发布消息的组件。这种服务通过地址进行定位。
 
 在运行时，每一个组件都运行于独立的Docker容器中。当需要进行名称解析的时候，这些容器会进行互联。

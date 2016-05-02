@@ -207,7 +207,7 @@ vertx.eventBus().publish(EVENT_ADDRESS, new JsonObject()
 
 Let's have a deeper look:
 
-1. it gets the `EventBus` instance and call `publish` on it. The first parameter in the _address_ on which the
+1. it gets the `EventBus` instance and call `publish` on it. The first parameter is the _address_ on which the
 message is sent
 2. the body is a `JsonObject` containing the different information on the action (buy or sell, the quote (another
 json object), the date...

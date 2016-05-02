@@ -6,7 +6,7 @@
 * 实现 `Handler`
 * 从Event Bus接收消息
 
-在投资组合组件中，我们将要实现一个 _Event Bus 服务_ 。一个 `Portfolio` 储存着用户买入的股票以及可用的现金数量。
+在投资组合组件中，我们将要实现一个 _Event Bus 服务_ 。一个 `Portfolio` 实体储存着用户买入的股票以及可用的现金数量。
 
 ### RPC与异步RPC
 
@@ -31,19 +31,16 @@ Proxy -> Bob : "hello Bob"
 @enduml
 ----
 
-这种通信有着
-Such interactions has the advantages to introduce typing, and so is less error-prone than unstructured messages. However, it also
- introduces a tighter coupling between the caller and the callee. The caller knows how to call the callee:
+RPC也使得调用端(caller)和被调用端(callee)之间的关系更紧密了。调用端知道如何去调用被调用端：
 
-1. how the service is called
-2. where the service is living (location)
+1. 服务如何被调用
+2. 服务的位置在哪里
 
-Traditional RPC exhibits an annoying drawback: the caller waits until the response has been received. This is
-definitely a blocking call, as it involves at least two network messages. In addition, it is not really designed for
-failures while distributed communications have many reasons to fail (`RemoteException` I'm thinking about you...).
+传统的RPC有一个缺陷：调用者会一直等待结果，直到接收到结果。这显然是一个阻塞型的调用过程。并且，这种传统的RPC并没有很好的针对失败处理而设计，
+而分布式通信中可能会有形形色色的原因导致服务失败(`RemoteException`)。
 
-Fortunately, Vert.x proposes a different form of RPC: Async RPC. Async RPC follows the same principles as RPC, but
-instead of _waiting_ for the response, it passes a `Handler<AsyncResult<X>` called when the result is received.
+幸运的是，Vert.x采用了一种不同形式的RPC：异步RPC(Async RPC)。异步RPC与传统RPC遵循同样的规则，但异步RPC会传递一个 `Handler<AsyncResult<X>`
+类型的参数（回调函数），在得到结果时会被调用，而不是一直阻塞等待结果返回。
 
 [plantuml, async-rpc-sequence, png]
 ----
@@ -67,95 +64,86 @@ instead of _waiting_ for the response, it passes a `Handler<AsyncResult<X>` call
  @enduml
 ----
 
-The `AsyncResult` notifies the `Handler` whether the invocation succeeded or failed. Upon success, the handler can
- retrieve the result.
+`AsyncResult` 用于向 `Handler` 通知调用过程是否成功。如果成功的话， `Handler` 就可以获取结果了。
 
-Such async-RPC has several advantages:
+这种异步RPC有着以下的优点：
 
-* the caller is not blocked
-* it deals with failures
-* it avoids you to send messages on the event bus and manages object marshalling and unmarshalling for you.
+* 调用者不会被阻塞
+* 为失败处理而设计
+* 自动帮你处理对象的编码和解码
 
 ### 异步服务接口
 
-To create an async RPC service, or event bus service, or service proxies, you first need a Java interface declaring the
- async methods. Open the `io.vertx.workshop.portfolio.PortfolioService` class.
+要创建一个异步RPC服务、Event Bus服务或服务代理，你首先需要一个声明异步方法的Java接口。打开 `io.vertx.workshop.portfolio.PortfolioService` 。
 
-The class is annotated with:
+这个接口有两个注解：
 
-* `ProxyGen` - enables the event bus service proxy and server generation
-* `VertxGen`  - enables the creation of the proxy in the different language supported by Vert.x
+* `ProxyGen` - 可以让Vert.x自动生成Event Bus服务代理
+* `VertxGen` - 可以让Vert.x生成其它Vert.x支持的语言中的服务代理
 
-Let's have a look at the first method:
+让我们来看一看第一个方法：
 
 [source]
 ----
 void getPortfolio(Handler<AsyncResult<Portfolio>> resultHandler);
 ----
 
-This method lets you retrieve a `Portfolio` object. As explained above the method is asynchronous and so has a `Handler`
- parameter receiving an `AsyncResult<Portfolio>`. The other methods follows the same pattern.
+`getPortfolio` 方法可以让你以异步的方式获取 `Portfolio` 对象。这个函数是异步的，所以接受一个 `Handler` 参数，并且这个Handler的类型参数为
+`AsyncResult<Portfolio>` 。其他函数也是同样的模式。
 
-NOTE: You may have also noticed the the package as a `package-info.java` class. This file is required to enable the
-service proxy generation.
+NOTE: 你可能会注意到 `package-info.java` 这个包描述类文件。在项目中我们需要这个类来为生成服务代理类提供支持。
 
 
 === 数据实体对象
 
-The `Portfolio` object is a data object. Event bus proxies support a limited set of types, and for non-supported types,
-it must use _data objects_ (please check the http://vertx.io/docs/vertx-service-proxy/[documentation] for the whole list
- of supported types). Data objects are Java classes obeying to a set of constraints:
+`Portfolio` 对象是一个数据对象(data object)。Event Bus代理仅支持少数类型的数据，对于那些不支持的数据类型，必须使用 `@DataObject`
+注解作为约束（请移步 http://vertx.io/docs/vertx-service-proxy/[此处] 来查看所有支持的类型）。数据对象是遵循下面一系列约束的实体类：
 
-* It must be annotated with `DataObject`
-* It must have an empty constructor, a copy constructor and a constructor taking a `JsonObject` as parameter
-* It must have a `toJson` method building a `JsonObject` representing the current object
-* Fields must be _property_ with (getters and setters)
+* 必须加上 `@DataObject` 注解
+* 必须有一个空的构造函数、一个拷贝构造函数以及一个接受 `JsonObject` 类型参数（必须代表当前对象）的构造函数
+* 类成员必须都有 `getter` 和 `setter`
 
-Let's open the `io.vertx.workshop.portfolio.Portfolio` class to see how it looks like. As you can see, all the JSON
-handling is managed by `converters` that are automatically generated, so a data object is very close to a simple _bean_.
+让我们看一下 `io.vertx.workshop.portfolio.Portfolio` 这个类。正如你所看到的，所有的JSON数据处理都由 `converters` 进行管理，而 `converters`
+是Vert.x自动生成的，所以其实一个数据对象和一个Java Bean差不多。
 
 === 实现服务
 
-It's nice to have an async interface for our service, but it's time to implement it. We are going to implement two
-methods in this service:
+既然我们的服务有了一个异步的接口了，现在是时候来实现具体的逻辑了。在这个服务重，我们要实现三个方法：
 
-* `getPortfolio` to understand how to create `AsyncResult` objects
-* `sendActionOnTheEventBus` to see how to send messages on the event bus
-* `evaluate` computing the current value of the portfolio
+* `getPortfolio`：通过这个方法，我们可以了解到如何去创建 `AsyncResult` 对象
+* `sendActionOnTheEventBus`：通过这个方法，我们可以了解到如何向Event Bus发送消息
+* `evaluate`：用于计算当前投资组合的价值
 
-==== 生成AsyncResult
+==== 创建AsyncResult
 
-As we have seen above, our async service have `Handler<AsyncResult<Portfolio>>` parameter. So when we implement this
-service, we would need to call the `Handler` with an instance of `AsyncResult`. To see how this works, let's
-implement the `getPortfolio` method:
+正如我们之前所提到的，我们的异步服务方法接受 `Handler<AsyncResult<Portfolio>>` 类型的参数。所以在实现此方法的时候，我们需要调用 `Handler`
+并传递一个 `AsyncResult` 实例。我们来看看如何实现 `getPortfolio` 方法：
 
-In `io.vertx.workshop.portfolio.impl.PortfolioServiceImpl`, replace the body of `getPortfolio` by:
+将 `io.vertx.workshop.portfolio.impl.PortfolioServiceImpl` 类中 `getPortfolio` 方法的实现替换为：
 
 [source, java, role=assignment]
 ----
 resultHandler.handle(Future.succeededFuture(portfolio));
 ----
 
-Wow... one single line ? Let's dissect it:
+我勒个去。。。只有一行代码么？？？我们来解析一下：
 
-* `resultHandler.handle` : this is to invoke the `Handler`. `Handler<X>` has a single method (`handle(X)`).
-* `Future.succeededFuture` : this is how we create an instance of `AsyncResult` denoting a success. The passed value
- is the result (`portfolio`)
+* `resultHandler.handle`：此方法用于调用 `Handler`。 `Handler<X>` 接口只有一个方法 (`handle(X)`)。
+* `Future.succeededFuture`：此方法就是用于创建 `AsyncResult` 实例的。我们将结果(`portfolio`)作为参数传递给它。
 
-But, wait, what is the relationship between `AsyncResult` and `Future` ? A `Future` represents the result of an action
-that may, or may not, have occurred yet. The result may be `null` if the `Future` is used to detect the completion of
- an operation. The operation behind a `Future` object may succeed or fail. `AsyncResult` is a structure describing the
-  success of the failure of an operation. So, `Future` are `AsyncResult`. In Vert.x `AsyncResult` instances are
-  created from the `Future` class.
+诶？等一下，有猫腻。。。`AsyncResult` 与 `Future` 有什么关系呢？一个 `Future` 对象代表一个操作的结果，这个异步操作可能还没有进行，
+可能正在进行，也可能已经完成。如果这个 `Future` 仅用于检查操作是否完成的话，结果可能是 `null`。`Future` 对象对应的操作可能会成功，也可能会失败。
+而 `AsyncResult` 是一种描述一个操作是成功还是失败的数据结构，所以 `Future` 也是一种 `AsyncResult`（译者注： `Future` 是 `AsyncResult` 的一个子类）。
+在Vert.x中， `AsyncResult` 实例都从 `Future` 类进行创建。
 
-`AsyncResult` describes:
+`AsyncResult` 描述以下信息：
 
-* a success as shown before, it encapsulates the result
-* a failure, it encapsulates a `Throwable` instance
+* 操作成功，此时它会封装操作的结果
+* 操作失败，此时它会封装 `Throwable` 对象
 
-NOTE: Did you know that the term `Future` has been introduced in 1977, `Promise` in 1976... Not really new things.
+NOTE: `Future` 这个词发明于1977年，`Promise` 发明于1976年。它们都不是新玩意了。
 
-So, how does this work with our async RPC service, let's look at this sequence diagram:
+所以，`getPortfolio` 方法如何对接我们的异步RPC服务呢？我们来看一下时序图：
 
 [plantuml, portfolio-sequence, png]
 ----
@@ -179,21 +167,20 @@ So, how does this work with our async RPC service, let's look at this sequence d
 
 ==== 将事件发送至Event Bus
 
-In the previous chapter, we have registered a consumer receiving event bus services, it's time to see how to send
-messages on the event bus. You access the event bus using `vertx.eventBus()`. From this object you can:
+在前面章节中，我们已经注册了一个接受Event Bus服务的消费者。现在是时候看一下它是如何向Event Bus发送消息的了。
+你可以通过 `vertx.eventBus()` 方法获取对应的 `EventBus` 实例，然后做如下操作：
 
-* `send` : send a message in point to point mode
-* `publish` : broadcast a message to all consumers registered on the address
-* `send` with a `Handler<AsyncResult<Message>>>`: send a message in point to point mode and expect a reply
+* `send`：发送消息（点对点模式）
+* `publish`：将消息发送给所有注册到此地址的消费者（发布广播）
+* `send` with a `Handler<AsyncResult<Message>>>`：发送消息并且需要对方回复（点对点模式）
 
-In the last point, notice the `AsyncResult<Message>`. It's an async result as the reply may never arrive (and so will
- be considered as a failure).
+我们注意一下最后一种操作中的 `AsyncResult<Message>`， 这是一种异步结果，因为可能永远也收不到回复（视为失败）。
 
-Ok, back to our code. We have provided the `buy` and `sell` methods, that are just doing some checks before buying or
- selling shares. Once the action is _emitted_, we send a message on the event bus that will be consumed by the `Audit
-  Service` and the `Dashboard`. So, we are going to use the `publish` method.
+好嘞，回到我们的代码世界。我们已经在代码中给出了 `buy` 方法和 `sell` 方法的源码，这两个方法只是在买入或卖出股票之前做一些检查。
+一旦触发某种操作，我们就会向Event Bus发送一条消息， `Audit Service`（审计服务）以及 `Dashboard`（仪表板）会利用这条消息进行相应的处理。
+所以，我们可以使用 `publish` 方法。
 
-In the `sendActionOnTheEventBus` method, write:
+`sendActionOnTheEventBus` 方法的实现：
 
 [source, java, role=assignment]
 ----
@@ -205,61 +192,57 @@ vertx.eventBus().publish(EVENT_ADDRESS, new JsonObject()
     .put("owned", newAmount));
 ----
 
-Let's have a deeper look:
+我们来解析一下：
 
-1. it gets the `EventBus` instance and call `publish` on it. The first parameter in the _address_ on which the
-message is sent
-2. the body is a `JsonObject` containing the different information on the action (buy or sell, the quote (another
-json object), the date...
+首先该方法获取了 `EventBus` 实例然后调用了 `publish` 方法。第一个参数是该消息要发送到的地址(address)，第二个参数是一个 `JsonObject` 对象，里面包含着该操作的各种信息
+（买入还是卖出，报价，操作时间等等）。
 
-==== Coordinating async methods and consuming HTTP endpoints - Portfolio value evaluation
+==== 整合异步方法，访问HTTP端点 - 投资组合价值评估
 
-The last method to implement is the `evaluate` method. This method computes the current value of the portfolio.
-However, for this it needs to access the "current" value of the stock (so the last quote). It is going to consume
-the HTTP endpoint we have implemented in the quote generator. For this, we are going to:
+我们来实现最后一个方法 - `evaluate` 方法，它用于计算当前投资组合的价值。然而，要计算价值，我们必须要获取对应公司股票最新的报价。
+也就是说，我们需要去访问我们在报价生成器中实现的HTTP端点。因此，我们要做以下的事情：
 
-* discover the service
-* call the service for each company we own some shares
-* when all calls are done, compute the value and send it back to the caller
+* 发现服务
+* 买了哪些公司的股票，就对哪些公司进行服务调用
+* 当所有调用都完成后，计算结果并将其发送回调用者处
 
-That's a bit more tricky, so let's do it step by step. First, in the `evaluate`, we need to retrieve the HTTP
-endpoint (service) provided by the quote generator. This service is named `CONSOLIDATION`, and will be imported by
-Docker. We are going to see this in details in 5 minutes. So, let's start to get this service:
+这过程挺复杂的，我们来一步一步地实现。首先，我们需要获取报价生成器提供的HTTP端点（服务），这个服务名字叫 `CONSOLIDATION`，由Docker导入。
+一会我们就会阐述其详细实现，这里我们先获取此服务：
 
 [source, java]
 ----
 HttpEndpoint.get(vertx, discovery, new JsonObject().put("name", "CONSOLIDATION"), // <1>
   client -> {
        if (client.failed()) {                                                     // <2>
-         // It failed...
+         // 操作失败
          resultHandler.handle(Future.failedFuture(client.cause()));
        } else {
-         // We have the client
+         // 获取到HTTP客户端
          HttpClient httpClient = client.result();                                 // <3>
          computeEvaluation(httpClient, resultHandler);
        }
  });
 ----
-<1> Get the HTTP Client for the requested service.
-<2> The client cannot be retrieved (service not found), report the failure
-<3> We have the client, let's continue...
+<1> 从请求的服务中获取HTTP客户端
+<2> 假如客户端获取失败（比如找不到对应的服务），报告错误信息
+<3> 客户端获取成功，继续操作
 
-Let's now implement the `computeEvaluation` method:
+下面我们来实现 `computeEvaluation` 方法：
 
 [source, java]
 ----
 private void computeEvaluation(HttpClient httpClient, Handler<AsyncResult<Double>> resultHandler) {
-    // We need to call the service for each company we own shares
+    // 买了哪些公司的股票，就对哪些公司进行服务调用
     List<Future> results = portfolio.getShares().entrySet().stream()
         .map(entry -> getValueForCompany(httpClient, entry.getKey(), entry.getValue()))    // <1>
         .collect(Collectors.toList());
 
     if (results.isEmpty()) {
-      // We don't own anything
+      // 一点股票都没买
       resultHandler.handle(Future.succeededFuture(0.0));
     } else {
-      // We need to return only when we have all results, for this we create a composite future.
-      // The set handler is called when all the futures has been assigned.
+      // 我们只需要当所有结果就绪时才返回结果，因此我们创建一个CompositeFuture
+      // 所有的Future都得到结果后，handler会被调用
       CompositeFuture.all(results).setHandler(                                              // <2>
           ar -> {
             double sum = results.stream().mapToDouble(fut -> (double) fut.result()).sum();  // <3>
@@ -269,19 +252,17 @@ private void computeEvaluation(HttpClient httpClient, Handler<AsyncResult<Double
 }
 ----
 
-First, we need to get a list of `Future` that would receive the different evaluations (one per company) (1). This
-evaluation is asynchronous (as it involves a HTTP call to get the latest value). We don't know when these `Future`
-will be all valuated (or assigned). Fortunately, Vert.x provides `CompositeFuture` for this very purpose (2).
-`CompositeFuture.all` calls its assigned handler when all the given `Futures` are assigned. So when the handler is
-executed, we knows all the futures has received a value, and so we can compute the sum (3). Finally, we send this
-result to the client by calling the `resultHandler` (4).
+首先，我们需要得到一组 `Future`， 每个Future对应不同公司的估价 (1)。估价操作是异步的，因此我们不知道什么时候所有的 `Future` 都能得到结果。
+出于这种目的，Vert.x提供了 `CompositeFuture` (2)。`CompositeFuture.all` 方法将会在其接受的所有 `Future` 都得到结果以后调用其 `Handler`。
+因此，当 `Handler` 被调用的时候，我们就可以得知所有的操作都返回了结果，因此我们进行求和计算 (3)。最后，我们调用 `resultHandler` 的 `handle`
+方法将此结果发送至客户端 (4)。
 
-Well, we just need the `getValueForCompany` method that call the service:
+我们再来看一下 `getValueForCompany` 方法的实现。此方法会返回相应公司的报价：
 
 [source, java]
 ----
 private Future<Double> getValueForCompany(HttpClient client, String company, int numberOfShares) {
-  // Create the future object that will  get the value once the value have been retrieved
+  // Create the future object that will get the value once the value have been retrieved
   Future<Double> future = Future.future();                                           // <1>
 
   client.get("/?name=" + encode(company), response -> {                              // <2>
@@ -302,36 +283,34 @@ private Future<Double> getValueForCompany(HttpClient client, String company, int
 }
 ----
 
-First, we create the `Future` object that will be returned by the method (1). Then, we use the HTTP client to retrieve
-the last quote of the company with the `get` method (2). `get` prepares the request but does not emit it until `end` is called. The HTTP Client is already configured with the right IP and
-port (the discovery manages this). When we get the response, we have to register an `exceptionHandler` (3) to catch failures that may happen when receiving the response body. Then we can read the body and compute the evaluation. When done,
-we assigned a value to the `Future` (4). If the company cannot be found, we evaluate these shares to `0.0` (5).
+首先，我们创建了一个 `Future` 对象用于结果返回 (1)。然后，我们通过HTTP客户端的 `get` 方法 (2) 来获取公司最近的一次报价。`get` 方法直到在 `end` 方法被调用后才会发送HTTP请求。
+注意，我们的HTTP客户端已经事先由服务发现机制配置好对应的IP地址和端口了。当我们收到HTTP响应的时候，我们需要注册一个 `exceptionHandler` (3) 用于捕获异常。接着，我们读取响应body，并且计算估价。计算完成后，我们将结果赋予 `Future` (4)。
+如果找不到对应的公司，那么就将股票价格赋值为 `0.0` (5)。
 
-As the connection to the server may fail, we should also register an `exceptionHandler` on the client itself (6). Finally, we emit the request using the `end` method (7).
+由于连接可能会失败，我们也需要给客户端本身注册一个异常处理器 `exceptionHandler` (6)。最后，我们通过 `end` 方法将请求发送出去。
 
 
 === 发布服务
 
-Now that the service implementation is complete, let's publish it ! First we need a `verticle` that creates the actual
- service object, registers the service on the event bus and publishes the service in the discovery infrastructure.
+我们终于把服务实现搞定了，下面我们来发布服务！首先我们需要一个 `verticle`， 它需要创建对应的服务实例，在Event Bus上注册服务并且在服务发现层发布服务。
 
-Open the `io.vertx.workshop.portfolio.impl.PortfolioVerticle` class. In its `start` method is does what we just say:
+打开 `io.vertx.workshop.portfolio.impl.PortfolioVerticle` 这个类，我们可以看到 `start` 方法里实现了一部分上面提到的功能：
 
-1) Create the service object with:
+1) 创建服务实例：
 
 [source, java]
 ----
 PortfolioServiceImpl service = new PortfolioServiceImpl(vertx, discovery, config().getDouble("money", 10000.00));
 ----
 
-2) Register it on the event bus using the `ProxyHelper` class:
+2) 借助 `ProxyHelper` 类，在Event Bus上注册服务：
 
 [source, java]
 ----
 ProxyHelper.registerService(PortfolioService.class, vertx, service, ADDRESS);
 ----
 
-3) Publish the service in the discovery infrastructure to make it discoverable:
+3) 将服务发布至服务发现层(discovery infrastructure)，使得该服务能够被发现：
 
 [source, java]
 ----
@@ -344,7 +323,7 @@ publishEventBusService("portfolio", ADDRESS, PortfolioService.class, ar -> {
 });
 ----
 
-The `publishEventBusService` is implemented as follows:
+`publishEventBusService` 的实现如下：
 
 [source, java]
 ----
@@ -361,10 +340,9 @@ discovery.publish(record, ar -> {
 });
 ----
 
-Are we done ? No.... We have a second service to publish. Remember, we are also sending messages on the event bus
-when we buy or sell shares. This is also a service (a message source service to be exact).
+这就完成了吗？不不不，我们还有一个服务需要发布呢。记住，在我们买入或卖出股票的时候我们也往Event Bus上发送消息了，因此这也是一个服务（准确的来说是一种消息源服务）。
 
-At the end of the `start` method, add:
+在 `start` 方法的最后添加如下代码：
 
 [source, java, role=assignment]
 ----
@@ -377,40 +355,35 @@ publishMessageSource("portfolio-events", EVENT_ADDRESS, ar -> {
 });
 ----
 
-`portfolio-events` is the service name, `EVENT_ADDRESS` is the event bus address.
+服务的名称是 `portfolio-events`，Event Bus的地址是 `EVENT_ADDRESS`。
 
-Now we are done, and it's time to build and run this service.
+现在一切大功告成，是时候构建并且运行投资组合服务了。
 
 
 === 启动服务！
 
-To build the project launch:
+构建项目：
 
 ----
 cd portfolio-service
 mvn clean package docker:build
 ----
 
-Then, launch it, in another terminal with:
+然后在另一个终端内启动容器：
 
 ----
 docker run --name portfolio --rm --link quote-generator:CONSOLIDATION vertx-microservice-workshop/portfolio-service
 ----
 
-`link` ? What's this ? It instructs Docker to link this container with the `quote-generator` container we started
-before. This link will be named `CONSOLIDATION`. Vert.x discovery service detects these links and imports
-the service records in the discovery infrastructure, so your application does not have to know whether the service
-has been imported using a docker link, or published _manually_, or imported some other ways.
+`link`？这是啥？它指示Docker将此容器与我们之前启动的 `quote-generator` 容器链接起来，这个链接的名称是 `CONSOLIDATION`。
+Vert.x的服务发现机制会自动检测这些链接，然后将服务记录(service records)导入到服务发现层，所以你的应用不需要知道服务是如何导入的。
 
 NOTE: Could we have used the regular Vert.x publication to publish the _consolidation_ HTTP endpoint ? No, because
 even at runtime it does not know on which (public) IP and (public) port it is accessible. Indeed the code running in the container ignore these details.
 
-Go back to the dashboard, and you should see some new services and the _cash_ should have been set in the top left
-corner.
+让我们回到Dashboard，我们可以看到一些新的服务运行起来了，并且 _cash_ （现金）应该在左上角显示出来了。
 
-NOTE: The dashboard is consuming the portfolio service using the async RPC mechanism. A client for JavaScript is
-generated at compile time, and use SockJS to communicate. Behind the hood there is a bridge between the event bus and
- SockJS.
+NOTE: Dashboard通过异步RPC机制来调用投资组合服务。在编译时会生成一个JS客户端，使用SockJS进行通信。在底层，Event Bus与SockJS之间有一种连接关系。
 
 哈，是时候买入或卖出一些股票了，不是吗？我们将在下一章节实现它。
 

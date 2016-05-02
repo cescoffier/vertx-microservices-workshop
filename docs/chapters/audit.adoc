@@ -203,7 +203,7 @@ Future<X> chain = Chain.chain(input, function1, function2, function3);
 A chain can be triggered by a `Future` too, so is started upon the successful completion of the given
 `Future`.
 
-So do use the composition pattern, we just need a set of `Functions` and a `Future` that would trigger the chain.
+So to use the composition pattern, we just need a set of `Functions` and a `Future` that would trigger the chain.
 Let's create this `Future` first:
 
 [source, java]
