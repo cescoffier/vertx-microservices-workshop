@@ -1,0 +1,24 @@
+# Vert.x - 从零基础迈向微服务之巅
+作者：Clement Escoffier, Julien Viet；译者：赵奕豪(Eric Zhao)
+v0.2, 2016年4月19日
+:toc:
+:toc-title: 目录
+:toclevels: 4
+:toc-placement!:
+:imagesdir: images
+
+toc::[]
+
+include::chapters/preface.adoc[序言]
+include::chapters/vertx.adoc[Vert.x]
+include::chapters/microservices.adoc[解道微服务]
+include::chapters/application.adoc[微服务应用 —— 微型交易系统]
+include::chapters/prerequisites.adoc[环境准备]
+include::chapters/setup.adoc[开始！]
+include::chapters/quote-generator.adoc[第一个Vert.x微服务 - 报价生成器]
+include::chapters/portfolio.adoc[展现EventBus服务与HTTP客户端 - 投资组合服务]
+include::chapters/traders.adoc[消费EventBus服务与多种Verticle - 交易者服务]
+include::chapters/audit.adoc[数据库与复杂的代码 - 审计服务]
+include::chapters/dashboard.adoc[仪表板(Dashboard)详解]
+include::chapters/conclusion.adoc[你成功了！]
+include::chapters/references.adoc[引用]

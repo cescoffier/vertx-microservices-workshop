@@ -1,0 +1,256 @@
+## 第一个Vert.x微服务 - 报价生成器
+
+免责声明：这个报价生成器是虚构的，非真实的，请勿用于现实。况且这就是一堆随机数。。。
+
+### 项目结构
+
+我们来看一看这个项目的结构，其它的项目与此结构相同。
+
+[source]
+----
+.
+├── README.md <--- 组件描述
+├── pom.xml <--- Maven配置文件
+└── src
+    ├── docker
+    │   └── config.json <--- 配置文件，启动Docker容器时需要
+    └── main
+        └── java
+            └── io.vertx.workshop.quote
+                            ├── GeneratorConfigVerticle.java <--- 各种Verticle
+                            ├── QuoteVerticle.java
+                            └── RestQuoteAPIVerticle.java
+----
+
+我们从 `pom.xml` 文件开始，这个文件决定了Maven的构建方式：
+
+1. 定义各种依赖
+2. 构建 _fat-jar_ 文件
+3. 构建对应的Docker容器
+
+构建 _Fat-jar_ 是一个给Vert.x应用打包的一个简便方法。一个 _fat-jar_ 里包括了你的应用以及所有的依赖（包括Vert.x本身）。
+想要运行应用也很简单，你只需要在终端中使用 `java -jar ....` 命令而不需要指定 `CLASSPATH` 。等一下，我之前提到过Vert.x没有自己的一个打包方式。
+是的， _fat-jar_ 非常简便，但这也是唯一的方法咯。
+
+生成的 _fat-jar_ 对应的Main Class是 `io.vertx.core.Launcher`，但你也可以用你自己的类来替代它。 `Launcher` 类创建Vert.x实例，
+对Vert.x进行配置并且对 _main-verticle_ 进行部署。
+
+我们也要对 `pom.xml` 文件进行配置以便创建Docker容器以及启动应用。 
+
+### Verticle
+
+你可能已经注意到了，核心代码被分为3个 `Verticle` ，但Verticle又是啥呢？Verticle是构成Vert.x应用的一种方法。我们不强制你使用Verticle，
+但它的确非常方便。Verticle是一串基于Vert.x实例部署的代码。Verticle可以访问 `vertx` 实例，并且还可以对其它Verticles进行部署。
+
+我们打开 `GeneratorConfigVerticle` 类的代码，看看 `start` 方法：
+
+[source, java]
+----
+@Override
+public void start() {
+    super.start();
+
+    JsonArray quotes = config().getJsonArray("companies");
+    for (Object q : quotes) {
+      JsonObject company = (JsonObject) q;
+      // 对Verticle进行部署的时候可以提供配置选项
+      vertx.deployVerticle(MarketDataVerticle.class.getName(),
+         new DeploymentOptions().setConfig(company));
+    }
+
+    vertx.deployVerticle(RestQuoteAPIVerticle.class.getName());
+
+    publishMessageSource("market-data", ADDRESS, rec -> {
+      if (!rec.succeeded()) {
+        rec.cause().printStackTrace();
+      }
+      System.out.println("Market-Data service published : " + rec.succeeded());
+    });
+}
+----
+
+Verticle可以通过 `config()` 方法来获取配置信息。我们的服务就是从此处获取要模拟的公司的信息。配置信息是一个 `JsonObject` 实例。
+在Vert.x中，JSON的使用非常普遍，所以你将会在这个实验中见到大量的JSON数据。
+
+`start` 方法的另一部分与我们之前提到的服务发现有关。我们的报价生成器组件报价并发送到Event Bus上，但为了让其他的组件知道消息的来源（即地址），
+生成器会进行服务注册。 服务的名字是 `market-data` ，消息发送的地址是 `ADDRESS` 。最后一个参数是一个 `Handler` ，当注册完成时会调用这个函数
+来进行通知。 `handler` 会接受一种 `AsyncResult` 类型的数据。
+
+记住，Vert.x推崇异步、非阻塞的开发模型。发布服务很可能会占用不少时间（实际上确实是这样，因为它需要创建一条记录，将其写到后端然后通知所有组件），
+所以我们不能阻塞Event Loop线程，此方法是异步的。异步方法的最后一个参数都是 `Handler` ，它会在异步操作完成后被调用。
+`Handler` 会被同一个Event Loop线程（即调用异步方法的线程）调用。因为异步操作可能会失败， `Handler` 会接受 `AsyncResult` 类型的类型参数
+来表示异步操作是否成功进行。你将会在许多Vert.x应用中见到下面的模式：
+
+[source, java]
+----
+ // 异步方法，返回类型为X的结果
+ operation(param1, param2, Handler<AsyncResult<X>>);
+
+ // Handler接受X类型的对象
+
+ ar -> {
+   if (ar.succeeded()) {
+      X x = ar.result();
+      // Do something with X
+   } else {
+      // it failed
+      Throwable cause = ar.cause();
+   }
+ }
+----
+
+如果你还记得我们应用的架构的话，报价生成器也会提供一个HTTP端点，返回最近的报价值（这需要你去实现咯）。我们会用Docker去“发布”这个服务
+（不需要写代码，Docker会对其进行发布）。
+
+### 合并端点(The consolidation endpoint)
+
+现在到了你动手实现应用的部分功能的时间了（我知道你的手指已经如坐针毡了）。打开 `RestQuoteAPIVerticle` 类的代码。它是一个继承了 `AbstractVerticle` 的类。
+在 `start` 方法中，你需要实现以下功能：
+
+1. 注册一个Event Bus消费者来收集最新的报价数据（收集到 `quotes` map中）
+2. 处理HTTP请求并且返回报价列表；如果提供了 `name`（查询）参数的话，返回对应的报价
+
+让我们来动手实践吧！
+
+#### 实现接收事件的Handler
+
+第一个操作就是要创建一个 `Handler`，也就是在事件发生时被调用的方法。在这里，此 `Handler` 将会在每个消息被发送到Event Bus上特定的 `地址`
+（接收生成器生成的每一个报价）时被调用。我们在Handler的方法部分进行如下的编码：
+
+[source, java,role=assignment]
+----
+JsonObject quote = message.body(); // 1
+quotes.put(quote.getString("name"), quote); // 2
+----
+
+首先，它会获取消息的正文(body) (1)，它是一个JSON对象。然后我们将它储存到 `quotes` map中 (2)。
+
+#### 实现处理HTTP请求的Handler
+
+现在我们来实现第二个功能。我们需要HTTP服务端以便处理HTTP请求。还好，Vert.x可以让你方便地创建HTTP服务端：
+
+[source, java]
+----
+vertx.createHttpServer()
+    .requestHandler(request -> {...})
+    .listen(port, resultHandler);
+----
+
+
+将 `requestHandler` （当收到每个HTTP请求时调用）的方法部分替换为：
+
+[source, java, role=assignment]
+----
+HttpServerResponse response = request.response()    // <1>
+    .putHeader("content-type", "application/json");
+String company = request.getParam("name");          // <2>
+if (company == null) {
+    String content = Json.encodePrettily(quotes);   // <3>
+    response
+        .end(content);                              // <4>
+ } else {
+    JsonObject quote = quotes.get(company);
+    if (quote == null) {
+      response.setStatusCode(404).end();            // <5>
+    } else {
+      response.end(quote.encodePrettily());
+    }
+ }
+----
+<1> 从 `request` 对象中获取 `response` 对象
+<2> 获取 `name` 参数（查询参数）
+<3> 将map转化为JSON格式的数据
+<4> 编写HTTP响应并且通过 `end(...)` 方法刷新数据流。
+<5> 如果给定的查询参数没有对应的公司，返回 `404` 状态码
+
+你可能想知道为什么这里用不到同步(synchronization)。的确，我们往map中读写数据的时候不需要加任何的锁。这也是Vert.x
+的主要特性之一：这些代码都会在**同一个**Event Loop线程中执行，因此它们总是被**相同的线程**读取，而不是并发读取。
+
+TIP: `Map<String, JsonObject>` 对象可以简化为一个 `JsonObject` 对象，因为它们两个的本质相似。
+
+### 是时候启动报价生成器了
+
+首先，我们来构建Docker镜像。在终端中执行以下命令：
+
+----
+cd quote-generator
+mvn package docker:build
+----
+
+然后，打开一个新终端，然后启动容器：
+
+----
+docker run -p 8081:8080 --rm --name quote-generator vertx-microservice-workshop/quote-generator
+----
+
+我们来分析一下这个Docker命令。它用于运行一个容器，这个容器产生于我们刚刚构建好的镜像(`vertx-microservice-workshop/quote-generator`)。
+其中 `-p` 选项用于配置端口。报价生成器应用的 `8080` 端口会映射到你本机的 `8081` 端口。在我们微服务的世界里，这也意味着HTTP端点能够被发现。
+
+我们打开浏览器，访问一下 http://dockerhost:8081 。
+
+此地址将会返回类似于以下的JSON数据：
+
+----
+{
+  "MacroHard" : {
+    "volume" : 100000,
+    "shares" : 51351,
+    "symbol" : "MCH",
+    "name" : "MacroHard",
+    "ask" : 655.0,
+    "bid" : 666.0,
+    "open" : 600.0
+  },
+  "Black Coat" : {
+    "volume" : 90000,
+    "shares" : 45889,
+    "symbol" : "BCT",
+    "name" : "Black Coat",
+    "ask" : 654.0,
+    "bid" : 641.0,
+    "open" : 300.0
+  },
+  "Divinator" : {
+    "volume" : 500000,
+    "shares" : 251415,
+    "symbol" : "DVN",
+    "name" : "Divinator",
+    "ask" : 877.0,
+    "bid" : 868.0,
+    "open" : 800.0
+  }
+}
+----
+
+返回的数据给出了当前每个报价的详细信息。数据每3秒更新一次，所以你需要刷新来获取最新的数据。
+
+下面我们来启动仪表盘(Dashboard)。在另一个终端中，定位到 `$project-home/trader-dashboard` 目录中并且执行以下命令：
+
+[source]
+----
+mvn clean package docker:build
+docker run -p 8083:8080 --rm --name dashboard vertx-microservice-workshop/trader-dashboard
+----
+
+TIP: 如果Docker报出类似于 `Error response from daemon: Conflict. The name "/xyz" is
+already in use by container...` 这样的错误，没关系。执行 `docker rm -f xyz` 命令删除容器然后重新执行上述启动命令即可。
+
+然后，访问 http://dockerhost:8083 地址。你应该会看到如下界面：
+
+image::dashboard-initial-state.png[Dashboard, 800]
+
+有些部分可能暂时没有内容，这是因为我们才刚刚开始。。。
+
+### 并非一个金融学专家？
+
+你可能不习惯很多金融学的名词。。。我也不习惯，但这个系统已经做了很大的简化了。我们来了解一些重要的金融学名词：
+
+* `name` : 公司名称
+* `symbol` : 公司缩写名称
+* `shares` : 可以购买的股票数量
+* `open` : 开盘时股票的价格
+* `ask` : 买方购买股票时的价格(卖出价)
+* `bid` : 由买方报出表示愿意按此水平买入的一个价格(买入价)
+
+更多信息请见 https://en.wikipedia.org/wiki/Financial_quote[维基百科]。
+

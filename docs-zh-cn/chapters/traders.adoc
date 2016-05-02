@@ -1,0 +1,258 @@
+## 交易者服务
+
+在 `portfolio`（投资组合服务）项目中，我们已经实现了管理我们投资组合的Event Bus服务。在报价生成器中，我们将报价发送至Event Bus。
+而在交易者服务中，我们将会消费（调用）这两个服务，目标只有一个：发达（或者GG。。。）！
+
+在本章节中，我们将要实现两个交易者（毫无头脑，你可以把它变得智能化）：
+
+* 第一个交易者服务使用 Java 编写
+* 第二个交易者服务使用 Groovy 编写
+
+### 交易者
+
+在我们实现交易者之前，我们先来解释一下这几个交易者使用的不合逻辑的算法：
+
+1. 一开始，一个被强迫的交易者(A compulsive trader，或许翻译成 交易木偶 比较好？)会随机选择一个公司获得一定数量的股票(`x`)
+2. 然后它会随机地尝试买入或卖出公司的部分股票
+
+他不会检查他是否有足够的股票和现金，他只是在尝试。。。此逻辑在 `io.vertx.workshop.trader.impl.TraderUtils` 类中实现：
+
+
+### 部署多个实例以及多种语言编写的Verticle
+
+`compulsive-trader` 项目包括一个 _主Verticle)_ (`io.vertx.workshop.trader.impl.MainVerticle`)，用于对交易者进行配置和部署：
+
+[source]
+----
+@Override
+public void start() throws Exception {
+
+    // Java traders
+    vertx.deployVerticle(JavaCompulsiveTraderVerticle.class.getName(),
+        new DeploymentOptions().setInstances(2));                           // <1>
+
+    // Groovy traders...
+    vertx.deployVerticle("GroovyCompulsiveTraderVerticle.groovy");          // <2>
+}
+----
+
+首先部署 `JavaCompulsiveTraderVerticle`，并且将实例数目配置为2（通过 `DeploymentOptions`）。这样，Vert.x就会将此Verticle初始化两次（两个不同的对象）。
+所以，上面的代码一共部署了3个交易者。
+
+是时候来实现这几个Verticle了～
+
+### Java版本的交易者
+
+打开 `io.vertx.workshop.trader.impl.JavaCompulsiveTraderVerticle` 类的代码。我们需要在标记了 `TODO` 的位置实现以下功能：
+
+1. 对交易者进行初始化
+2. 获取我们需要的两个服务
+3. 服务获取成功后，对每组市场数据执行相应的交易逻辑
+
+#### 1. 对交易者进行初始化
+
+首先看一下 `start` 方法签名：`start(Future<Void> future)`。`future` 参数意味着我们需要显式地在 `future` 上调用 `complete` 或 `fail` 方法。
+
+我们来实现相应逻辑。我们删掉 `future.fail` 这句，然后编写如下代码：
+
+[source, java, role=assignment]
+----
+String company = TraderUtils.pickACompany();
+int numberOfShares = TraderUtils.pickANumber();
+System.out.println("Java compulsive trader configured for company " + company + " and shares: " + numberOfShares);
+----
+
+#### 2. 获取我们需要的两个服务
+
+交易者需要 `Portfolio`（投资组合）服务以及 `market` 服务（发送市场数据的消息源）。我们必须先获取这两个服务，然后才能执行相关的交易逻辑。
+我们来利用上一章节中用到的 `Future` 组合特性。
+
+[source, java, role=assignment]
+----
+// 我们需要异步获取这两个服务
+Future<MessageConsumer<JsonObject>> marketFuture = Future.future();             // <1>
+Future<PortfolioService> portfolioFuture = Future.future();
+
+// 获取服务，通过一种特殊的handler对future进行赋值
+MessageSource.get(vertx, discovery, new JsonObject().put("name", "market-data"),
+    marketFuture.completer());                                                  // <2>
+EventBusService.get(vertx, discovery, PortfolioService.class,
+    portfolioFuture.completer());                                               // <3>
+
+// 两个服务都获取成功后，调用对应的hander
+CompositeFuture.all(marketFuture, portfolioFuture).setHandler(ar -> {           // <4>
+   // Next....
+});
+----
+
+首先我们先创建两个 `Future` 作为异步获取服务的结果 (1). 在 (2) 中我们异步获取消息源服务，并通过一种特殊的 `Handler` —— `completer` 来给 `Future` 赋值。
+`completer` 是一种能够在收到异步结果时给 `Future` 赋值或者在失败时记录异常的 `Handler`。
+
+最后，在 (4) 中我们对两个 `Future` 进行组合（通过 `CompositeFuture.all` ），并且在两个服务都被成功获取之时调用后面的 `Handler`。
+
+#### 3. 执行交易逻辑
+
+马上就要完成啦！在上面我们标记 `Next...` 的地方添加如下代码：
+
+[source, java, role=assignment]
+----
+if (ar.failed()) {                                                               // <1>
+    future.fail("One of the required service cannot " +
+            "be retrieved: " + ar.cause());
+} else {
+    // 两个服务                                                             // <2>
+    PortfolioService portfolio = portfolioFuture.result();
+    MessageConsumer<JsonObject> marketConsumer = marketFuture.result();
+
+    // 监听market
+    marketConsumer.handler(message -> {                                          // <3>
+        JsonObject quote = message.body();
+        TraderUtils.dumbTradingLogic(company, numberOfShares, portfolio, quote); // <4>
+    });
+
+    future.complete();                                                           // <5>
+}
+----
+
+首先我们需要检查服务获取是否成功 (1)。如果获取成功，我们就将服务从 `Future` 对象中取出 (2)。我们给 `marketConsumer`（消息源服务）设了一个 `Handler` 用于执行交易逻辑 (4)。
+最后，在 (5) 中，我们调用 `complete` 方法来通知我们的初始化过程已经完成，此次调用不需要传递结果（因为只是通知的作用）。当然初始化失败时我们也可以通过 `future.fail` 进行异常通知。
+
+#### 完整代码
+
+这是完整的代码：
+
+[source, java, role=assignment]
+----
+    super.start();
+
+    String company = TraderUtils.pickACompany();
+    int numberOfShares = TraderUtils.pickANumber();
+    System.out.println("Java compulsive trader configured for company " + company + " and shares: " + numberOfShares);
+
+    // We need to retrieve two services, create two futures object that will get the services
+    Future<MessageConsumer<JsonObject>> marketFuture = Future.future();
+    Future<PortfolioService> portfolioFuture = Future.future();
+    // Retrieve the services, use the "special" completed to assign the future
+    MessageSource.get(vertx, discovery, new JsonObject().put("name", "market-data"), marketFuture.completer());
+    EventBusService.get(vertx, discovery, PortfolioService.class, portfolioFuture.completer());
+
+    // When done (both services retrieved), execute the handler
+    CompositeFuture.all(marketFuture, portfolioFuture).setHandler(ar -> {
+      if (ar.failed()) {
+        future.fail("One of the required service cannot " +
+            "be retrieved: " + ar.cause());
+      } else {
+        // Our services:
+        PortfolioService portfolio = portfolioFuture.result();
+        MessageConsumer<JsonObject> marketConsumer = marketFuture.result();
+
+        // Listen the market...
+        marketConsumer.handler(message -> {
+          JsonObject quote = message.body();
+          TraderUtils.dumbTradingLogic(company, numberOfShares, portfolio, quote);
+        });
+
+        future.complete();
+      }
+    });
+----
+
+#### 运行这个交易者服务
+
+我们已经可以运行我们的交易者服务了。让我们来看看他是否会在交易市场中表现良好～首先构建我们的项目：
+
+[source]
+----
+cd compulsive-traders
+mvn clean package docker:build
+----
+
+然后启动Docker容器：
+
+[source]
+----
+docker run --rm --name traders vertx-microservice-workshop/compulsive-traders
+----
+
+如果你回到Dashboard看看，你会发现你的投资组合数据正在变化。
+
+### Groovy版本的交易者
+
+Groovy版本的交易者与Java版本的逻辑相同，但是是以Groovy的形式部署Verticle的。Vert.x同时支持Groovy脚本和Groovy类。为了方便理解，我们的Groovy代码写的和Java代码差不多。
+
+打开 `src/main/resources/GroovyCompulsiveTraderVerticle.groovy` 文件，复制以下代码至对应文件：
+
+[source, groovy, role=assignment]
+----
+import io.vertx.groovy.core.CompositeFuture
+import io.vertx.groovy.core.Future
+import io.vertx.groovy.core.eventbus.MessageConsumer
+import io.vertx.ext.discovery.groovy.DiscoveryService
+import io.vertx.ext.discovery.groovy.types.EventBusService
+import io.vertx.ext.discovery.groovy.types.MessageSource
+import io.vertx.workshop.portfolio.PortfolioService
+import io.vertx.workshop.trader.impl.TraderUtils
+
+def company = TraderUtils.pickACompany();
+def numberOfShares = TraderUtils.pickANumber();
+
+println("Groovy compulsive trader configured for company " + company + " and shares: " + numberOfShares);
+
+// We create the discovery service object.
+def discovery = DiscoveryService.create(vertx);
+
+Future<MessageConsumer<Map>> marketFuture = Future.future();
+Future<PortfolioService> portfolioFuture = Future.future();
+
+MessageSource.get(vertx, discovery,
+        ["name" : "market-data"], marketFuture.completer());
+EventBusService.get(vertx, discovery,
+        "io.vertx.workshop.portfolio.PortfolioService", portfolioFuture.completer());
+
+// When done (both services retrieved), execute the handler
+CompositeFuture.all(marketFuture, portfolioFuture).setHandler( { ar ->
+  if (ar.failed()) {
+    System.err.println("One of the required service cannot be retrieved: " + ar.cause());
+  } else {
+    // Our services:
+    PortfolioService portfolio = portfolioFuture.result();
+    MessageConsumer<Map> marketConsumer = marketFuture.result();
+
+    // Listen the market...
+    marketConsumer.handler( { message ->
+      Map quote = message.body();
+      TraderUtils.dumbTradingLogic(company, numberOfShares, portfolio, quote);
+    });
+  }
+});
+----
+
+正如你所看到的，Groovy版本的代码非常像Java版本的代码。我们来对比一下它们之间的不同点：
+
+* 好，首先它是Groovy。
+* `import` 的是 `groovy` 版本的包。
+* 我们需要创建Discovery Service（Java版本中由父类进行创建）。
+* `JsonObjects` 变成了 `Maps` 类型的。在Groovy中，使用 `Maps` 类型会更好。
+
+当某个接口被 `@VertxGen` 注解修饰的时候，Vert.x会自动将其转化为其支持的语言版本。这种转化会针对不同的语言适配不同语言的特性，因此我们才在Groovy中使用 `Maps` 而不是 `JsonObject`。
+
+这个例子使用 Groovy 写的，当然也可以用诸如 JavaScript、Ruby 或者 Ceylon 之类的语言编写。
+
+是时候重新构建并启动我们的交易者服务了～在终端中键入 `CTRL+C` 来停止交易者服务（或者执行 `docker stop traders` 命令）。然后重新构建项目：
+
+[source]
+----
+mvn clean package docker:build
+----
+
+接着启动Docker容器：
+
+[source]
+----
+docker run --rm --name traders vertx-microservice-workshop/compulsive-traders
+----
+
+如果你回到Dashboard看看，你会发现你的投资组合数据正在变化。现在这三个交易者正努力让你变得富有～～
+
+
+

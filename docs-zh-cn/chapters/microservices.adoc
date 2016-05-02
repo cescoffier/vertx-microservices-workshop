@@ -1,0 +1,72 @@
+## 解道微服务
+
+除非（实际上我并不清楚）去年一年你都在山洞里呆着，否则你应该听说过 _微服务_ 这个东西。
+**微服务** 是什么呢？我们来看以下的定义（这里就不翻译了，原文能更好的表达其含义）：
+
+[quote, Martin Fowler, http://martinfowler.com/articles/microservices.html]
+The microservice architectural style is an approach to developing a single application as a suite of small services,
+each running in its own process and communicating with lightweight mechanisms, often an HTTP resource API. These
+services are built around business capabilities and independently deployable by fully automated deployment machinery.
+There is a bare minimum of centralized management of these services, which may be written in different programming
+languages and use different data storage technologies.
+
+_微服务_ 是一种 _架构风格_ 。现在，你心中仍会有疑团：“啥玩意儿”？
+
+让我们用另外一种方式解释。为什么我们最后都要使用**微服务**呢？用一个词总结：**敏捷性**(agility)
+footnote:[可以容易并且迅速地移动，与敏捷方法(Agile Methodologies)无关]。让我们来想象一下，现在有一个非常
+大型的应用（超级大！）。维护这种应用将会是一场梦魇，给它添加新特性会消耗太多的时间，并且使用的技术都过时了
+（什么？Corba不再吸引人了？），任何改动都需要经过一个复杂的处理过程和审核过程。
+哈，你这是在维护着一个 _怪兽_ 呢！那么我们如何使得应用的开发和维护更高效呢？微服务就是这个问题的答案之一。
+它的目标是缩短 _生产的时间(time to production)_ 。
+
+要达到以上目标，**微服务**架构风格建议：
+
+1. 将应用拆分成一组分离的组件，提供一组API `服务`
+2. 组件之间可以利用任何的协议进行通信，通常使用REST风格，但不是必须使用
+3. 组件可以使用任何编程语言，利用任何的技术编写
+4. 每个组件都是独立开发、发布和部署的
+5. 在它们各自的**流水线**(pipeline)上**自动**进行部署
+6. 整个应用的流程(orchestration)要尽可能地精简
+
+在这个实验中，我们不要求第五点，但你需要清楚Vert.x不会对你部署应用的方式（如SSH，ansible，puppet，
+Docker，云服务，软盘）进行限制。
+
+最后一点非常有趣，也经常被误解。您可能会觉得开发一个程序的各个独立部分，在运行时这些独立的组件之间可以相互通信
+是非常神奇的。。。事实上，这并不神奇。这其实是 _服务发现_ 。
+
+在使用另一个组件提供的 `服务` 之前，你需要发现它。它的位置既可以在代码中写死（这种方法不好），也可以通过DNS查询查到它的服务名，
+也可以用更高级的方法。服务发现机制同时也提供了一种统一的视角来了解对应的服务是什么。拥有发现不同可用服务和资源的能力
+可以让你实现一定程度上的 _透明化_ ，这也是分布式系统的一个内在特性。举个例子，它可以使你的组件顺利应对服务位置变化。
+它也使得实现负载均衡（比如轮询算法）、容错（比如寻找另一个服务生产者）等等的功能成为可能。
+
+尽管定义中没有要求微服务必须做成分布式的，但是一般来说微服务应用都是分布式的。因此，分布式应用的利与弊也随之而来：
+一致性计算(consensus computation)、CAP理论、持久性、系统监视，以及其他很多可能导致 **程序失败** 的原因。
+所以在一开始，我们设计微服务应用的时候，就要为处理失败而设计。
+
+尽管在之前的对微服务的伪定义中谈到了我们可以将现有的应用拆分成一堆独立的组件，对于那些正在开发或还未在开发阶段的应用，
+我们也可以采取相同的思路：拆分成独立的组件，在运行时可以相互通信。
+
+我还想提一提我们的几个看法。微服务不是一个新事物，也不是火箭科学(rocket science)。。。上世纪70、80年代的论文里
+已经定义了与微服务十分相近的架构风格（只不过名字不同）。另一点也非常重要，微服务不是万能的，
+它会增加整个系统的复杂度（因为系统变得更加分布式了）。
+
+微服务与快速交付息息相关。并且它也与独立性与可替代性息息相关。每一个微服务都可以被其它提供相同服务/API/接口的组件所替代
+（这是 https://en.wikipedia.org/wiki/Liskov_substitution_principle[里氏替换原则] 的一种应用）。
+
+如果你是一个有几年开发经验的开发者，你可能会想知道微服务与SOA（面向服务的架构）有什么区别。首先，这与服务大小无关，
+实际上“微”这个字不太恰当，因为大小并不重要。微服务与SOA有着不同的目的：SOA是为了整合不同开发角色所处理的系统，而微服务是为了
+缩短生产时间。这就是说，他们之间的这些概念是相近的：
+
+* 服务：一个可以通过API、客户端或代理进行访问的特性
+* 服务生产者：实现某个服务的组件
+* 服务消费者：消费（调用）某个服务的组件
+* 服务发现：服务消费者用于发现服务生产者的一种机制
+
+微服务与SOA都源于 _面向服务的计算(service oriented computing)_ ，目的是进行解耦并且管理一个程序的各个独立部分。
+即使你使用过下面的技术你也可能没听说过这个名词：COM、Corba、Jini、OSGi以及Web Services，它们都是
+_面向服务的计算_ 的不同实现。
+
+微服务仅限于REST风格吗？当然不是。这是一个常见的误区。微服务可以使用任何风格的通信方式进行通信：
+RPC、事件、消息、数据流等等。在这个实验中，我们将会了解到REST、异步RPC以及消息源(message source)的使用。
+
+
