@@ -87,7 +87,7 @@ public class AuditVerticle extends MicroServiceVerticle {
 
   private Future<MessageConsumer<JsonObject>> retrieveThePortfolioMessageSource() {
     Future<MessageConsumer<JsonObject>> future = Future.future();
-    MessageSource.get(vertx, discovery,
+    MessageSource.getConsumer(discovery,
         new JsonObject().put("name", "portfolio-events"),
         future.completer()
     );

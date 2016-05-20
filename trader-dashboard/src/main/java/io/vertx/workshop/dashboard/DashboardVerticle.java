@@ -49,7 +49,7 @@ public class DashboardVerticle extends MicroServiceVerticle {
   }
 
   private void lastOperations(RoutingContext context) {
-    HttpEndpoint.get(vertx, discovery, new JsonObject().put("name", "AUDIT"), client -> {
+    HttpEndpoint.getClient(discovery, new JsonObject().put("name", "AUDIT"), client -> {
       if (client.failed() || client.result() == null) {
         context.response()
             .putHeader("content-type", "application/json")

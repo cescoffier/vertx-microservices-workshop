@@ -51,7 +51,7 @@ public class PortfolioServiceImpl implements PortfolioService {
   public void evaluate(Handler<AsyncResult<Double>> resultHandler) {
     // ----
     // First we need to discover and get a HTTP client for the `consolidation` service:
-    HttpEndpoint.get(vertx, discovery, new JsonObject().put("name", "CONSOLIDATION"),
+    HttpEndpoint.getClient(discovery, new JsonObject().put("name", "CONSOLIDATION"),
         client -> {
           if (client.failed()) {
             // It failed...

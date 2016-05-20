@@ -1,8 +1,6 @@
 package io.vertx.workshop.common;
 
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
@@ -13,7 +11,6 @@ import io.vertx.ext.discovery.spi.DiscoveryBridge;
 import io.vertx.ext.discovery.spi.ServiceType;
 import io.vertx.ext.discovery.types.HttpEndpoint;
 import io.vertx.ext.discovery.types.HttpLocation;
-import sun.rmi.runtime.Log;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -36,15 +33,14 @@ public class DockerEnvironmentBridge implements DiscoveryBridge {
   private final static Logger LOGGER = LoggerFactory.getLogger(DockerEnvironmentBridge.class);
 
   @Override
-  public void start(Vertx vertx, DiscoveryService discovery, JsonObject configuration, Handler<AsyncResult<Void>> completionHandler) {
+  public void start(Vertx vertx, DiscoveryService discovery, JsonObject jsonObject, Future<Void> future) {
     this.discovery = discovery;
-
     synchronized (this) {
-      lookup(completionHandler);
+      lookup(future);
     }
   }
 
-  private void lookup(Handler<AsyncResult<Void>> completionHandler) {
+  private void lookup(Future<Void> future) {
     Map<String, String> variables = getVariables();
 
     // Find names
@@ -74,16 +70,16 @@ public class DockerEnvironmentBridge implements DiscoveryBridge {
           }
         });
       } catch (URISyntaxException e) {
-        if (completionHandler != null) {
-          completionHandler.handle(Future.failedFuture(e));
+        if (future != null) {
+          future.fail(e);
         } else {
           throw new IllegalStateException("Cannot extract service record from variables for " + link, e);
         }
       }
     }
 
-    if (completionHandler != null) {
-      completionHandler.handle(Future.succeededFuture());
+    if (future != null) {
+      future.complete();
     }
   }
 
@@ -114,7 +110,7 @@ public class DockerEnvironmentBridge implements DiscoveryBridge {
   }
 
   @Override
-  public void stop(Vertx vertx, DiscoveryService discovery) {
+  public void stop(Vertx vertx, DiscoveryService discoveryService, Future<Void> future) {
     for (Record record : records) {
       discovery.unpublish(record.getRegistration(), v -> {
       });

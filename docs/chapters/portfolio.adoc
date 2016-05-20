@@ -228,7 +228,7 @@ Docker. We are going to see this in details in 5 minutes. So, let's start to get
 
 [source, java]
 ----
-HttpEndpoint.get(vertx, discovery, new JsonObject().put("name", "CONSOLIDATION"), // <1>
+HttpEndpoint.getClient(discovery, new JsonObject().put("name", "CONSOLIDATION"), // <1>
   client -> {
        if (client.failed()) {                                                     // <2>
          // It failed...

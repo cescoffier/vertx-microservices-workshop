@@ -37,6 +37,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import io.vertx.serviceproxy.ProxyHelper;
 import io.vertx.serviceproxy.ProxyHandler;
+import io.vertx.serviceproxy.ServiceException;
+import io.vertx.serviceproxy.ServiceExceptionMessageCodec;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.AsyncResult;
 import io.vertx.workshop.portfolio.Portfolio;
@@ -68,6 +70,10 @@ public class PortfolioServiceVertxProxyHandler extends ProxyHandler {
     this.vertx = vertx;
     this.service = service;
     this.timeoutSeconds = timeoutSeconds;
+    try {
+      this.vertx.eventBus().registerDefaultCodec(ServiceException.class,
+          new ServiceExceptionMessageCodec());
+    } catch (IllegalStateException ex) {}
     if (timeoutSeconds != -1 && !topLevel) {
       long period = timeoutSeconds * 1000 / 2;
       if (period > 10000) {
@@ -117,7 +123,11 @@ public class PortfolioServiceVertxProxyHandler extends ProxyHandler {
         case "getPortfolio": {
           service.getPortfolio(res -> {
             if (res.failed()) {
-              msg.fail(-1, res.cause().getMessage());
+              if (res.cause() instanceof ServiceException) {
+                msg.reply(res.cause());
+              } else {
+                msg.reply(new ServiceException(-1, res.cause().getMessage()));
+              }
             } else {
               msg.reply(res.result() == null ? null : res.result().toJson());
             }
@@ -127,7 +137,11 @@ public class PortfolioServiceVertxProxyHandler extends ProxyHandler {
         case "buy": {
           service.buy(json.getValue("amount") == null ? null : (json.getLong("amount").intValue()), (io.vertx.core.json.JsonObject)json.getValue("quote"), res -> {
             if (res.failed()) {
-              msg.fail(-1, res.cause().getMessage());
+              if (res.cause() instanceof ServiceException) {
+                msg.reply(res.cause());
+              } else {
+                msg.reply(new ServiceException(-1, res.cause().getMessage()));
+              }
             } else {
               msg.reply(res.result() == null ? null : res.result().toJson());
             }
@@ -137,7 +151,11 @@ public class PortfolioServiceVertxProxyHandler extends ProxyHandler {
         case "sell": {
           service.sell(json.getValue("amount") == null ? null : (json.getLong("amount").intValue()), (io.vertx.core.json.JsonObject)json.getValue("quote"), res -> {
             if (res.failed()) {
-              msg.fail(-1, res.cause().getMessage());
+              if (res.cause() instanceof ServiceException) {
+                msg.reply(res.cause());
+              } else {
+                msg.reply(new ServiceException(-1, res.cause().getMessage()));
+              }
             } else {
               msg.reply(res.result() == null ? null : res.result().toJson());
             }
@@ -153,7 +171,7 @@ public class PortfolioServiceVertxProxyHandler extends ProxyHandler {
         }
       }
     } catch (Throwable t) {
-      msg.fail(-1, t.getMessage());
+      msg.reply(new ServiceException(500, t.getMessage()));
       throw t;
     }
   }
@@ -161,16 +179,29 @@ public class PortfolioServiceVertxProxyHandler extends ProxyHandler {
   private <T> Handler<AsyncResult<T>> createHandler(Message msg) {
     return res -> {
       if (res.failed()) {
-        msg.fail(-1, res.cause().getMessage());
+        if (res.cause() instanceof ServiceException) {
+          msg.reply(res.cause());
+        } else {
+          msg.reply(new ServiceException(-1, res.cause().getMessage()));
+        }
       } else {
-        if (res.result() != null  && res.result().getClass().isEnum()) {          msg.reply(((Enum) res.result()).name());        } else {          msg.reply(res.result());        }      }
+        if (res.result() != null  && res.result().getClass().isEnum()) {
+          msg.reply(((Enum) res.result()).name());
+        } else {
+          msg.reply(res.result());
+        }
+      }
     };
   }
 
   private <T> Handler<AsyncResult<List<T>>> createListHandler(Message msg) {
     return res -> {
       if (res.failed()) {
-        msg.fail(-1, res.cause().getMessage());
+        if (res.cause() instanceof ServiceException) {
+          msg.reply(res.cause());
+        } else {
+          msg.reply(new ServiceException(-1, res.cause().getMessage()));
+        }
       } else {
         msg.reply(new JsonArray(res.result()));
       }
@@ -180,7 +211,11 @@ public class PortfolioServiceVertxProxyHandler extends ProxyHandler {
   private <T> Handler<AsyncResult<Set<T>>> createSetHandler(Message msg) {
     return res -> {
       if (res.failed()) {
-        msg.fail(-1, res.cause().getMessage());
+        if (res.cause() instanceof ServiceException) {
+          msg.reply(res.cause());
+        } else {
+          msg.reply(new ServiceException(-1, res.cause().getMessage()));
+        }
       } else {
         msg.reply(new JsonArray(new ArrayList<>(res.result())));
       }
@@ -190,7 +225,11 @@ public class PortfolioServiceVertxProxyHandler extends ProxyHandler {
   private Handler<AsyncResult<List<Character>>> createListCharHandler(Message msg) {
     return res -> {
       if (res.failed()) {
-        msg.fail(-1, res.cause().getMessage());
+        if (res.cause() instanceof ServiceException) {
+          msg.reply(res.cause());
+        } else {
+          msg.reply(new ServiceException(-1, res.cause().getMessage()));
+        }
       } else {
         JsonArray arr = new JsonArray();
         for (Character chr: res.result()) {
@@ -204,7 +243,11 @@ public class PortfolioServiceVertxProxyHandler extends ProxyHandler {
   private Handler<AsyncResult<Set<Character>>> createSetCharHandler(Message msg) {
     return res -> {
       if (res.failed()) {
-        msg.fail(-1, res.cause().getMessage());
+        if (res.cause() instanceof ServiceException) {
+          msg.reply(res.cause());
+        } else {
+          msg.reply(new ServiceException(-1, res.cause().getMessage()));
+        }
       } else {
         JsonArray arr = new JsonArray();
         for (Character chr: res.result()) {
