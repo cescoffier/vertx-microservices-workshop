@@ -31,16 +31,17 @@ cd vertx-microservices-workshop
 mvn clean install
 ----
 
-### Clustering and Discovery infrastructure
+### Clustering and Service Discovery infrastructure
 
-It's about time to start. If you remember the microservice section, we need some discovery mechanism. Fortunately,
-Vert.x offers a discovery service. To let every component discover the services, it needs to store the service
-_record_ in a location that every one can access.
+It's about time to start. If you remember the microservice section, we need some service discovery mechanism.
+Fortunately, Vert.x offers a service discovery service. To let every component discover the services, it needs to
+store the service _record_ in a location that every one can access.
 
-By default, Vert.x discovery service is going to use a distributed map accessible by all the members of the cluster.
-So, when you start your Vert.x application and enable the cluster mode, it joins a cluster. This cluster lets nodes:
+By default, Vert.x service discovery is going to use a distributed map accessible by all the members of the
+cluster. So, when you start your Vert.x application and enable the cluster mode, it joins a cluster. This cluster
+lets nodes:
 
-* to come and go, and so manage member discovery
+* to come and go, and so manage **member** discovery (_member != service_)
 * to share data such as distributed maps, locks, counters...
 * to access the event bus
 

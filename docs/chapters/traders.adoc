@@ -82,9 +82,9 @@ Future<MessageConsumer<JsonObject>> marketFuture = Future.future();             
 Future<PortfolioService> portfolioFuture = Future.future();
 
 // Retrieve the services, use the "special" completed to assign the future
-MessageSource.get(vertx, discovery, new JsonObject().put("name", "market-data"),
+MessageSource.getConsumer(discovery, new JsonObject().put("name", "market-data"),
     marketFuture.completer());                                                  // <2>
-EventBusService.get(vertx, discovery, PortfolioService.class,
+EventBusService.getProxy(discovery, PortfolioService.class,
     portfolioFuture.completer());                                               // <3>
 
 // When done (both services retrieved), execute the handler
@@ -203,9 +203,9 @@ Copy the following code in the file:
 import io.vertx.groovy.core.CompositeFuture
 import io.vertx.groovy.core.Future
 import io.vertx.groovy.core.eventbus.MessageConsumer
-import io.vertx.ext.discovery.groovy.DiscoveryService
-import io.vertx.ext.discovery.groovy.types.EventBusService
-import io.vertx.ext.discovery.groovy.types.MessageSource
+import io.vertx.groovy.servicediscovery.types.EventBusService;
+import io.vertx.groovy.servicediscovery.types.MessageSource;
+import io.vertx.groovy.servicediscovery.ServiceDiscovery
 import io.vertx.workshop.portfolio.PortfolioService
 import io.vertx.workshop.trader.impl.TraderUtils
 
@@ -215,7 +215,7 @@ def numberOfShares = TraderUtils.pickANumber();
 println("Groovy compulsive trader configured for company " + company + " and shares: " + numberOfShares);
 
 // We create the discovery service object.
-def discovery = DiscoveryService.create(vertx);
+def discovery = ServiceDiscovery.create(vertx);
 
 Future<MessageConsumer<Map>> marketFuture = Future.future();
 Future<PortfolioService> portfolioFuture = Future.future();
@@ -247,7 +247,7 @@ As you can see the code if very close to the Java one. Let's spot the difference
 
 * Well, it's in Groovy
 * On the `import` statements, you can see it does import `groovy` version of the packages.
-* We have to create the discovery service (as before it was made by a parent class)
+* We have to create the service discovery (as before it was made by a parent class)
 * `JsonObjects` are `Maps`. In Groovy, it makes more sense to use `Map` objects.
 
 When an interface is annotated with `@VertxGen`, Vert.x translates it to all the supported (and configured) languages

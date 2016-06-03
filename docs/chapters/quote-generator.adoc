@@ -76,11 +76,11 @@ public void start() {
 Verticles can retrieve a configuration using the `config()` method. Here it gets the details about the company to
 simulate. The configuration is a `JsonObject`. Vert.x heavily uses JSON, so you are going to see a lot of JSON during the lab. For each company found in the configuration, it deploys another verticle with the extracted configuration. Finally, it deploys another verticle providing a very simple HTTP API.
 
-The last part of the method is about the discovery mentioned in the microservice section. This component generates
-quotes sent on the event bus. But to let other components discover where the messages are sent (_where_ means on which
-address), it registers it. `market-data` is the name of the service, `ADDRESS` is the event bus address on which the
-messages are sent. The last argument is a `Handler` that is notified when the registration has been completed. The
-`handler` receives a structured called `AsyncResult`.
+The last part of the method is about the service discovery mentioned in the microservice section. This component
+generates quotes sent on the event bus. But to let other components discover where the messages are sent (_where_
+means on which address), it registers it. `market-data` is the name of the service, `ADDRESS` is the event bus
+address on which the messages are sent. The last argument is a `Handler` that is notified when the registration has
+been completed. The `handler` receives a structured called `AsyncResult`.
 
 Remember, Vert.x is promoting an asynchronous, non-blocking development model. Publishing the service may take time
 (actually it does as it creates a record, write it to the backend, and notifies everyone), as we cannot block the

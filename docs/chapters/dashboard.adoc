@@ -121,9 +121,9 @@ private void lastOperations(RoutingContext context) {
 }
 ----
 
-It retrieves the audit service from the discovery infrastructure and once it gets the HTTP client. It uses it to call
- the audit REST API. The response is simply sent back to the HTTP response. Finally, don't forget to close the HTTP
- client.
+It retrieves the audit service from the service discovery infrastructure and once it gets the HTTP client. It uses it
+ to call the audit REST API. The response is simply sent back to the HTTP response. Finally, don't forget to close
+ the HTTP client.
 
 ### Consuming event bus service from the browser
 

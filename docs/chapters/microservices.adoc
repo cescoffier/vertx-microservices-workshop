@@ -37,14 +37,15 @@ In this lab, we don't address the point 5, but you should know that Vert.x does 
 your components (ssh, ansible, puppet, docker, cloud, floppy disk).
 
 The last point is interesting, and often misunderstood. It's pretty cool to develop independent pieces of software
-that magically interact at runtime.... But actually, there is no magic (sorry). There is some _discovery_ happening.
+that magically interact at runtime.... But actually, there is no magic (sorry). There is some service _discovery_
+happening.
 
 Before using a `service` provided by another component, it should find it. The location can be hardcoded
 in the code (but it's generally not a good idea), use a name resolved using a DNS lookup, or use more advanced
-frameworks.  Having a  discovery mechanism also provides a consolidated view of what's there. Being able to discover
-the different services, or resources available lets you implement some _transparency_, an inherent
-characteristic of distributed systems. For instance, it lets your components react smoothly to location changes. It enables load-balancing (such as with a round robin),
-  fault-tolerance (by looking for another service provider) and so on.
+frameworks.  Having a  service discovery mechanism also provides a consolidated view of what's there. Being able to
+discover the different services, or resources available lets you implement some _transparency_, an inherent
+characteristic of distributed systems. For instance, it lets your components react smoothly to location changes. It
+enables load-balancing (such as with a round robin), fault-tolerance (by looking for another service provider) and so on.
 
 Even if not necessary per definition, microservice applications are generally distributed. This comes with all the
 distributed application benefits and constraints: consensus computation, CAP theorem, consistency, monitoring, and many

@@ -303,17 +303,21 @@ private Future<Double> getValueForCompany(HttpClient client, String company, int
 ----
 
 First, we create the `Future` object that will be returned by the method (1). Then, we use the HTTP client to retrieve
-the last quote of the company with the `get` method (2). `get` prepares the request but does not emit it until `end` is called. The HTTP Client is already configured with the right IP and
-port (the discovery manages this). When we get the response, we have to register an `exceptionHandler` (3) to catch failures that may happen when receiving the response body. Then we can read the body and compute the evaluation. When done,
-we assigned a value to the `Future` (4). If the company cannot be found, we evaluate these shares to `0.0` (5).
+the last quote of the company with the `get` method (2). `get` prepares the request but does not emit it until `end` is
+ called. The HTTP Client is already configured with the right IP and port (the service discovery manages this). When we
+  get the response, we have to register an `exceptionHandler` (3) to catch failures that may happen when receiving the
+  response body. Then we can read the body and compute the evaluation. When done, we assigned a value to the `Future`
+  (4). If the company cannot be found, we evaluate these shares to `0.0` (5).
 
-As the connection to the server may fail, we should also register an `exceptionHandler` on the client itself (6). Finally, we emit the request using the `end` method (7).
+As the connection to the server may fail, we should also register an `exceptionHandler` on the client itself (6).
+Finally, we emit the request using the `end` method (7).
 
 
 === Publishing the service
 
 Now that the service implementation is complete, let's publish it ! First we need a `verticle` that creates the actual
- service object, registers the service on the event bus and publishes the service in the discovery infrastructure.
+ service object, registers the service on the event bus and publishes the service in the service discovery
+ infrastructure.
 
 Open the `io.vertx.workshop.portfolio.impl.PortfolioVerticle` class. In its `start` method is does what we just say:
 
@@ -331,7 +335,7 @@ PortfolioServiceImpl service = new PortfolioServiceImpl(vertx, discovery, config
 ProxyHelper.registerService(PortfolioService.class, vertx, service, ADDRESS);
 ----
 
-3) Publish the service in the discovery infrastructure to make it discoverable:
+3) Publish the service in the service discovery infrastructure to make it discoverable:
 
 [source, java]
 ----
@@ -350,7 +354,7 @@ The `publishEventBusService` is implemented as follows:
 ----
 // Create the service record:
 Record record = EventBusService.createRecord(name, address, serviceClass);
-// Publish it using the discovery service
+// Publish it using the service discovery
 discovery.publish(record, ar -> {
   if (ar.succeeded()) {
     registeredRecords.add(record);
@@ -398,12 +402,13 @@ docker run --name portfolio --rm --link quote-generator:CONSOLIDATION vertx-micr
 ----
 
 `link` ? What's this ? It instructs Docker to link this container with the `quote-generator` container we started
-before. This link will be named `CONSOLIDATION`. Vert.x discovery service detects these links and imports
-the service records in the discovery infrastructure, so your application does not have to know whether the service
-has been imported using a docker link, or published _manually_, or imported some other ways.
+before. This link will be named `CONSOLIDATION`. Vert.x service discovery detects these links and imports
+the service records in the service discovery infrastructure, so your application does not have to know whether the
+service has been imported using a docker link, or published _manually_, or imported some other ways.
 
 NOTE: Could we have used the regular Vert.x publication to publish the _consolidation_ HTTP endpoint ? No, because
-even at runtime it does not know on which (public) IP and (public) port it is accessible. Indeed the code running in the container ignore these details.
+even at runtime it does not know on which (public) IP and (public) port it is accessible. Indeed the code running in the
+ container ignore these details.
 
 Go back to the dashboard, and you should see some new services and the _cash_ should have been set in the top left
 corner.
