@@ -3,11 +3,12 @@ package io.vertx.workshop.common;
 import io.vertx.core.*;
 import io.vertx.core.impl.ConcurrentHashSet;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.discovery.DiscoveryOptions;
-import io.vertx.ext.discovery.DiscoveryService;
-import io.vertx.ext.discovery.Record;
-import io.vertx.ext.discovery.types.EventBusService;
-import io.vertx.ext.discovery.types.MessageSource;
+import io.vertx.servicediscovery.Record;
+import io.vertx.servicediscovery.ServiceDiscovery;
+import io.vertx.servicediscovery.ServiceDiscoveryOptions;
+import io.vertx.servicediscovery.docker.DockerLinksServiceDiscoveryBridge;
+import io.vertx.servicediscovery.types.EventBusService;
+import io.vertx.servicediscovery.types.MessageSource;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,13 +21,13 @@ import java.util.Set;
  */
 public class MicroServiceVerticle extends AbstractVerticle {
 
-  protected DiscoveryService discovery;
+  protected ServiceDiscovery discovery;
   protected Set<Record> registeredRecords = new ConcurrentHashSet<>();
 
   @Override
   public void start() {
-    discovery = DiscoveryService.create(vertx, new DiscoveryOptions().setBackendConfiguration(config()));
-    discovery.registerDiscoveryBridge(new DockerEnvironmentBridge(), new JsonObject());
+    discovery = ServiceDiscovery.create(vertx, new ServiceDiscoveryOptions().setBackendConfiguration(config()));
+    discovery.registerDiscoveryBridge(new DockerLinksServiceDiscoveryBridge(), new JsonObject());
   }
 
   public void publishMessageSource(String name, String address, Class contentClass, Handler<AsyncResult<Void>>

@@ -6,9 +6,9 @@ This is a Groovy verticle implemented as a _script_. To the content of this scri
 import io.vertx.groovy.core.CompositeFuture
 import io.vertx.groovy.core.Future
 import io.vertx.groovy.core.eventbus.MessageConsumer
-import io.vertx.ext.discovery.groovy.DiscoveryService
-import io.vertx.ext.discovery.groovy.types.EventBusService
-import io.vertx.ext.discovery.groovy.types.MessageSource
+import io.vertx.groovy.servicediscovery.types.EventBusService;
+import io.vertx.groovy.servicediscovery.types.MessageSource;
+import io.vertx.groovy.servicediscovery.ServiceDiscovery
 import io.vertx.workshop.portfolio.PortfolioService
 import io.vertx.workshop.trader.impl.TraderUtils
 
@@ -18,14 +18,14 @@ def numberOfShares = TraderUtils.pickANumber();
 println("Groovy compulsive trader configured for company " + company + " and shares: " + numberOfShares);
 
 // We create the discovery service object.
-def discovery = DiscoveryService.create(vertx);
+def discovery = ServiceDiscovery.create(vertx);
 
 Future<MessageConsumer<Map>> marketFuture = Future.future();
 Future<PortfolioService> portfolioFuture = Future.future();
 
-MessageSource.get(vertx, discovery,
+MessageSource.getConsumer(discovery,
         ["name" : "market-data"], marketFuture.completer());
-EventBusService.get(vertx, discovery,
+EventBusService.getProxy(discovery,
         "io.vertx.workshop.portfolio.PortfolioService", portfolioFuture.completer());
 
 // When done (both services retrieved), execute the handler

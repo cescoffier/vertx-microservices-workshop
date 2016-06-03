@@ -3,8 +3,7 @@ package io.vertx.workshop.portfolio.impl;
 import io.vertx.core.*;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.discovery.DiscoveryService;
-import io.vertx.ext.discovery.types.HttpEndpoint;
+import io.vertx.servicediscovery.ServiceDiscovery;
 import io.vertx.workshop.portfolio.Portfolio;
 import io.vertx.workshop.portfolio.PortfolioService;
 
@@ -20,9 +19,9 @@ public class PortfolioServiceImpl implements PortfolioService {
 
   private final Vertx vertx;
   private final Portfolio portfolio;
-  private final DiscoveryService discovery;
+  private final ServiceDiscovery discovery;
 
-  public PortfolioServiceImpl(Vertx vertx, DiscoveryService discovery, double initialCash) {
+  public PortfolioServiceImpl(Vertx vertx, ServiceDiscovery discovery, double initialCash) {
     this.vertx = vertx;
     this.portfolio = new Portfolio().setCash(initialCash);
     this.discovery = discovery;

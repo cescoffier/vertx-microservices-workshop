@@ -84,7 +84,12 @@
     <!-- Microservice toolbox -->
     <dependency>
       <groupId>io.vertx</groupId>
-      <artifactId>vertx-discovery-service</artifactId>
+      <artifactId>vertx-service-discovery</artifactId>
+      <version>3.3.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-service-discovery-bridge-docker-links</artifactId>
       <version>3.3.0-SNAPSHOT</version>
     </dependency>
 

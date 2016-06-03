@@ -4,14 +4,14 @@ import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.discovery.DiscoveryOptions;
-import io.vertx.ext.discovery.DiscoveryService;
-import io.vertx.ext.discovery.Record;
-import io.vertx.ext.discovery.impl.DefaultDiscoveryBackend;
-import io.vertx.ext.discovery.types.MessageSource;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.servicediscovery.Record;
+import io.vertx.servicediscovery.ServiceDiscovery;
+import io.vertx.servicediscovery.ServiceDiscoveryOptions;
+import io.vertx.servicediscovery.impl.DefaultServiceDiscoveryBackend;
+import io.vertx.servicediscovery.types.MessageSource;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -27,7 +27,7 @@ public class AuditVerticleTest {
       .put("url", "jdbc:hsqldb:mem:audit?shutdown=true")
       .put("driverclass", "org.hsqldb.jdbcDriver")
       .put("drop", true)
-      .put("backend-name", DefaultDiscoveryBackend.class.getName());
+      .put("backend-name", DefaultServiceDiscoveryBackend.class.getName());
   private Vertx vertx;
 
   @Before
@@ -36,8 +36,8 @@ public class AuditVerticleTest {
     vertx = Vertx.vertx();
     Record record = MessageSource.createRecord("portfolio-events", "portfolio", JsonObject
         .class);
-    DiscoveryService.create(vertx, new DiscoveryOptions()
-        .setBackendConfiguration(new JsonObject().put("backend-name", DefaultDiscoveryBackend.class.getName())))
+    ServiceDiscovery.create(vertx, new ServiceDiscoveryOptions()
+        .setBackendConfiguration(new JsonObject().put("backend-name", DefaultServiceDiscoveryBackend.class.getName())))
         .publish(record,
             r -> {
               if (r.failed()) {

@@ -1,14 +1,14 @@
 package io.vertx.workshop.dashboard;
 
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.discovery.rest.DiscoveryRestEndpoint;
-import io.vertx.ext.discovery.types.HttpEndpoint;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.handler.sockjs.BridgeOptions;
 import io.vertx.ext.web.handler.sockjs.PermittedOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
+import io.vertx.servicediscovery.rest.ServiceDiscoveryRestEndpoint;
+import io.vertx.servicediscovery.types.HttpEndpoint;
 import io.vertx.workshop.common.MicroServiceVerticle;
 
 /**
@@ -34,7 +34,7 @@ public class DashboardVerticle extends MicroServiceVerticle {
     router.route("/eventbus/*").handler(sockJSHandler);
 
     // Discovery endpoint
-    DiscoveryRestEndpoint.create(router, discovery);
+    ServiceDiscoveryRestEndpoint.create(router, discovery);
 
     // Last operations
     router.get("/operations").handler(this::lastOperations);
