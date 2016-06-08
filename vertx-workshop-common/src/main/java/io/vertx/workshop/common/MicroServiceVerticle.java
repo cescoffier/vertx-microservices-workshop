@@ -6,7 +6,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.servicediscovery.Record;
 import io.vertx.servicediscovery.ServiceDiscovery;
 import io.vertx.servicediscovery.ServiceDiscoveryOptions;
-import io.vertx.servicediscovery.docker.DockerLinksServiceDiscoveryBridge;
+import io.vertx.servicediscovery.docker.DockerLinksServiceImporter;
 import io.vertx.servicediscovery.types.EventBusService;
 import io.vertx.servicediscovery.types.MessageSource;
 
@@ -27,7 +27,7 @@ public class MicroServiceVerticle extends AbstractVerticle {
   @Override
   public void start() {
     discovery = ServiceDiscovery.create(vertx, new ServiceDiscoveryOptions().setBackendConfiguration(config()));
-    discovery.registerDiscoveryBridge(new DockerLinksServiceDiscoveryBridge(), new JsonObject());
+    discovery.registerServiceImporter(new DockerLinksServiceImporter(), new JsonObject());
   }
 
   public void publishMessageSource(String name, String address, Class contentClass, Handler<AsyncResult<Void>>
