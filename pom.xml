@@ -17,7 +17,7 @@
   <packaging>pom</packaging>
 
   <properties>
-    <stack.version>3.3.0-SNAPSHOT</stack.version>
+    <stack.version>3.3.0.CR1</stack.version>
     <doc.skip>true</doc.skip>
 
     <!--overridden in each project packaged as a fat jar -->
@@ -85,12 +85,10 @@
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-service-discovery</artifactId>
-      <version>3.3.0-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-service-discovery-bridge-docker-links</artifactId>
-      <version>3.3.0-SNAPSHOT</version>
     </dependency>
 
 
@@ -271,31 +269,31 @@
             </execution>
           </executions>
         </plugin>
-        
+
         <plugin>
-     <groupId>org.eclipse.m2e</groupId>
-     <artifactId>lifecycle-mapping</artifactId>
-     <version>1.0.0</version>
-     <configuration>
-       <lifecycleMappingMetadata>
-         <pluginExecutions>
-           <pluginExecution>
-             <pluginExecutionFilter>
-               <groupId>org.codehaus.gmavenplus</groupId>
-        	   <artifactId>gmavenplus-plugin</artifactId>
-               <versionRange>[1.0.0,)</versionRange>
-               <goals>
-                 <goal>compile</goal>
-               </goals>
-             </pluginExecutionFilter>
-             <action>
-               <ignore/>
-             </action>
-           </pluginExecution>
-         </pluginExecutions>
-       </lifecycleMappingMetadata>
-     </configuration>
-    </plugin>
+          <groupId>org.eclipse.m2e</groupId>
+          <artifactId>lifecycle-mapping</artifactId>
+          <version>1.0.0</version>
+          <configuration>
+            <lifecycleMappingMetadata>
+              <pluginExecutions>
+                <pluginExecution>
+                  <pluginExecutionFilter>
+                    <groupId>org.codehaus.gmavenplus</groupId>
+                    <artifactId>gmavenplus-plugin</artifactId>
+                    <versionRange>[1.0.0,)</versionRange>
+                    <goals>
+                      <goal>compile</goal>
+                    </goals>
+                  </pluginExecutionFilter>
+                  <action>
+                    <ignore/>
+                  </action>
+                </pluginExecution>
+              </pluginExecutions>
+            </lifecycleMappingMetadata>
+          </configuration>
+        </plugin>
       </plugins>
     </pluginManagement>
   </build>
