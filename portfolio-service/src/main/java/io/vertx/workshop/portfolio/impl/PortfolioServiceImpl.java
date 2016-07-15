@@ -4,6 +4,7 @@ import io.vertx.core.*;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.json.JsonObject;
 import io.vertx.servicediscovery.ServiceDiscovery;
+import io.vertx.servicediscovery.types.HttpEndpoint;
 import io.vertx.workshop.portfolio.Portfolio;
 import io.vertx.workshop.portfolio.PortfolioService;
 
