@@ -18,9 +18,6 @@
     <property name="hazelcast.connection.monitor.max.faults">2</property>
     <property name="hazelcast.partition.migration.timeout">10</property>
     <property name="hazelcast.migration.min.delay.on.member.removed.seconds">3</property>
-
-    <property name="hazelcast.discovery.enabled">true</property>
-
   </properties>
   <network>
     <port auto-increment="true" port-count="10000">5701</port>
