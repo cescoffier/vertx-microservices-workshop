@@ -50,8 +50,8 @@ public class PortfolioServiceImpl implements PortfolioService {
   @Override
   public void evaluate(Handler<AsyncResult<Double>> resultHandler) {
     // ----
-    // First we need to discover and get a HTTP client for the `consolidation` service:
-    HttpEndpoint.getClient(discovery, new JsonObject().put("name", "CONSOLIDATION"),
+    // First we need to discover and get a HTTP client for the `quotes` service:
+    HttpEndpoint.getClient(discovery, new JsonObject().put("name", "quotes"),
         client -> {
           if (client.failed()) {
             // It failed...
