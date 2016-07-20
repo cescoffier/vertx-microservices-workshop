@@ -37,7 +37,6 @@ public class RestQuoteAPIVerticle extends AbstractVerticle {
     // If the symbol is set but not found, you should return 404.
     // Once the request handler is set,
 
-
     vertx.createHttpServer()
         .requestHandler(request -> {
           HttpServerResponse response = request.response()
@@ -61,9 +60,9 @@ public class RestQuoteAPIVerticle extends AbstractVerticle {
 
           // ----
         })
-        .listen(8080, ar -> {
+        .listen(config().getInteger("http.port", 8080), ar -> {
           if (ar.succeeded()) {
-            System.out.println("Server started");
+            System.out.println("Server started on port " + ar.result().actualPort());
           } else {
             System.out.println("Cannot start the server: " + ar.cause());
           }
