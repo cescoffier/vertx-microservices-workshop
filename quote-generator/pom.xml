@@ -37,9 +37,8 @@
         <artifactId>maven-shade-plugin</artifactId>
       </plugin>
       <plugin>
-        <!-- plugin to create a docker image -->
-        <groupId>io.fabric8</groupId>
-        <artifactId>docker-maven-plugin</artifactId>
+        <!-- copy the cluster configuration -->
+        <artifactId>maven-dependency-plugin</artifactId>
       </plugin>
     </plugins>
   </build>

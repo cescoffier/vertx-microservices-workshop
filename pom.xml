@@ -17,17 +17,21 @@
   <packaging>pom</packaging>
 
   <properties>
-    <stack.version>3.3.0.CR1</stack.version>
+    <stack.version>3.3.2</stack.version>
     <doc.skip>true</doc.skip>
 
     <!--overridden in each project packaged as a fat jar -->
     <main.verticle/>
-
-    <docker.group.name>vertx-microservice-workshop</docker.group.name>
-    <docker.image>${docker.group.name}/${project.artifactId}:${project.version}</docker.image>
-
-    <discovery.service-type>unknown</discovery.service-type>
   </properties>
+
+  <modules>
+    <module>vertx-workshop-common</module>
+    <module>quote-generator</module>
+    <module>portfolio-service</module>
+    <module>audit-service</module>
+    <module>compulsive-traders</module>
+    <module>trader-dashboard</module>
+  </modules>
 
   <dependencyManagement>
     <dependencies>
@@ -85,10 +89,6 @@
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-service-discovery</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-service-discovery-bridge-docker-links</artifactId>
     </dependency>
 
 
@@ -165,79 +165,31 @@
     <pluginManagement>
       <plugins>
         <plugin>
-          <groupId>io.fabric8</groupId>
-          <artifactId>docker-maven-plugin</artifactId>
-          <version>0.14.1</version>
-          <configuration>
-            <images>
-              <image>
-                <name>${docker.image}</name>
-                <build>
-                  <from>java:8</from>
-                  <tags>
-                    <tag>latest</tag>
-                    <tag>${project.version}</tag>
-                  </tags>
-                  <ports>
-                    <port>8080</port>
-                  </ports>
-                  <workdir>/opt</workdir>
-                  <entryPoint>
-                    <exec>
-                      <arg>java</arg>
-                      <arg>-jar</arg>
-                      <arg>${project.artifactId}-${project.version}-fat.jar</arg>
-                      <arg>-cluster</arg>
-                      <arg>-conf</arg>
-                      <arg>config.json</arg>
-                      <arg>-cp</arg>
-                      <arg>.</arg>
-                    </exec>
-                  </entryPoint>
-                  <runCmds>
-                    <runcmd>chmod -R 777 /opt</runcmd>
-                  </runCmds>
-                  <assembly>
-                    <basedir>/</basedir>
-                    <inline>
-                      <files>
-                        <file>
-                          <source>${project.build.directory}/${project.artifactId}-${project.version}-fat.jar</source>
-                          <outputDirectory>/opt</outputDirectory>
-                          <fileMode>0755</fileMode>
-                        </file>
-                      </files>
-                      <fileSets>
-                        <fileSet>
-                          <directory>${project.basedir}/src/docker/</directory>
-                          <outputDirectory>/opt</outputDirectory>
-                          <fileMode>0755</fileMode>
-                        </fileSet>
-                      </fileSets>
-                    </inline>
-                  </assembly>
-                  <env>
-                    <SERVICE_TYPE>${discovery.service-type}</SERVICE_TYPE>
-                  </env>
-                </build>
-                <run>
-                  <ports>
-                    <port>http.port:8080</port>
-                    <port>eventbus.port:5701</port>
-                  </ports>
-                </run>
-              </image>
-            </images>
-          </configuration>
-        </plugin>
-
-        <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
           <version>3.1</version>
           <configuration>
             <source>1.8</source>
             <target>1.8</target>
           </configuration>
+        </plugin>
+
+        <plugin>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>2.10</version>
+          <executions>
+            <execution>
+              <id>unpack-hazelcast-configuration</id>
+              <phase>process-resources</phase>
+              <goals>
+                <goal>unpack-dependencies</goal>
+              </goals>
+              <configuration>
+                <includeArtifactIds>vertx-workshop-common</includeArtifactIds>
+                <outputDirectory>${project.build.directory}/classes</outputDirectory>
+                <includes>**/cluster.xml</includes>
+              </configuration>
+            </execution>
+          </executions>
         </plugin>
 
         <plugin>
@@ -298,13 +250,5 @@
     </pluginManagement>
   </build>
 
-  <modules>
-    <module>vertx-workshop-common</module>
-    <module>quote-generator</module>
-    <module>portfolio-service</module>
-    <module>audit-service</module>
-    <module>compulsive-traders</module>
-    <module>trader-dashboard</module>
-  </modules>
 
 </project>
