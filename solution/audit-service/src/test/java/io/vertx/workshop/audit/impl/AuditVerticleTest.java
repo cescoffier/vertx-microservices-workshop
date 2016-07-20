@@ -14,6 +14,7 @@ import io.vertx.servicediscovery.impl.DefaultServiceDiscoveryBackend;
 import io.vertx.servicediscovery.types.MessageSource;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -27,7 +28,8 @@ public class AuditVerticleTest {
       .put("url", "jdbc:hsqldb:mem:audit?shutdown=true")
       .put("driverclass", "org.hsqldb.jdbcDriver")
       .put("drop", true)
-      .put("backend-name", DefaultServiceDiscoveryBackend.class.getName());
+      .put("backend-name", DefaultServiceDiscoveryBackend.class.getName())
+      .put("http.port", 8081);
   private Vertx vertx;
 
   @Before
@@ -61,7 +63,7 @@ public class AuditVerticleTest {
 
     vertx.eventBus().publish("portfolio", createBuyOperation());
 
-    vertx.createHttpClient().getNow(8080, "localhost", "/", response -> {
+    vertx.createHttpClient().getNow(8081, "localhost", "/", response -> {
       tc.assertEquals(response.statusCode(), 200);
       response.bodyHandler(buffer -> {
         JsonArray array = buffer.toJsonArray();
@@ -89,7 +91,7 @@ public class AuditVerticleTest {
     vertx.eventBus().publish("portfolio", createBuyOperation());
     vertx.eventBus().publish("portfolio", createSellOperation());
 
-    vertx.createHttpClient().getNow(8080, "localhost", "/", response -> {
+    vertx.createHttpClient().getNow(8081, "localhost", "/", response -> {
       tc.assertEquals(response.statusCode(), 200);
       response.bodyHandler(buffer -> {
         JsonArray array = buffer.toJsonArray();

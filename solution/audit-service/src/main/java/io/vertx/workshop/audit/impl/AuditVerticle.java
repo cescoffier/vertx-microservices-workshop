@@ -15,6 +15,7 @@ import io.vertx.ext.sql.SQLConnection;
 import io.vertx.ext.sql.UpdateResult;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.servicediscovery.Record;
 import io.vertx.servicediscovery.types.MessageSource;
 import io.vertx.workshop.common.Chain;
 import io.vertx.workshop.common.MicroServiceVerticle;
@@ -52,7 +53,13 @@ public class AuditVerticle extends MicroServiceVerticle {
     // ----
     Future<Void> databaseReady = initializeDatabase(config().getBoolean("drop", false));
     Future<MessageConsumer<JsonObject>> messageListenerReady = retrieveThePortfolioMessageSource();
-    Future<HttpServer> httpEndpointReady = configureTheHTTPServer();
+    Future<Void> httpEndpointReady = configureTheHTTPServer().compose(
+        server -> {
+          Future<Void> regFuture = Future.future();
+          publishHttpEndpoint("audit", "localhost", server.actualPort(), regFuture.completer());
+          return regFuture;
+        }
+    );
 
     CompositeFuture.all(httpEndpointReady, databaseReady, messageListenerReady)
         .setHandler(ar -> {
@@ -122,7 +129,7 @@ public class AuditVerticle extends MicroServiceVerticle {
 
     vertx.createHttpServer()
         .requestHandler(router::accept)
-        .listen(8080, future.completer());
+        .listen(config().getInteger("http.port", 0), future.completer());
     //----
     return future;
   }
