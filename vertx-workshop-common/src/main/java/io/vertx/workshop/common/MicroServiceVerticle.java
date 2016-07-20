@@ -6,6 +6,7 @@ import io.vertx.servicediscovery.Record;
 import io.vertx.servicediscovery.ServiceDiscovery;
 import io.vertx.servicediscovery.ServiceDiscoveryOptions;
 import io.vertx.servicediscovery.types.EventBusService;
+import io.vertx.servicediscovery.types.HttpEndpoint;
 import io.vertx.servicediscovery.types.MessageSource;
 
 import java.util.ArrayList;
@@ -27,25 +28,31 @@ public class MicroServiceVerticle extends AbstractVerticle {
     discovery = ServiceDiscovery.create(vertx, new ServiceDiscoveryOptions().setBackendConfiguration(config()));
   }
 
+  public void publishHttpEndpoint(String name, String host, int port, Handler<AsyncResult<Void>>
+      completionHandler) {
+    Record record = HttpEndpoint.createRecord(name, host, port, "/");
+    publish(record, completionHandler);
+  }
+
   public void publishMessageSource(String name, String address, Class contentClass, Handler<AsyncResult<Void>>
       completionHandler) {
     Record record = MessageSource.createRecord(name, address, contentClass);
-    publish(completionHandler, record);
+    publish(record, completionHandler);
   }
 
   public void publishMessageSource(String name, String address, Handler<AsyncResult<Void>>
       completionHandler) {
     Record record = MessageSource.createRecord(name, address);
-    publish(completionHandler, record);
+    publish(record, completionHandler);
   }
 
   public void publishEventBusService(String name, String address, Class serviceClass, Handler<AsyncResult<Void>>
       completionHandler) {
     Record record = EventBusService.createRecord(name, address, serviceClass);
-    publish(completionHandler, record);
+    publish(record, completionHandler);
   }
 
-  private void publish(Handler<AsyncResult<Void>> completionHandler, Record record) {
+  private void publish(Record record, Handler<AsyncResult<Void>> completionHandler) {
     if (discovery == null) {
       try {
         start();
