@@ -103,7 +103,7 @@ service proxy generation.
 === Data objects
 
 The `Portfolio` object is a data object. Event bus proxies support a limited set of types, and for non-supported types,
-it must use _data objects_ (please check the http://vertx.io/docs/vertx-service-proxy/[documentation] for the whole list
+it must use _data objects_ (please check the http://vertx.io/docs/vertx-service-proxy/java/[documentation] for the whole list
  of supported types). Data objects are Java classes obeying to a set of constraints:
 
 * It must be annotated with `DataObject`
@@ -116,7 +116,7 @@ handling is managed by `converters` that are automatically generated, so a data 
 
 === Implementing the service
 
-It's nice to have an async interface for our service, but it's time to implement it. We are going to implement two
+It's nice to have an async interface for our service, but it's time to implement it. We are going to implement three
 methods in this service:
 
 * `getPortfolio` to understand how to create `AsyncResult` objects
@@ -224,9 +224,11 @@ the HTTP endpoint we have implemented in the quote generator. For this, we are g
 
 That's a bit more tricky, so let's do it step by step. First, in the `evaluate`, we need to retrieve the HTTP
 endpoint (service) provided by the quote generator. This service is named `CONSOLIDATION`, and will be imported by
-Docker. We are going to see this in details in 5 minutes. So, let's start to get this service:
+Docker. We are going to see this in detail in 5 minutes. So, let's start to get this service.
 
-[source, java]
+In the `evaluate` method, write:
+
+[source, java, role=assignment]
 ----
 HttpEndpoint.getClient(discovery, new JsonObject().put("name", "CONSOLIDATION"), // <1>
   client -> {
@@ -244,7 +246,7 @@ HttpEndpoint.getClient(discovery, new JsonObject().put("name", "CONSOLIDATION"),
 <2> The client cannot be retrieved (service not found), report the failure
 <3> We have the client, let's continue...
 
-Let's now implement the `computeEvaluation` method:
+Here is how `computeEvaluation` method is implemented:
 
 [source, java]
 ----
@@ -278,7 +280,7 @@ result to the client by calling the `resultHandler` (4).
 
 Well, we just need the `getValueForCompany` method that call the service:
 
-[source, java]
+[source, java, role=assignment]
 ----
 private Future<Double> getValueForCompany(HttpClient client, String company, int numberOfShares) {
   // Create the future object that will  get the value once the value have been retrieved
