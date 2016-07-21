@@ -21,8 +21,9 @@ public class Launcher extends io.vertx.core.Launcher {
     // TODO this should not be required, but the beforeStartingVertx method does not yet allow setting whether we
     // start in cluster mode. This is obviously a bug.
     List<String> list = new ArrayList<>(Arrays.asList(args));
-    if (!list.contains("-cluster")) {
-      list.add(0, "-cluster");
+
+    if (list.isEmpty()) {
+      list.add("-cluster");
     }
 
     new Launcher().dispatch(list.toArray(new String[list.size()]));
