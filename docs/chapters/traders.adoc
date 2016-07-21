@@ -4,7 +4,7 @@ In the `portfolio` project we have implemented an event bus service to manage ou
 we send quotes on the event bus. Traders are components that consumes these two services with only one goal: getting
 rich (or not...)!
 
-In this section, we are going to develop 2 traders (following a stupid logic you can definitely be improved):
+In this section, we are going to develop 2 traders (following a stupid logic you can definitely improve):
 
 * the first trader is developed in Java
 * the second trader is developed in Groovy
@@ -57,7 +57,9 @@ Open the `io.vertx.workshop.trader.impl.JavaCompulsiveTraderVerticle` class. In 
 
 #### 1. Initialize the trader
 
-First, look at the `start` method signature: `start(Future<Void> future)`. The `future` let us tell when the initialization has been completed and whether or not it has been successful. That means we have to `complete` or `fail` this `future` explicitly.
+First, look at the `start` method signature: `start(Future<Void> future)`. The `future` let us tell when the
+initialization has been completed and whether or not it has been successful. That means we have to `complete` or
+`fail` this `future` explicitly.
 
 To initialize the trader, remove the `future.fail` statement and write:
 
@@ -127,7 +129,9 @@ if (ar.failed()) {                                                              
 
 First, we need to check if the service retrieval has been successful. This is made in (1). If so, we can unwrap the
 services from the `Future` objects (2). We set a `Handler` on the `marketConsumer` (the message source service)
-executing the trading logic (4). Finally, in (5), we complete the `future` given as parameter of the `start` method to notify of the completion of the initialization process. The `complete` method does not pass a _result_ as we just notify of the completion. Notice also the `future.fail` to denote an initialization issue.
+executing the trading logic (4). Finally, in (5), we complete the `future` given as parameter of the `start` method to
+notify of the completion of the initialization process. The `complete` method does not pass a _result_ as we just notify
+ of the completion. Notice also the `future.fail` to denote an initialization issue.
 
 #### The code in one snippet
 
@@ -176,14 +180,14 @@ We can already run this trader and see if it makes educated actions on the marke
 [source]
 ----
 cd compulsive-traders
-mvn clean package docker:build
+mvn clean package
 ----
 
-Then launch the docker container with:
+Then launch the application with:
 
 [source]
 ----
-docker run --rm --name traders vertx-microservice-workshop/compulsive-traders
+java -jar target/compulsive-traders-1.0-SNAPSHOT-fat.jar
 ----
 
 If you go back to the dashboard, you may start seen some moves on your portfolio.
@@ -245,7 +249,7 @@ CompositeFuture.all(marketFuture, portfolioFuture).setHandler( { ar ->
 
 As you can see the code if very close to the Java one. Let's spot the differences:
 
-* Well, it's in Groovy
+* Well, it's Groovy
 * On the `import` statements, you can see it does import `groovy` version of the packages.
 * We have to create the service discovery (as before it was made by a parent class)
 * `JsonObjects` are `Maps`. In Groovy, it makes more sense to use `Map` objects.
@@ -256,19 +260,18 @@ instead of `JsonObject`.
 
 This example has been developed in Groovy, but it would be similar in JavaScript, Ruby or Ceylon.
 
-It's time to rebuild and restart our traders. Hit `CTRL+C` to stop the running trader (or launch `docker stop
-traders`). Then, rebuild with:
+It's time to rebuild and restart our traders. Hit `CTRL+C` to stop the running trader. Then, rebuild with:
 
 [source]
 ----
-mvn clean package docker:build
+mvn clean package
 ----
 
-And launch the docker container with:
+And launch the application with:
 
 [source]
 ----
-docker run --rm --name traders vertx-microservice-workshop/compulsive-traders
+java -jar vertx-metrics-sample-1.0.0.-SNAPSHOT-fat.jar
 ----
 
 If you go back to the dashboard, you may start seen some moves on your portfolio. Now 3 traders are trying to make

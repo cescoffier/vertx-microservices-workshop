@@ -31,7 +31,9 @@ Client -> Handler : The client invokes the handler \n(in the same thread as the 
 @enduml
 ----
 
-NOTE: _Worker_ ? Yes, Vert.x has the notion of _workers_ (a separated thread pool) to execute blocking code. It can be a verticle marked as _worker_ or with the `vertx.executeBlocking` construct. However, even if possible, you should not abuse from these features as it reduces the scalability of the application.
+NOTE: _Worker_ ? Yes, Vert.x has the notion of _workers_ (a separated thread pool) to execute blocking code. It can be a
+ verticle marked as _worker_ or with the `vertx.executeBlocking` construct. However, even if possible, you should not
+ abuse from these features as it reduces the scalability of the application.
 
 However, interactions with databases are rarely a single operation, but a composition of operations. For example:
 
@@ -57,7 +59,8 @@ Interactions with the database use the `vertx-jdbc-client`, an async version of 
 ### Initializing the audit service with Composite Future
 
 Open the `io.vertx.workshop.audit.impl.AuditVerticle` class. The first important detail of this verticle is its
-`start` method. As the `start` method from the Java trader, the method is asynchronous, and report its completion in the given `Future` object:
+`start` method. As the `start` method from the Java trader, the method is asynchronous, and report its completion in the
+ given `Future` object:
 
 [source, java]
 ----
@@ -329,27 +332,14 @@ First you need to built it:
 [source]
 ----
 cd audit-service
-mvn clean package docker:build
+mvn clean package
 ----
 
-Then, you need to launch the container:
-
-[source]
-----
-docker run -p 8082:8080 --rm --name audit vertx-microservice-workshop/audit-service
-----
-
-You need to restart the dashboard to get access to the REST endpoint we just published (imported as a link):
+Then, you need to launch the application:
 
 [source]
 ----
-docker stop dashboard
-docker run -p 8083:8080 --rm --name dashboard --link audit:AUDIT vertx-microservice-workshop/trader-dashboard
+ java -jar target/audit-service-1.0-SNAPSHOT-fat.jar
 ----
 
 Refresh the dashboard, and you should see the operations in the top right corner!
-
-
-
-
-
