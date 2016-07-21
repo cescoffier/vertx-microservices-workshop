@@ -9,7 +9,7 @@ microservices:
 * The quote generator - this simulator, absolutely not realistic - generates the quotes for 3 companies _MacroHard_,
 _Divinator_, and _Black Coat_. The market data are sent on the Vert.x event bus.
 
-* The traders - the trader are a set of components receiving the quotes and deciding whether or not they want to
+* The traders - the traders are a set of components receiving the quotes and deciding whether or not they want to
 sell or buy shares. For this they rely on the _portfolio_ service.
 
 * The portfolio - it manages the money and your current set of shares. It is exposed as a _service proxy_, i.e. a
@@ -28,13 +28,14 @@ image::workshop-application.png[Micro-Trader Architecture, 800]
 
 The application uses several types of services:
 
-* HTTP endpoint (_i.e._ REST API) - the service is located using a URL.
+* HTTP endpoint (_i.e._ REST API) - the service is located using an HTTP URL.
 * Service proxies that are asynchronous services exposed on the event bus using a RPC interaction, the service is
-located using a address.
-* Message sources that are components publishing messages on the event bus, the service is located using a address.
+located using an (event bus) address.
+* Message sources that are components publishing messages on the event bus, the service is located using an (event bus)
+address.
 
-At runtime, each component runs in its own docker container. The containers are going to be inter-connected with
-links when name resolution is required.
+These components runs in the same network (during the lab they will be on the same machine (yours), but in different
+processes).
 
 The dashboard presents the available services, the value of each company quotes, the last operations made by your
 traders and the current state of your portfolio:

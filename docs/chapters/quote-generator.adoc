@@ -12,8 +12,8 @@ Let's have a look to the project, as every other project are structured the same
 ├── README.md <--- component description
 ├── pom.xml <--- the Maven file
 └── src
-    ├── docker
-    │   └── config.json <--- a configuration file that is passed when the component starts in its docker container
+    ├── conf
+    │   └── config.json <--- a configuration file that is passed when the application starts
     └── main
         └── java
             └── io.vertx.workshop.quote
@@ -25,19 +25,18 @@ Let's have a look to the project, as every other project are structured the same
 Let's start with the `pom.xml` file. This file specifies the Maven build:
 
 1. Define the dependencies
-2. Build a _fat-jar_
-3. Build a docker container
+2. Compile the java code and process resources (if any)
+3. Build a _fat-jar_
 
-A _fat-jar_ is a convenient way to package a Vert.x application. It creates a _über-jar_ containing your application
-and all its dependencies, including Vert.x. Then, to launch it, you just need to use `java -jar ....`, without having
-to handle the `CLASSPATH`. Wait, I told you that Vert.x does not dictate a type of packaging. It's true, fat jars
-are convenient, but it's the the only way.
+A _fat-jar_ (also called _uber_ jar or _shaded_ jar) is a convenient way to package a Vert.x application. It creates a
+_über-jar_ containing your application and all its dependencies, including Vert.x. Then, to launch it, you just need
+to use `java -jar ....`, without having to handle the `CLASSPATH`. Wait, I told you that Vert.x does not dictate a
+type of packaging. It's true, fat jars are convenient, but it's the the only way, you can use plain (not fat) jars,
+OSGi bundles...
 
-The created _fat-jar_ is configured to use the `io.vertx.core.Launcher` main class, but you can use your own _main_
-class. The `Launcher` class creates the Vert.x instance, configure it and deploys the _main-verticle_. Again, it's
-just a convenient way, you can use your own _main_ class.
-
-The `pom.xml` file is also configured to create a Docker container, configured to launch the application.
+The created _fat-jar_ is configured to use a main class provided in `vertx-workshop-common` (`io.vertx.workshop
+.common.Launcher`). This `Launcher` class creates the Vert.x instance, configure it and deploys the _main-verticle_.
+Again, it's just a convenient way, you can use your own _main_ class.
 
 ### Verticle
 
@@ -70,11 +69,21 @@ public void start() {
       }
       System.out.println("Market-Data service published : " + rec.succeeded());
     });
+
+    publishHttpEndpoint("quotes", "localhost", config().getInteger("http.port", 8080), ar -> {
+      if (ar.failed()) {
+        ar.cause().printStackTrace();
+      } else {
+        System.out.println("Quotes (Rest endpoint) service published : " + ar.succeeded());
+      }
+    });
 }
 ----
 
-Verticles can retrieve a configuration using the `config()` method. Here it gets the details about the company to
-simulate. The configuration is a `JsonObject`. Vert.x heavily uses JSON, so you are going to see a lot of JSON during the lab. For each company found in the configuration, it deploys another verticle with the extracted configuration. Finally, it deploys another verticle providing a very simple HTTP API.
+Verticles can retrieve a configuration using the `config()` method. Here it gets the details about the companies to
+simulate. The configuration is a `JsonObject`. Vert.x heavily uses JSON, so you are going to see a lot of JSON during
+this lab. For each company found in the configuration, it deploys another verticle with the extracted configuration.
+Finally, it deploys another verticle providing a very simple HTTP API.
 
 The last part of the method is about the service discovery mentioned in the microservice section. This component
 generates quotes sent on the event bus. But to let other components discover where the messages are sent (_where_
@@ -108,10 +117,21 @@ Remember, Vert.x is promoting an asynchronous, non-blocking development model. P
 ----
 
 If you remember the architecture, the quote generator also provides a HTTP endpoint returning the last values of the
-quotes (but, you are going to work on it). This _service_ is not published, as we are going to "publish" it using
-Docker (no code required, Docker publishes it).
+quotes (but, you are going to work on it). As the previous service, it needs to be published. For the publication it
+gives details on its locations (host, port...):
 
-### The consolidation endpoint
+[source, java]
+----
+publishHttpEndpoint("quotes", "localhost", config().getInteger("http.port", 8080), ar -> {
+  if (ar.failed()) {
+    ar.cause().printStackTrace();
+  } else {
+    System.out.println("Quotes (Rest endpoint) service published : " + ar.succeeded());
+  }
+});
+----
+
+### The quote REST endpoint
 
 It's time for you to develop some parts of the application (I know you have pins and needles in your fingers). Open the
 `RestQuoteAPIVerticle`. It's a verticle class extending `AbstractVerticle`. In the `start` method you need to:
@@ -137,7 +157,7 @@ First, it retrieves the message body (1). It's a JSON object, and stores it in t
 
 #### Implementing a Handler to handle HTTP requests
 
-Let's now implement the second point.  To handle the HTTP requests, we need a HTTP server. Fortunately, Vert.x lets
+Let's now implement the second point. To handle the HTTP requests, we need a HTTP server. Fortunately, Vert.x lets
 you create HTTP servers using:
 
 [source, java]
@@ -186,21 +206,20 @@ First, let's build the docker image. In the terminal, execute:
 
 ----
 cd quote-generator
-mvn package docker:build
+mvn package
 ----
 
 Then, open a new terminal and launch:
 
 ----
-docker run -p 8081:8080 --rm --name quote-generator vertx-microservice-workshop/quote-generator
+java -jar target/quote-generator-1.0-SNAPSHOT-fat.jar
 ----
 
-Let's analyze this docker command. It runs a container created from the image we just built
-(`vertx-microservice-workshop/quote-generator`). We give it a name (`quote-generator`). The `-p` option configure the
-port forwarding. The port `8080` of the application is now exposed on the port `8081` of your machine (or the
-docker-machine). In our microservice world, it also means that the HTTP endpoint becomes discoverable.
+This command launch the application. The main class we used creates a clustered Vert.x instance and read the
+configuration from `src/conf/config.json`. This configuration provides the HTTP port on which the REST service is
+published (`35000`).
 
-Let's now open a browser and have a look to http://dockerhost:8081.
+Let's now open a browser and have a look to http://localhost:35000.
 
 It should return something like:
 
@@ -243,19 +262,15 @@ Let's now launch the dashboard. In another terminal, navigate to `$project-home/
 
 [source]
 ----
-mvn clean package docker:build
-docker run -p 8083:8080 --rm --name dashboard vertx-microservice-workshop/trader-dashboard
+mvn clean package
+java -jar target/trader-dashboard-1.0-SNAPSHOT-fat.jar
 ----
 
-TIP: If Docker is yelling with something like `Error response from daemon: Conflict. The name "/xyz" is
-already in use by container...`, no problem, let be more convincing and launch `docker rm -f xyz` and
-then relaunch the command.
-
-Then, open your browser to http://dockerhost:8083. You should see:
+Then, open your browser to http://localhost:8080. You should see:
 
 image::dashboard-initial-state.png[Dashboard, 800]
 
-Some parts have no _content_, and it's normal as it's just the beginning...
+Some parts have no _content_, and it's expected as it's just the beginning...
 
 ### You are not a financial expert ?
 

@@ -6,7 +6,8 @@ In the quote generator we have seen the basics of Vert.x development:
 * Implementing `Handler`
 * Receiving messages from the event bus
 
-In the portfolio component, we are going to implement an _event bus service_. A `Portfolio` stores the owned shares and the available cash.
+In the portfolio component, we are going to implement an _event bus service_. A `Portfolio` stores the owned shares and
+the available cash.
 
 ### RPC and Async RPC
 
@@ -40,7 +41,7 @@ Such interactions has the advantages to introduce typing, and so is less error-p
 
 Traditional RPC exhibits an annoying drawback: the caller waits until the response has been received. This is
 definitely a blocking call, as it involves at least two network messages. In addition, it is not really designed for
-failures while distributed communications have many reasons to fail (`RemoteException` I'm thinking about you...).
+failures while distributed communications have many reasons to fail.
 
 Fortunately, Vert.x proposes a different form of RPC: Async RPC. Async RPC follows the same principles as RPC, but
 instead of _waiting_ for the response, it passes a `Handler<AsyncResult<X>` called when the result is received.
@@ -96,9 +97,8 @@ void getPortfolio(Handler<AsyncResult<Portfolio>> resultHandler);
 This method lets you retrieve a `Portfolio` object. As explained above the method is asynchronous and so has a `Handler`
  parameter receiving an `AsyncResult<Portfolio>`. The other methods follows the same pattern.
 
-NOTE: You may have also noticed the the package as a `package-info.java` class. This file is required to enable the
+NOTE: You may have also noticed that the package as a `package-info.java` file. This file is required to enable the
 service proxy generation.
-
 
 === Data objects
 
@@ -223,14 +223,14 @@ the HTTP endpoint we have implemented in the quote generator. For this, we are g
 * when all calls are done, compute the value and send it back to the caller
 
 That's a bit more tricky, so let's do it step by step. First, in the `evaluate`, we need to retrieve the HTTP
-endpoint (service) provided by the quote generator. This service is named `CONSOLIDATION`, and will be imported by
-Docker. We are going to see this in detail in 5 minutes. So, let's start to get this service.
+endpoint (service) provided by the quote generator. This service is named `quotes`. We published in in the previous
+section. So, let's start to get this service.
 
 In the `evaluate` method, write:
 
 [source, java, role=assignment]
 ----
-HttpEndpoint.getClient(discovery, new JsonObject().put("name", "CONSOLIDATION"), // <1>
+HttpEndpoint.getClient(discovery, new JsonObject().put("name", "quotes"), // <1>
   client -> {
        if (client.failed()) {                                                     // <2>
          // It failed...
@@ -394,23 +394,16 @@ To build the project launch:
 
 ----
 cd portfolio-service
-mvn clean package docker:build
+mvn clean package
 ----
 
 Then, launch it, in another terminal with:
 
 ----
-docker run --name portfolio --rm --link quote-generator:CONSOLIDATION vertx-microservice-workshop/portfolio-service
+java -jar target/portfolio-service-1.0-SNAPSHOT-fat.jar
 ----
 
-`link` ? What's this ? It instructs Docker to link this container with the `quote-generator` container we started
-before. This link will be named `CONSOLIDATION`. Vert.x service discovery detects these links and imports
-the service records in the service discovery infrastructure, so your application does not have to know whether the
-service has been imported using a docker link, or published _manually_, or imported some other ways.
-
-NOTE: Could we have used the regular Vert.x publication to publish the _consolidation_ HTTP endpoint ? No, because
-even at runtime it does not know on which (public) IP and (public) port it is accessible. Indeed the code running in the
- container ignore these details.
+Here you go, the portfolio service is started. It discovers the `quotes` service and is ready to be used.
 
 Go back to the dashboard, and you should see some new services and the _cash_ should have been set in the top left
 corner.
@@ -420,12 +413,6 @@ generated at compile time, and use SockJS to communicate. Behind the hood there 
  SockJS.
 
 Well, it's time to buy and sell some shares no ? Let's do that in the next chapter.
-
-
-
-
-
-
 
 
 

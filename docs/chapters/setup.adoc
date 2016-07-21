@@ -31,10 +31,12 @@ cd vertx-microservices-workshop
 mvn clean install
 ----
 
+As said previously, Vert.x does not depend on Apache Maven. You can use any build tool (or even no build tool).
+
 ### Clustering and Service Discovery infrastructure
 
 It's about time to start. If you remember the microservice section, we need some service discovery mechanism.
-Fortunately, Vert.x offers a service discovery service. To let every component discover the services, it needs to
+Fortunately, Vert.x offers a service discovery mechanism. To let every component discover the services, it needs to
 store the service _record_ in a location that every one can access.
 
 By default, Vert.x service discovery is going to use a distributed map accessible by all the members of the
@@ -45,8 +47,7 @@ lets nodes:
 * to share data such as distributed maps, locks, counters...
 * to access the event bus
 
-In our context, nothing is required to configure it. Our docker images already start the Vert.x applications in
-cluster mode.
-
-In this lab, the cluster is built on top of Hazelcast and the member discovery uses _multicast_.
+In our context, you don't need to configure anything. The lab provides a cluster configuration using unicast and the
+`127.0.0.1` IP (so you won't see the services from your neighbors). The cluster is built on top of Hazelcast. You can
+ check the configuration in `vertx-workshop-common/src/main/resources/cluster.xml`.
 

@@ -34,31 +34,34 @@ known interface or API)
 6. the orchestration of the whole application needs to be reduced to the bare minimum
 
 In this lab, we don't address the point 5, but you should know that Vert.x does not restricts how you want to deploy
-your components (ssh, ansible, puppet, docker, cloud, floppy disk).
+your components (ssh, ansible, puppet, docker, cloud, fabric8, floppy disk).
 
 The last point is interesting, and often misunderstood. It's pretty cool to develop independent pieces of software
 that magically interact at runtime.... But actually, there is no magic (sorry). There is some service _discovery_
 happening.
 
-Before using a `service` provided by another component, it should find it. The location can be hardcoded
+Before using a `service` provided by another component, you need to find it. The location can be hardcoded
 in the code (but it's generally not a good idea), use a name resolved using a DNS lookup, or use more advanced
-frameworks.  Having a  service discovery mechanism also provides a consolidated view of what's there. Being able to
+techniques.  Having a  service discovery mechanism also provides a consolidated view of what's available. Being able to
 discover the different services, or resources available lets you implement some _transparency_, an inherent
-characteristic of distributed systems. For instance, it lets your components react smoothly to location changes. It
-enables load-balancing (such as with a round robin), fault-tolerance (by looking for another service provider) and so on.
+characteristic of distributed systems. For instance, it lets your components react smoothly to location or
+environment changes. It enables load-balancing (such as with a round robin), fault-tolerance (by looking for another
+service provider) and so on.
 
 Even if not necessary per definition, microservice applications are generally distributed. This comes with all the
-distributed application benefits and constraints: consensus computation, CAP theorem, consistency, monitoring, and many
-many reasons to **fail**. So microservices applications need to be design to face failures from their early stage.
+distributed application benefits and constraints: consensus computation, FLP, CAP theorem, consistency, monitoring, and
+many many reasons to **fail**. So microservices applications need to be design to face failures from their early stage.
 
-Even if in the previous pseudo-definition of microservices, it's about splitting an existing application into a set
-of independent components, there are also greenfield applications that can choose the microservice approach, following
-the same principles: a set of independent components interacting at runtime to deliver the _high-level_ service.
+The previous pseudo-definition of microservices is about splitting an existing application into a set
+of independent components. However microservices are not limited to refactoring monoliths. Greenfield
+applications that can choose the microservice approach, following the same principles: a set of independent
+components interacting at runtime to deliver the _high-level_ service.
 
 There are a couple of points I would like to mention before going further. _Microservices_ are **not** new and is not
  rocket science... Academic papers from the 70's and 80's have defined (using different words) architectural styles very
-  close to this. Another very important point to understand right away: microservices are not a silver bullet, it is
-  going to increase the complexity of the whole system (because you become more distributed).
+  close to this one. Another very important point to understand right away: microservices are not a silver bullet, it is
+  going to increase the complexity of the whole system (because you become more distributed). It will not fixed all
+  your issues.
 
 It's really about rapid delivery and adaptation. It's also about independence and replaceability. Every microservice is
 made to be replaceable by another one providing the same _service / API / interface_ (it's an application of the
@@ -81,5 +84,3 @@ different implementations of _service oriented computing_.
 Are microservices limited to REST ? No, and actually it's a common misconception. Microservices can use whatever
 interaction style that fit their service: RPC, events, messages, streams.... In this lab we are going to see REST
 services, async RPC, and message sources.
-
-

@@ -8,14 +8,15 @@ It's not a JavaScript library either. Vert.x is a `jar` file, so a Vert.x applic
  file. Vert.x does not define a packaging model, all Vert.x _components_ are plain _boring_
  `jar` files. How does this impact you and your application? Let's imagine you are using a build tool such as
  Maven or Gradle, to make your application a Vert.x application just add the `vertx-core` dependency. Wanna use another
- Vert.x components, just add it as a dependency. It's simple, burden-less. Starting the application is a class with
-  `public static void main(String[] args)`. No specific IDE or plugin to install, actually no installation either.
+ Vert.x components, just add it as a dependency. It's simple, burden-less. Starting the application is a simple class
+ with the `public static void main(String[] args)` entry point. No specific IDE or plugin to install, and there is
+ nothing to install to start using Vert.x.
 
 Then, to use the awesomeness provided by Vert.x, you just need to use it in your code, but be patient, this will be
 covered later.
 
-Another word that is important in the Vert.x description is **reactive**. Vert.x is made to build reactive
-applications, actually systems. Reactive systems has been defined in the http://reactivemanifesto.org[Reactive
+Another important word in the Vert.x description is **reactive**. Vert.x is made to build reactive
+applications, actually **systems**. Reactive systems has been defined in the http://reactivemanifesto.org[Reactive
 Manifesto]. Even if it's not that long to read, let's summarized it in 4 bullet points:
 
 * Responsive: a reactive system needs to handle requests in a _reasonable_ time (I let you define _reasonable_).
@@ -25,14 +26,14 @@ it must be _designed for failures_ and deal with them.
 being able to handle the load with minimal resources.
 * Message driven: components from a reactive system interacts using **asynchronous message-passing**.
 
-This last point defines the essence of Vert.x - it's event driven and also non-blocking. Events are delivered in an
+This last point defines the essence of Vert.x - it's event-driven and also non-blocking. Events are delivered in an
 _event loop_ that you **must never block**. Let's explain why. Unlike traditional, let's say "enterprise", systems,
 Vert.x uses a very small number of threads. Some of these threads are _event loops_, they are responsible for
 dispatching the events in `Handlers`. If you block this thread, the events won't be delivered anymore. This
-execution model has a big impact on how you write your code, instead of _traditional_ blocking code, your code is
+execution model impacts how you write your code, instead of _traditional_ blocking code, your code is
 going to be asynchronous footnote:[Asynchronous: the caller does not wait for a returned response, but pass
  a _callback_ executed when the result has been computed] and non-blocking footnote:[Non-blocking: the code
-  must not block the executing thread - so it must avoid blocking IO, method taking a long processing time...].
+  must not block the executing thread - so it must avoid blocking IO, long processing time...].
 
 Before, you were doing:
 
@@ -64,7 +65,8 @@ for a long time (because the web site may be slow or whatever).
 * the Vert.x one is asynchronous and non-blocking: the thread (event loop) is released while the connection with the
 HTTP server is established and so can do something else. When the response has been received, the **same** event loop
  calls the _callback_. Most of the Vert.x components are single-threaded (access only by a single thread), so no
- concurrency burden anymore.
+ concurrency burden anymore. By the way, with Vert.x, even the DNS resolution is asynchronous and non-blocking (while
+ Java DNS resolution is blocking).
 
 Another important point about the Vert.x description given above is _"on the JVM"_. Vert.x applications run on
 the Java Virtual Machine (8+), but that does not mean they have to be developed using the Java language. Vert.x
@@ -82,7 +84,7 @@ _message_ to the initial sender
 
 Ok, let's step back a minute because that's a lot of information to process... Why would you use Vert.x ? Vert.x is
 incredibly flexible - whether it's simple network utilities, sophisticated modern web applications, HTTP/REST
-microservices, high volume event processing or a full blown back-end message-bus application, Vert.x is a great fit.
+microservices, high volume event processing or a full blown backend message-bus application, Vert.x is a great fit.
 It's fast, and does not constraint you. Last but not least, Vert.x is not only reactive, it makes your application be
  reactive; in other words: _responsive, elastic, resilient and asynchronous_!
 

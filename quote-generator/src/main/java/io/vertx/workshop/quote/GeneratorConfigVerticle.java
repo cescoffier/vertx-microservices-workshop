@@ -40,5 +40,13 @@ public class GeneratorConfigVerticle extends MicroServiceVerticle {
       }
       System.out.println("Market-Data service published : " + rec.succeeded());
     });
+
+    publishHttpEndpoint("quotes", "localhost", config().getInteger("http.port", 8080), ar -> {
+      if (ar.failed()) {
+        ar.cause().printStackTrace();
+      } else {
+        System.out.println("Quotes (Rest endpoint) service published : " + ar.succeeded());
+      }
+    });
   }
 }

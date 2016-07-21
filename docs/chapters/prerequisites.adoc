@@ -7,64 +7,13 @@ It's going to be your turn now... But before starting, you need to install a cou
 * Operating System: Mac OS X (10.8+), Windows 7+, Ubuntu 12+, CentOS 7+, Fedora 22+
 * Memory: At least 4 GB+, preferred 8 GB
 
-### Docker
-
-#### Docker Toolbox or Packages
-
-Docker runs natively on Linux. Because the Docker daemon uses Linux-specific kernel features, you can’t run Docker
-natively in OS X or Windows (yet, they are working on that). Instead, you must use `docker-machine` to create and
-attach to a virtual machine (VM). This machine is a Linux VM that hosts Docker for you on your Mac or Windows.
-This can be easily installed using https://www.docker.com/docker-toolbox[Docker Toolbox].
-
-Follow the instructions to install Docker:
-
-* https://github.com/docker/toolbox/releases/download/v1.10.3/DockerToolbox-1.10.3.pkg[Docker Tool Box 1.10.3 for Mac]
-* https://github.com/docker/toolbox/releases/download/v1.10.3/DockerToolbox-1.10.3.exe[Docker Toolbox 1.10.3 for
-Windows]
-* http://docs.docker.com/engine/installation/ubuntulinux/[Docker on Ubuntu]
-* http://docs.docker.com/engine/installation/centos/[Docker on Centos]
-* http://docs.docker.com/engine/installation/fedora/[Docker on Fedora]
-
-Complete set of operating systems are listed at http://docs.docker.com/engine/installation/[Install Docker Engine].
-
-#### Images
-
-Do avoid waiting for docker image to download when implementing the application, you should download them beforehand:
-
-[source]
-docker pull library/java
-
-#### Create Docker Host Mapping
-
-If you are using Docker Machine, to make it easier to start/stop the containers, an entry is added into the host
-mapping table of your operating system.
-
-Find out the IP address of your machine:
-
-[source]
-----
-docker-machine ip default
-----
-
-IMPORTANT: Replace `default` by the name of your docker machine.
-
-This will provide the IP address associated with the Docker Machine created earlier.
-
-Edit `/etc/hosts` (Mac OS) or `C:\Windows\System32\drivers\etc\hosts` (Windows) and add:
-
-[source, text]
-----
-<IP ADDRESS>  dockerhost
-----
-
-On Linux (and for the lucky people having access to the native version of docker for Windows and Mac), `dockerhost`
- is `localhost` (as it runs natively). You would need to replace every reference to `dockerhost` by `localhost`.
-
 ### Java Development Kit
 
 You need a JDK 8 installed on your machine. Install is from:
 
 * http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html[Oracle JDK 8]
+
+You can use either Oracle JDK or OpenJDK.
 
 ### Maven
 

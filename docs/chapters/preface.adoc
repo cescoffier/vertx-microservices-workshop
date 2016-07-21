@@ -2,10 +2,10 @@
 
 Let's start from the beginning.... _Vert.x_. What's Vert.x ? That's a pretty good question, and probably a good start.
  If you go on the http://vertx.io[Vert.x web site], Vert.x is defined as _"a toolkit for building reactive
- applications on the JVM"_. This description is rather fuzzy no ? What's a toolkit ? What are reactive applications ?
- In this lab, we are going to explain these words, and build an application using Vert.x illustrating what Vert.x is.
- This application is going to be composed by _microservices_. Another buzzword to be trendy ? No, Vert.x was promoting
-  _microservices_  before everyone and his dog jumped on the bandwagon.
+ applications on the JVM"_. This description is rather fuzzy no ? What's a _toolkit_ ? What are _reactive_
+ applications ? In this lab, we are going to explain these words, and build an application using Vert.x illustrating
+ what Vert.x is. This application is going to be composed by _microservices_. Another buzzword to be trendy ? No,
+ Vert.x was promoting _microservices_  before everyone and his dog jumped on the bandwagon.
 
 The developed application is going to be:
 
@@ -19,8 +19,8 @@ services, to consuming them and finally to assembling everything in a consistent
 are reactive systems, what is reactive programming, and how to build applications based on reactive microservice**s**
 (the **s** is important).
 
-This is a BYOL (bring your own laptop) session, so bring your Windows, OSX, or Linux laptop. You would also need Docker,
- not because Vert.x needs Docker (it does not!), but to simulate a distributed system.
+This is a BYOL (bring your own laptop) session, so bring your Windows, OSX, or Linux laptop. You need Java 8 on your
+machine (JDK, so with javac), and Apache Maven (3.3+).
 
 What you are going to learn:
 
