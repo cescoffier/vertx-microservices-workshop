@@ -16,9 +16,9 @@ Engineering Institute.]. And now, you say "what ???".
 
 Let's rewind, and take another approach... Why did we end up with _microservices_. In one word: **agility**
 footnote:[Ability to move quickly and easily, not related to the Agile methodologies]. Let's imagine, you have
-an  application, rather large, and as with all large applications, the maintenance is a nightmare, adding features take
+an  application, rather large. As a large application, the maintenance is a nightmare, adding features take
  too much time, the technology used is very outdated (What ? Corba is not cool anymore ?), any change needs to pass a
- 50-steps process and be validated by 5 levels of management, obviously there are several teams on the application with
+ 50-steps process and be validated by 5 levels of management. Obviously there are several teams on the application with
   different requirements and agendas. Well, you have such a _monster app_. How could we make the development and
   maintenance of this application efficient ? Microservices are one answer to this question. It aims to reduce the
   _time to production_.
@@ -49,19 +49,19 @@ environment changes. It enables load-balancing (such as with a round robin), fau
 service provider) and so on.
 
 Even if not necessary per definition, microservice applications are generally distributed. This comes with all the
-distributed application benefits and constraints: consensus computation, FLP, CAP theorem, consistency, monitoring, and
-many many reasons to **fail**. So microservices applications need to be design to face failures from their early stage.
+distributed application benefits and constraints: consensus computation (FLP), CAP theorem, consistency, monitoring,
+and many many reasons to fail. So microservices applications need to be design to face failures from their early stage.
 
-The previous pseudo-definition of microservices is about splitting an existing application into a set
-of independent components. However microservices are not limited to refactoring monoliths. Greenfield
-applications that can choose the microservice approach, following the same principles: a set of independent
-components interacting at runtime to deliver the _high-level_ service.
+The previous pseudo-definition of microservices is about splitting an existing application into a set of independent
+components. However microservices are not limited to refactoring monoliths. Greenfield applications that can choose
+the microservice approach, following the same principles: a set of independent components interacting at runtime to
+deliver the _high-level_ service.
 
 There are a couple of points I would like to mention before going further. _Microservices_ are **not** new and is not
  rocket science... Academic papers from the 70's and 80's have defined (using different words) architectural styles very
-  close to this one. Another very important point to understand right away: microservices are not a silver bullet, it is
-  going to increase the complexity of the whole system (because you become more distributed). It will not fixed all
-  your issues.
+  close to this one. Another very important point to understand right away: microservices are not a silver bullet,
+  (unless managed) it is going to increase the complexity of the whole system (because you become more distributed).
+  It will not fixed all your issues.
 
 It's really about rapid delivery and adaptation. It's also about independence and replaceability. Every microservice is
 made to be replaceable by another one providing the same _service / API / interface_ (it's an application of the

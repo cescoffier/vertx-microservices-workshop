@@ -85,7 +85,7 @@ _message_ to the initial sender
 Ok, let's step back a minute because that's a lot of information to process... Why would you use Vert.x ? Vert.x is
 incredibly flexible - whether it's simple network utilities, sophisticated modern web applications, HTTP/REST
 microservices, high volume event processing or a full blown backend message-bus application, Vert.x is a great fit.
-It's fast, and does not constraint you. Last but not least, Vert.x is not only reactive, it makes your application be
+It's fast, and does not constraint you. Last but not least, Vert.x is not only reactive, it makes your application
  reactive; in other words: _responsive, elastic, resilient and asynchronous_!
 
 

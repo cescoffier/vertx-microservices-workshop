@@ -11,7 +11,7 @@ In this section, we are going to develop 2 traders (following a stupid logic you
 
 ### Compulsive and dumb traders
 
-Before seen how there are implemented, let's explain the absolutely illogic algorithm used by these traders:
+Before seeing how these are implemented, let's explain the absolutely illogic algorithm used by these traders:
 
 1. A compulsive trader is picking randomly one company name and a number of shares (`x`)
 2. Randomly, it tries to buy or sell `x` shares of the company

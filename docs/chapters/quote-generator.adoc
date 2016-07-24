@@ -31,7 +31,7 @@ Let's start with the `pom.xml` file. This file specifies the Maven build:
 A _fat-jar_ (also called _uber_ jar or _shaded_ jar) is a convenient way to package a Vert.x application. It creates a
 _über-jar_ containing your application and all its dependencies, including Vert.x. Then, to launch it, you just need
 to use `java -jar ....`, without having to handle the `CLASSPATH`. Wait, I told you that Vert.x does not dictate a
-type of packaging. It's true, fat jars are convenient, but it's the the only way, you can use plain (not fat) jars,
+type of packaging. It's true, fat jars are convenient, but it's not the only way, you can use plain (not fat) jars,
 OSGi bundles...
 
 The created _fat-jar_ is configured to use a main class provided in `vertx-workshop-common` (`io.vertx.workshop
@@ -89,7 +89,7 @@ The last part of the method is about the service discovery mentioned in the micr
 generates quotes sent on the event bus. But to let other components discover where the messages are sent (_where_
 means on which address), it registers it. `market-data` is the name of the service, `ADDRESS` is the event bus
 address on which the messages are sent. The last argument is a `Handler` that is notified when the registration has
-been completed. The `handler` receives a structured called `AsyncResult`.
+been completed. The `handler` receives a structure called `AsyncResult`.
 
 Remember, Vert.x is promoting an asynchronous, non-blocking development model. Publishing the service may take time
 (actually it does as it creates a record, write it to the backend, and notifies everyone), as we cannot block the
@@ -274,7 +274,7 @@ Some parts have no _content_, and it's expected as it's just the beginning...
 
 ### You are not a financial expert ?
 
-So maybe you are not used to the financial world and words... I'm not too, and this is a overly simplified version.
+So maybe you are not used to the financial world and words... Neither am I, and this is a overly simplified version.
 Let's define the important fields:
 
 * `name` : the company name

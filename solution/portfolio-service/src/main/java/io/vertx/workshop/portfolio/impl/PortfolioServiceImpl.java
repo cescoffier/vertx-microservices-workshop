@@ -72,18 +72,13 @@ public class PortfolioServiceImpl implements PortfolioService {
         .map(entry -> getValueForCompany(httpClient, entry.getKey(), entry.getValue()))
         .collect(Collectors.toList());
 
-    if (results.isEmpty()) {
-      // We don't own anything
-      resultHandler.handle(Future.succeededFuture(0.0));
-    } else {
-      // We need to return only when we have all results, for this we create a composite future. The set handler
-      // is called when all the futures has been assigned.
-      CompositeFuture.all(results).setHandler(
-          ar -> {
-            double sum = results.stream().mapToDouble(fut -> (double) fut.result()).sum();
-            resultHandler.handle(Future.succeededFuture(sum));
-          });
-    }
+    // We need to return only when we have all results, for this we create a composite future. The set handler
+    // is called when all the futures has been assigned.
+    CompositeFuture.all(results).setHandler(
+        ar -> {
+          double sum = results.stream().mapToDouble(fut -> (double) fut.result()).sum();
+          resultHandler.handle(Future.succeededFuture(sum));
+        });
   }
 
   private Future<Double> getValueForCompany(HttpClient client, String company, int numberOfShares) {
