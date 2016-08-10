@@ -202,7 +202,7 @@ TIP: The `Map<String, JsonObject>` could be replaced by a simple `JsonObject` as
 
 ### Time to start the quote generator
 
-First, let's build the docker image. In the terminal, execute:
+First, let's build the microservice _fat-jar_. In the terminal, execute:
 
 ----
 cd quote-generator
@@ -285,4 +285,3 @@ Let's define the important fields:
 * `bid` : the price of the stock when you sell them (buyer price)
 
 You can check https://en.wikipedia.org/wiki/Financial_quote[Wikipedia] for more details.
-
