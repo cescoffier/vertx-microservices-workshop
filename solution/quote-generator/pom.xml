@@ -17,9 +17,6 @@
   <properties>
     <!-- Main verticle -->
     <main.verticle>io.vertx.workshop.quote.GeneratorConfigVerticle</main.verticle>
-
-    <!-- Docker discovery - we are exposing a HTTP endpoint -->
-    <discovery.service-type>http-endpoint</discovery.service-type>
   </properties>
 
   <dependencies>

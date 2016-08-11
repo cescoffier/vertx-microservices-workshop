@@ -10,15 +10,11 @@ This component is a UI to see what's going on with our trading system. It uses:
 ## Build
 
 ```
-mvn clean install docker:build
+mvn clean package
 ```
 
 ## Run
 
-You can launch the dashboard with or without the audit service.
-
 ```
-docker run -p 8083:8080 --rm --name dashboard vertx-microservice-workshop/trader-dashboard
-# or with the audit
-docker run -p 8083:8080 --rm --name dashboard --link audit:AUDIT vertx-microservice-workshop/trader-dashboard
+java -jar target/trader-dashboard-1.0-SNAPSHOT-fat.jar
 ```
