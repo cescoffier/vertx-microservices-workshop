@@ -14,9 +14,6 @@
 
   <properties>
     <main.verticle>io.vertx.workshop.audit.impl.AuditVerticle</main.verticle>
-
-    <!-- Docker discovery - we are exposing a HTTP endpoint -->
-    <discovery.service-type>http-endpoint</discovery.service-type>
   </properties>
 
   <dependencies>

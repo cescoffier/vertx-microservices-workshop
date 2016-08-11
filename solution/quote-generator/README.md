@@ -4,11 +4,11 @@
 == Build
 
 ```
-mvn clean install docker:build
+mvn clean package
 ```
 
 == Run
 
 ```
-docker run -p 8081:8080 --rm --name quote-generator vertx-microservice-workshop/quote-generator
+java -jar target/quote-generator-1.0-SNAPSHOT-fat.jar
 ```
