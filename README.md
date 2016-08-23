@@ -3,7 +3,7 @@
 This repository is a lab about vert.x explaining how to build distributed _microservice_ reactive applications using
 Vert.x.
 
-Instructions are available on http://vertx-lab.dynamis-technologies.com
+Instructions are available on http://escoffier.me/vertx-hol
 
 Complete code is available in the `solution` directory.
 
