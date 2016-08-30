@@ -81,7 +81,7 @@ public void start() {
 ----
 
 Verticles can retrieve a configuration using the `config()` method. Here it gets the details about the companies to
-simulate. The configuration is a `JsonObject`. Vert.x heavily uses JSON, so you are going to see a lot of JSON during
+simulate. The configuration is a `JsonObject`. Vert.x heavily uses JSON, so you are going to see a lot of JSON in
 this lab. For each company found in the configuration, it deploys another verticle with the extracted configuration.
 Finally, it deploys another verticle providing a very simple HTTP API.
 
@@ -141,24 +141,30 @@ It's time for you to develop some parts of the application (I know you have pins
 
 Let's do that....
 
-#### Implementing a Handler to receive events
+#### Task - Implementing a Handler to receive events
 
-The first action is about creating a `Handler`, so a method that is invoked on event. Here, the `Handler` is going to
-be called for every messages sent on the event bus on a specific `address` (receiving each quote sent by the generator).
- In the `Handler` body, write:
+The first action is about creating a `Handler`, so a method that is invoked on event. Handlers are an important part of Vert.x, so it's important to understand what they are.
 
-[source, java,role=assignment]
+In this task, the `Handler` is going to be called for each message sent on the event bus on a specific `address` (receiving each quote sent by the generator). It's a _message consumer_. The `message` parameter is the received message.
+
+Implement the logic that retrieve the body of the message (with the `body()` method. Then extract from the body the `name` of the quote and add an entry `name -> quote` in the `quotes` map.
+
+[.assignment]
+****
+[source, java]
 ----
 JsonObject quote = message.body(); // 1
 quotes.put(quote.getString("name"), quote); // 2
 ----
 
 First, it retrieves the message body (1). It's a JSON object, and stores it in the `quotes` map (2).
+****
 
-#### Implementing a Handler to handle HTTP requests
+#### Task - Implementing a Handler to handle HTTP requests
 
-Let's now implement the second point. To handle the HTTP requests, we need a HTTP server. Fortunately, Vert.x lets
-you create HTTP servers using:
+Now that you did a first `Handler`, let's do a second one. This handler does not receive messages from the event bus, but HTTP requests. The handler is attached to a HTTP server and is called every time there is a HTTP request to the server, the handler is called and is responsible for writing the response.
+
+To handle the HTTP requests, we need a HTTP server. Fortunately, Vert.x lets you create HTTP servers using:
 
 [source, java]
 ----
@@ -167,10 +173,22 @@ vertx.createHttpServer()
     .listen(port, resultHandler);
 ----
 
+Write the content of the request handler to respond to the request:
 
-Replace the content of the `requestHandler` (a handler called on every incoming HTTP request) by:
+1. a response with the `content-type` header set to `application/json`
+2. retrieve the `name` parameter (it's the company name)
+3. if the company name is not set, return all the quotes as json.
+4. if the company name is set, return the stored quote or a 404 response if the company is unknown
 
-[source, java, role=assignment]
+TIP: The response to a request is accessible using `request.response()`
+
+TIP: To write the response use `response.end(content)`.
+
+TIP: To create the JSON representation of an object, you can use the `Json.encode` method
+
+[.assignment]
+****
+[source, java]
 ----
 HttpServerResponse response = request.response()    // <1>
     .putHeader("content-type", "application/json");
@@ -193,6 +211,7 @@ if (company == null) {
 <3> Encode the map to JSON
 <4> Write the response and flush it using `end(...)`
 <5> If the given name does not match a company, set the status code to `404`
+****
 
 You may wonder why synchronization is not required. Indeed we write in the map and read from it without any
 synchronization constructs. Here is one of the main feature of Vert.x: all this code is going to be executed by

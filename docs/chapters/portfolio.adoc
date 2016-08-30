@@ -123,15 +123,17 @@ methods in this service:
 * `sendActionOnTheEventBus` to see how to send messages on the event bus
 * `evaluate` computing the current value of the portfolio
 
-==== Creating AsyncResult
+==== Task - Creating AsyncResult instances
 
 As we have seen above, our async service have `Handler<AsyncResult<Portfolio>>` parameter. So when we implement this
 service, we would need to call the `Handler` with an instance of `AsyncResult`. To see how this works, let's
 implement the `getPortfolio` method:
 
-In `io.vertx.workshop.portfolio.impl.PortfolioServiceImpl`, replace the body of `getPortfolio` by:
+In `io.vertx.workshop.portfolio.impl.PortfolioServiceImpl`, fill the `getPortfolio` method. It should call the `handle` method of the `resultHandler` with a _successful_ async result. This object can be created from the (Vert.x) `Future` method.
 
-[source, java, role=assignment]
+****
+[.assignment]
+[source, java]
 ----
 resultHandler.handle(Future.succeededFuture(portfolio));
 ----
@@ -141,6 +143,7 @@ Wow... one single line ? Let's dissect it:
 * `resultHandler.handle` : this is to invoke the `Handler`. `Handler<X>` has a single method (`handle(X)`).
 * `Future.succeededFuture` : this is how we create an instance of `AsyncResult` denoting a success. The passed value
  is the result (`portfolio`)
+****
 
 But, wait, what is the relationship between `AsyncResult` and `Future` ? A `Future` represents the result of an action
 that may, or may not, have occurred yet. The result may be `null` if the `Future` is used to detect the completion of
@@ -177,7 +180,7 @@ So, how does this work with our async RPC service, let's look at this sequence d
  @enduml
 ----
 
-==== Sending event on the event bus
+==== Task - Sending event on the event bus
 
 In the previous chapter, we have registered a consumer receiving event bus services, it's time to see how to send
 messages on the event bus. You access the event bus using `vertx.eventBus()`. From this object you can:
@@ -193,9 +196,17 @@ Ok, back to our code. We have provided the `buy` and `sell` methods, that are ju
  selling shares. Once the action is _emitted_, we send a message on the event bus that will be consumed by the `Audit
   Service` and the `Dashboard`. So, we are going to use the `publish` method.
 
-In the `sendActionOnTheEventBus` method, write:
+Write the body of the `sendActionOnTheEventBus` method in oder to publish a message on the `EVENT_ADDRESS` address containing a `JsonObject` as body. This object must contains the following entries:
 
-[source, java, role=assignment]
+* action -> the action (buy or sell)
+* quote -> the quote as Json
+* date -> a date (long in milliseconds)
+* amount -> the amount
+* owner -> the updated (owned) amount
+
+[.assignment]
+****
+[source, java]
 ----
 vertx.eventBus().publish(EVENT_ADDRESS, new JsonObject()
     .put("action", action)
@@ -211,8 +222,9 @@ Let's have a deeper look:
 message is sent
 2. the body is a `JsonObject` containing the different information on the action (buy or sell, the quote (another
 json object), the date...
+****
 
-==== Coordinating async methods and consuming HTTP endpoints - Portfolio value evaluation
+==== Task - Coordinating async methods and consuming HTTP endpoints - Portfolio value evaluation
 
 The last method to implement is the `evaluate` method. This method computes the current value of the portfolio.
 However, for this it needs to access the "current" value of the stock (so the last quote). It is going to consume
@@ -226,9 +238,11 @@ That's a bit more tricky, so let's do it step by step. First, in the `evaluate`,
 endpoint (service) provided by the quote generator. This service is named `quotes`. We published in in the previous
 section. So, let's start to get this service.
 
-In the `evaluate` method, write:
+Fill the `evaluate` method to retrieve the `quotes` service. You can retrieve Http services using `HttpEndpoint.getClient`. The `name` of the service is `quotes`. If you can't retrieve the service, just passed a failed async result to the handler. Otherwise, call `computeEvaluation`.
 
-[source, java, role=assignment]
+[.assignment]
+****
+[source, java]
 ----
 HttpEndpoint.getClient(discovery, new JsonObject().put("name", "quotes"), // <1>
   client -> {
@@ -245,8 +259,9 @@ HttpEndpoint.getClient(discovery, new JsonObject().put("name", "quotes"), // <1>
 <1> Get the HTTP Client for the requested service.
 <2> The client cannot be retrieved (service not found), report the failure
 <3> We have the client, let's continue...
+****
 
-Here is how `computeEvaluation` method is implemented:
+Here is how the `computeEvaluation` method is implemented:
 
 [source, java]
 ----
@@ -274,9 +289,11 @@ will be all valuated (or assigned). Fortunately, Vert.x provides `CompositeFutur
 executed, we knows all the futures has received a value, and so we can compute the sum (3). Finally, we send this
 result to the client by calling the `resultHandler` (4).
 
-Well, we just need the `getValueForCompany` method that call the service:
+Well, we just need the `getValueForCompany` method that call the service. Write the content of this method. You would need to create a `Future` object to report the completion of the operation. This future is the "returned" result of the method. Then, call the HTTP endpoint (`/?name= + encode(company)`). When the response arrives, check the status (should be 200) and retrieve the body (with `bodyHandler`). The body can be parsed as a `JsonObject` using `buffer.toJsonObject()`. The value you compute is the `numberOfShares` * the `bid` price (read from the body). Once the value is computed, complete the future. Don't forget to report failures to the future too. To simplify, if the company is unknown we considered the value of the shares to 0.0.
 
-[source, java, role=assignment]
+[.assignment]
+****
+[source, java]
 ----
 private Future<Double> getValueForCompany(HttpClient client, String company, int numberOfShares) {
   // Create the future object that will  get the value once the value have been retrieved
@@ -310,8 +327,9 @@ the last quote of the company with the `get` method (2). `get` prepares the requ
 As the connection to the server may fail, we should also register an `exceptionHandler` on the client itself (6).
 Finally, we emit the request using the `end` method (7).
 
+****
 
-=== Publishing the service
+=== Task - Publishing a service
 
 Now that the service implementation is complete, let's publish it ! First we need a `verticle` that creates the actual
  service object, registers the service on the event bus and publishes the service in the service discovery
@@ -366,9 +384,13 @@ discovery.publish(record, ar -> {
 Are we done ? No.... We have a second service to publish. Remember, we are also sending messages on the event bus
 when we buy or sell shares. This is also a service (a message source service to be exact).
 
-At the end of the `start` method, add:
+At the end of the `start` method, write the code required to publish the `portfolio-events` service. `EVENT_ADDRESS` is the event bus address.
 
-[source, java, role=assignment]
+TIP: there are `publish` methods available depending of your service type.
+
+[.assignment]
+****
+[source, java]
 ----
 publishMessageSource("portfolio-events", EVENT_ADDRESS, ar -> {
   if (ar.failed()) {
@@ -378,8 +400,7 @@ publishMessageSource("portfolio-events", EVENT_ADDRESS, ar -> {
   }
 });
 ----
-
-`portfolio-events` is the service name, `EVENT_ADDRESS` is the event bus address.
+****
 
 Now we are done, and it's time to build and run this service.
 

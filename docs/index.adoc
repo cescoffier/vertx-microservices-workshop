@@ -4,6 +4,8 @@ v0.5, August 30th, 2016
 :toc: left
 :toclevels: 4
 :imagesdir: images
+:docinfo1:
+:icons: font
 
 include::chapters/preface.adoc[Preface]
 include::chapters/vertx.adoc[Vert.x]

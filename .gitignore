@@ -134,3 +134,6 @@ hs_err_pid*
 
 #vertx
 .vertx
+
+# Asciidctor plugin
+.asciidoctor

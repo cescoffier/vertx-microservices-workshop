@@ -34,7 +34,7 @@ located using an (event bus) address.
 * Message sources that are components publishing messages on the event bus, the service is located using an (event bus)
 address.
 
-These components runs in the same network (during the lab they will be on the same machine (yours), but in different
+These components runs in the same network (in this lab they will be on the same machine (yours), but in different
 processes).
 
 The dashboard presents the available services, the value of each company quotes, the last operations made by your

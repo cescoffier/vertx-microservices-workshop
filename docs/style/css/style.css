@@ -1,4 +1,22 @@
-@import "asciidoctor.css";
+#header, #content, #footnotes, #footer {
+    max-width: 90.5em;
+}
+
+.quoteblock blockquote, .quoteblock blockquote, td.content {
+    font-size: 1.2em;
+}
+
+.assignment pre code {
+    background-color: transparent;
+}
+
+.sidebarblock p, .sidebarblock dt, .sidebarblock td.content, p.tableblock {
+    font-size: 1em;
+}
+
+a[data-toggle='collapse'] {
+    margin-bottom: 10px;
+}
 
 h1 {
     font-size: 46px;
@@ -17,16 +35,17 @@ h1 {
     font-weight: bold;
 }
 
-
 #toctitle, .h1, .h2, .h3, h1, h2, h3 {
     margin-top: 25px;
     margin-bottom: 12px;
 }
+
 #toctitle, .h1, .h2, .h3, .h4, .h5, .h6, h1, h2, h3, h4, h5, h6 {
     font-family: inherit;
     line-height: 1.1;
     color: inherit;
 }
+
 h1 {
     margin: .67em 0;
 }
@@ -50,10 +69,13 @@ p {
     font-size: 1.5em;
 }
 
-li p {
+.sect1 .assignment li, .sect2 .assignment li, .sect3 .assignment li {
     font-size: 1em;
 }
 
+li p {
+    font-size: 1em;
+}
 
 code {
     color: #c7254e;
@@ -73,7 +95,7 @@ pre code {
 }
 
 code, kbd, pre, samp {
-    font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
+    font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
 }
 
 .quoteblock blockquote:before {
@@ -84,11 +106,11 @@ sup.footnote {
     vertical-align: baseline;
 }
 
-.assignment::before {
-    content: "Spoiler Alert! You can decide whether or not you want to write this code by yourself or read it first.";
-    font-weight: bold;
-    font-size: larger;
-    height: 35px;
-    display: block;
-    color: #782b90;
-}
+/*.assignment::before {*/
+/*content: "Spoiler Alert! You can decide whether or not you want to write this code by yourself or read it first.";*/
+/*font-weight: bold;*/
+/*font-size: larger;*/
+/*height: 35px;*/
+/*display: block;*/
+/*color: #782b90;*/
+/*}*/

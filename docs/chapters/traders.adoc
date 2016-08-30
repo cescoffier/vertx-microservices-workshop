@@ -55,28 +55,35 @@ Open the `io.vertx.workshop.trader.impl.JavaCompulsiveTraderVerticle` class. In 
 2. Retrieve the 2 services we use
 3. When both have been retrieve, apply the trading logic on every new market data.
 
-#### 1. Initialize the trader
+#### Task - 1. Initialize the trader
 
 First, look at the `start` method signature: `start(Future<Void> future)`. The `future` let us tell when the
 initialization has been completed and whether or not it has been successful. That means we have to `complete` or
 `fail` this `future` explicitly.
 
-To initialize the trader, remove the `future.fail` statement and write:
+To initialize the trader, remove the `future.fail` statement and initialize the `company` and `numberOfShares` variables by using the `TraderUtils` class.
 
-[source, java, role=assignment]
+[.assignment]
+****
+[source, java]
 ----
 String company = TraderUtils.pickACompany();
 int numberOfShares = TraderUtils.pickANumber();
 System.out.println("Java compulsive trader configured for company " + company + " and shares: " + numberOfShares);
 ----
+****
 
-#### 2. Retrieve the 2 services
+#### Task - 2. Retrieving several services
 
 The trader needs the `Portfolio` service and the `market` service (the message source sending the market data). We
 cannot start the trading logic before having retrieved both of them. Let's use the `Future` composition feature we
 have seen in the previous section.
 
-[source, java, role=assignment]
+Write the code (just after the previous code you wrote) required to retrieve the 2 services. When both are retrieved (use the `all` composition operator), just do nothing. The `handler` will be filled in the next step.
+
+[.assignment]
+****
+[source, java]
 ----
 // We need to retrieve two services, create two futures object that
 // will get the services
@@ -102,12 +109,15 @@ retrieve the `Portfolio` service.
 
 Finally, in <4>, we create a `CompositeFuture` that execute the attached `Handler` when all the listed `Futures` has
 been assigned.
+****
 
-#### 3. Applying the trading logic
+#### Task - 3. Applying the trading logic
 
-Almost done! Where we had the `Next...`, write:
+Almost done! Now write the last handler. If the retrieval as failed, just report the failure on `future`. Otherwise, registers a message consumer on the market service and every time you get a message, apply the `TraderUtils.dumbTradingLogic` method. Then complete `future`.
 
-[source, java, role=assignment]
+[.assignment]
+****
+[source, java]
 ----
 if (ar.failed()) {                                                               // <1>
     future.fail("One of the required service cannot " +
@@ -132,12 +142,15 @@ services from the `Future` objects (2). We set a `Handler` on the `marketConsume
 executing the trading logic (4). Finally, in (5), we complete the `future` given as parameter of the `start` method to
 notify of the completion of the initialization process. The `complete` method does not pass a _result_ as we just notify
  of the completion. Notice also the `future.fail` to denote an initialization issue.
+****
 
 #### The code in one snippet
 
-Here is the whole code:
+Here is the whole code.
 
-[source, java, role=assignment]
+[.assignment]
+****
+[source, java]
 ----
     super.start();
 
@@ -172,6 +185,7 @@ Here is the whole code:
       }
     });
 ----
+****
 
 #### Run this trader
 
@@ -192,7 +206,7 @@ java -jar target/compulsive-traders-1.0-SNAPSHOT-fat.jar
 
 If you go back to the dashboard, you may start seen some moves on your portfolio.
 
-### The Groovy Trader
+### Task - Writing a Groovy Verticle
 
 The Groovy trader is using the same trading logic, but this verticle is going to be developed in Groovy. To ease the
 understanding, the code is going to be very close to the Java version.
@@ -200,9 +214,15 @@ understanding, the code is going to be very close to the Java version.
 Open `src/main/resources/GroovyCompulsiveTraderVerticle.groovy`. This verticle is going to be a _Groovy Script_. So
 the content is the `start` method of the verticle. Vert.x also supports Groovy classes.
 
-Copy the following code in the file:
 
-[source, groovy, role=assignment]
+If you don't know Groovy, just copy and paste the solution. If you do, you can try to implement the trader by yourself following the same logic as the Java trader:
+
+* Groovy version of the Vert.x API are in `io.verx.groovy.x.y`, for instance `io.vertx.groovy.core.CompositeFuture`.
+* Json Objects are Groovy Maps, so a `MessageConsumer<JsonObject>` in Java is a `MessageConsumer<Map>` in Groovy.
+
+[.assignment]
+****
+[source, groovy]
 ----
 import io.vertx.groovy.core.CompositeFuture
 import io.vertx.groovy.core.Future
@@ -246,19 +266,15 @@ CompositeFuture.all(marketFuture, portfolioFuture).setHandler( { ar ->
   }
 });
 ----
-
 As you can see the code if very close to the Java one. Let's spot the differences:
 
-* Well, it's Groovy
-* On the `import` statements, you can see it does import `groovy` version of the packages.
-* We have to create the service discovery (as before it was made by a parent class)
+* Well, it's Groovy. When an interface is annotated with `@VertxGen`, Vert.x translates it to all the supported (and configured) languages
+* On the `import` statements, you can see it does import `groovy` version of the packages.. Each translation tries to be as close as possible to the language idioms, that's why you have `Maps` in Groovy
+* We have to create the service discovery (as before it was made by a parent class)instead of `JsonObject`.
 * `JsonObjects` are `Maps`. In Groovy, it makes more sense to use `Map` objects.
 
-When an interface is annotated with `@VertxGen`, Vert.x translates it to all the supported (and configured) languages
-. Each translation tries to be as close as possible to the language idioms, that's why you have `Maps` in Groovy
-instead of `JsonObject`.
-
 This example has been developed in Groovy, but it would be similar in JavaScript, Ruby or Ceylon.
+****
 
 It's time to rebuild and restart our traders. Hit `CTRL+C` to stop the running trader. Then, rebuild with:
 
