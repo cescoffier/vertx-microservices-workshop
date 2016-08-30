@@ -1,13 +1,9 @@
 # Vert.x - From zero to (micro)-hero
 Clement Escoffier, Julien Viet
 v0.4, July 21st, 2016
-:toc:
-:toc-title: Table of Contents
+:toc: left
 :toclevels: 4
-:toc-placement!:
 :imagesdir: images
-
-toc::[]
 
 include::chapters/preface.adoc[Preface]
 include::chapters/vertx.adoc[Vert.x]
