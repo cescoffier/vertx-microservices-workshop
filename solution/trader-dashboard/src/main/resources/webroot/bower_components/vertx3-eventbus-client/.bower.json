@@ -1,0 +1,39 @@
+{
+  "name": "vertx3-eventbus-client",
+  "version": "3.2.1",
+  "homepage": "http://vertx.io",
+  "authors": [
+    "The Vert.x Team"
+  ],
+  "description": "Vert.x Event Bus Client for vert.x 3.2.1",
+  "main": "vertx-eventbus.js",
+  "moduleType": [
+    "amd"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/vert-x3/vertx-stack.git"
+  },
+  "keywords": [
+    "vert.x",
+    "sockjs",
+    "websocket",
+    "websockets"
+  ],
+  "ignore": [
+    "src",
+    "target",
+    "pom.xml",
+    "README.md"
+  ],
+  "license": "Apache-2.0",
+  "_release": "3.2.1",
+  "_resolution": {
+    "type": "version",
+    "tag": "3.2.1",
+    "commit": "b8503b4b55fdf2ee8cda8e6e8f36286f32cfa9c6"
+  },
+  "_source": "https://github.com/vert-x3/vertx-bus-bower.git",
+  "_target": "3.2.1",
+  "_originalSource": "vertx3-eventbus-client"
+}

@@ -32,6 +32,7 @@ What you are going to learn:
 * How to compose asynchronous actions
 * How to use several languages in the same application
 * How to use databases
+* How to manage failures with async results, futures, exception handlers and circuit breakers
 
 And many other points too...
 

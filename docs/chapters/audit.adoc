@@ -357,5 +357,5 @@ Then, you need to launch the application:
  java -jar target/audit-service-1.0-SNAPSHOT-fat.jar
 ----
 
-Refresh the dashboard, and you should see the operations in the top right corner!
+Restart and refresh the dashboard, and you should see the operations in the top right corner!
 

@@ -38,7 +38,7 @@ These components runs in the same network (in this lab they will be on the same 
 processes).
 
 The dashboard presents the available services, the value of each company quotes, the last operations made by your
-traders and the current state of your portfolio:
+traders and the current state of your portfolio. It also shows the state of the different circuit breakers.
 
 image::dashboard.png[Dashboard, 800]
 

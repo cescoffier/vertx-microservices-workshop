@@ -1,5 +1,9 @@
 package io.vertx.workshop.dashboard;
 
+import io.vertx.circuitbreaker.CircuitBreaker;
+import io.vertx.circuitbreaker.CircuitBreakerOptions;
+import io.vertx.core.Future;
+import io.vertx.core.http.HttpClient;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -16,8 +20,11 @@ import io.vertx.workshop.common.MicroServiceVerticle;
  */
 public class DashboardVerticle extends MicroServiceVerticle {
 
+  private CircuitBreaker circuit;
+  private HttpClient client;
+
   @Override
-  public void start() {
+  public void start(Future<Void> future) {
     super.start();
     Router router = Router.router(vertx);
 
@@ -28,7 +35,8 @@ public class DashboardVerticle extends MicroServiceVerticle {
         .addOutboundPermitted(new PermittedOptions().setAddress("market"))
         .addOutboundPermitted(new PermittedOptions().setAddress("portfolio"))
         .addOutboundPermitted(new PermittedOptions().setAddress("service.portfolio"))
-        .addInboundPermitted(new PermittedOptions().setAddress("service.portfolio"));
+        .addInboundPermitted(new PermittedOptions().setAddress("service.portfolio"))
+        .addOutboundPermitted(new PermittedOptions().setAddress("vertx.circuit-breaker"));
 
     sockJSHandler.bridge(options);
     router.route("/eventbus/*").handler(sockJSHandler);
@@ -37,39 +45,71 @@ public class DashboardVerticle extends MicroServiceVerticle {
     ServiceDiscoveryRestEndpoint.create(router, discovery);
 
     // Last operations
-    router.get("/operations").handler(this::lastOperations);
+    router.get("/operations").handler(this::callAuditService);
 
     // Static content
     router.route("/*").handler(StaticHandler.create());
 
+    // Create a circuit breaker.
+    circuit = CircuitBreaker.create("http-audit-service", vertx,
+        new CircuitBreakerOptions()
+            .setMaxFailures(2)
+            .setFallbackOnFailure(true)
+            .setResetTimeout(2000)
+            .setTimeout(1000))
+        .openHandler(v -> retrieveAuditService());
 
     vertx.createHttpServer()
         .requestHandler(router::accept)
-        .listen(8080);
+        .listen(8080, ar -> {
+          if (ar.failed()) {
+            future.fail(ar.cause());
+          } else {
+            retrieveAuditService();
+            future.complete();
+          }
+        });
   }
 
-  private void lastOperations(RoutingContext context) {
+  @Override
+  public void stop() throws Exception {
+    if (client != null) {
+      client.close();
+    }
+    circuit.close();
+  }
+
+  private Future<Void> retrieveAuditService() {
+    Future<Void> future = Future.future();
     HttpEndpoint.getClient(discovery, new JsonObject().put("name", "audit"), client -> {
-      if (client.failed() || client.result() == null) {
-        context.response()
-            .putHeader("content-type", "application/json")
-            .setStatusCode(200)
-            .end(new JsonObject().put("message", "No audit service").encode());
+      this.client = client.result();
+      if (client.succeeded()) {
+        future.complete();
       } else {
-        client.result().get("/", response -> {
-          response
-              .exceptionHandler(context::fail)
-              .bodyHandler(buffer -> {
-                context.response()
-                    .putHeader("content-type", "application/json")
-                    .setStatusCode(200)
-                    .end(buffer);
-                client.result().close();
-              });
-        })
-            .exceptionHandler(context::fail)
-            .end();
+        future.fail(client.cause());
       }
     });
+    return future;
+  }
+
+
+  private void callAuditService(RoutingContext context) {
+    if (client == null) {
+      context.response()
+          .putHeader("content-type", "application/json")
+          .setStatusCode(200)
+          .end(new JsonObject().put("message", "No audit service").encode());
+    } else {
+      client.get("/", response -> {
+        response
+            .bodyHandler(buffer -> {
+              context.response()
+                  .putHeader("content-type", "application/json")
+                  .setStatusCode(200)
+                  .end(buffer);
+            });
+      })
+          .end();
+    }
   }
 }

@@ -1,11 +1,12 @@
 ## Anatomy of the dashboard
 
-This section is about the dashboard. You won't have to write any code. It just explains how it works:
+This section is about the dashboard. It covers:
 
 1. How to configure configure Vert.x web to expose static resources
-2. How to configure the SockJS - Eventbus bridge
-3. How to implement a REST endpoint delegating to another REST endpoint (proxy pattern)
-4. How can you consume an event bus proxy from the browser
+2. How to implement a REST endpoint delegating to another REST endpoint (proxy pattern)
+3. How to protect microservices interaction against failures (exception handler, timeout, circuit breaker)
+4. How to configure the SockJS - Eventbus bridge
+5. How can you consume an event bus proxy from the browser
 
 The dashboard is a single verticle (`io.vertx.workshop.dashboard.DashboardVerticle`).
 
@@ -40,6 +41,191 @@ vertx.createHttpServer()
     .requestHandler(router::accept)
     .listen(8080);
 ----
+
+### Delegating REST calls
+
+It's often required to implement a REST API on top of another one. This pattern can be very costly on traditional
+architecture as each call would block a thread until the call to this second REST API has completed. With Vert.x
+delegation is easy, asynchronous and non blocking.
+
+For example in the dashboard, we want to retrieve the list of operations. This list is offered by the audit service.
+So in the dashboard we have this route definition:
+
+[source, java]
+----
+router.get("/operations").handler(this::callAuditService);
+----
+
+And the handler is:
+
+[source, java]
+----
+private void callAuditService(RoutingContext context) {
+    if (client == null) {
+      context.response()
+          .putHeader("content-type", "application/json")
+          .setStatusCode(200)
+          .end(new JsonObject().put("message", "No audit service").encode());
+    } else {
+      client.get("/", response -> {
+        response
+            .bodyHandler(buffer -> {
+              context.response()
+                  .putHeader("content-type", "application/json")
+                  .setStatusCode(200)
+                  .end(buffer);
+            });
+      })
+          .end();
+    }
+  }
+----
+
+The audit service is retrieved in the verticle `start` method. If the service was not found, it returns a _no audit service_ message. Otherwise, it uses the retrieved HTTP client to call the audit REST API. The response is simply sent back to the HTTP response.
+
+### Task - Managing failures with exception handler and timeout
+
+The `callAuditService` method we have seen in the previous section does the job... but well, what we do know about
+distributed systems: **they fail**. It would be better to manage failures in this method. Vert.x proposes four
+ways to handle failures:
+
+* failed asynchronous results and future
+* exception handlers
+* timeout
+* circuit breaker
+
+We have already covered the first point. In this section we cover the point 2 and 3. The next section is about circuit
+ breakers.
+
+Exception handlers are _handlers_ receiving a `Throwable` parameter and are responsible for managing the reported error. It is used on object that does not called a `Handler<AsyncResult<?>>` such as on a HTTP request. During a HTTP request-response interaction, failures can happen at several places:
+
+* a connection issue - the server does not reply or cannot be found.
+* a response issue - the server is there, but the connection is lost while retrieving the content
+* a server issue - the server returns a failure
+
+This last point is _application specific_ and need to be handle by your code. The first two points are managed
+by exception handlers on the 1) HTTP request, 2) HTTP response objects. Vert.x uses two different handlers because
+the root issue is different.
+
+Copy this method into another one called `callAuditServiceWithExceptionHandler`, and set the `exceptionHandler` on the HTTP request and HTTP response. Both should call the `fail` method on the `RoutingContext` parameter. In addition, on the request, configure the response timeout. The exception handler set on the request is called if the response cannot be retrieved before this timeout. Don't forget to update the handler of the `/operations` route to call this new method.
+
+[.assignment]
+****
+[source, java]
+----
+private void failureAwarelastOperations(RoutingContext context) {
+  if (client == null) {
+    context.response()
+        .putHeader("content-type", "application/json")
+        .setStatusCode(200)
+        .end(new JsonObject().put("message", "No audit service")
+            .encode());
+  } else {
+    client.result().get("/", response -> {
+      response
+          .exceptionHandler(context::fail)                      <1>
+          .bodyHandler(buffer -> {
+            context.response()
+                .putHeader("content-type", "application/json")
+                .setStatusCode(200)
+                .end(buffer);
+            client.result().close();
+          });
+    })
+        .exceptionHandler(context::fail)                        <2>
+        .setTimeout(5000)                                       <3>
+        .end();
+  }
+ });
+}
+----
+<1> Exception handler called when reading the response fails
+<2> Exception handler called when the connection with the server cannot be established
+<3> Timeout configuration
+****
+
+Once done, build the dashboard with:
+
+----
+cd trader-dashboard
+mvn clean package
+----
+
+Then, launch it, in another terminal with:
+
+----
+java -jar target/trader-dashboard-1.0-SNAPSHOT-fat.jar
+----
+
+Refresh the dashboard page. In the audit service terminal, stop the service and check how is reacting the
+dashboard (you can look at the AJAX request in the _inspector/dev tools_). Then, relaunch the audit service. What is
+happening ?
+
+### Task - Managing failures with a circuit breaker
+
+Circuit breaker is a reliability pattern that can be represented with a simple state machine:
+
+image::circuit-breaker.png[Circuit Breaker States, 600]
+
+This pattern is very popular in microservice based applications, because it recovers (if possible) from failures
+smoothly. The circuit breaker starts in the _close_ state. The circuit breaker monitors an operation. Every time this operation fails, it increases a failure counter. When a threshold is reached, it goes to the _open_ state. In this state, the required service is not called anymore, but a fallback is executed immediately. After some time, the circuit breaker goes into the _half-open_ state. In this state, the operation is called for the first request. Other request are redirected to the fallback. If the operation fails, the circuit breaker goes back to the open state until the next attempt. If it succeed it goes back to the _close_ state.
+
+There are lots of implementations of circuit breakers, Netflix Hystrix being the most popular. Vert.x provides its
+own implementation. Indeed, using Hystrix can be a bit cumbersome (but possible) as it does not enforce the Vert.x
+threading model.
+
+In the `DashboardVerticle.java` file, a circuit breaker (called `circuit`) is initialized in the `start` method:
+
+[source, java]
+----
+circuit = CircuitBreaker.create(
+    "http-audit-service",                        <1>
+    vertx,
+    new CircuitBreakerOptions()
+        .setMaxFailures(2)                       <2>
+        .setFallbackOnFailure(true)              <3>
+        .setResetTimeout(2000)                   <4>
+        .setTimeout(1000))                       <5>
+    .openHandler(v -> retrieveAuditService());   <6>
+----
+<1> the circuit breaker name
+<2> the number of failure before switching to the _open_ state
+<3> whether or not the fallback should be called when a failure is detected, even in the _close_ state
+<4> the time to wait in the _open_ state before switching to the _half-open_ state
+<5> the time before considering an operation as failed, if it didn't complete
+<6> a handler called when the circuit breaker switches to the _open_ state. We try to retrieve the audit service.
+
+With this circuit breaker, write a `callAuditServiceWithExceptionHandlerWithCircuitBreaker` method managing the arrival and the departure of the audit service. For this, use the `circuit.<Buffer>executeWithFallback` method. Don't forget to update the handler of the `/operations` route.
+
+Once done, rebuild and restart the dashboard. Stop the audit service and see how it behaves. Restart it. You can see on the dashboard page the state of the circuit breaker.
+
+[.assignment]
+****
+[source, java]
+----
+private void callAuditServiceWithExceptionHandlerWithCircuitBreaker(RoutingContext context) {
+    HttpServerResponse resp = context.response()
+        .putHeader("content-type", "application/json")
+        .setStatusCode(200);
+
+    circuit.executeWithFallback(
+        future ->
+            client.get("/", response -> {
+              response
+                  .exceptionHandler(future::fail)
+                  .bodyHandler(future::complete);
+            })
+                .exceptionHandler(future::fail)
+                .setTimeout(5000)
+                .end(),
+        t -> Buffer.buffer("{\"message\":\"No audit service, or unable to call it\"}")
+    )
+        .setHandler(ar -> resp.end(ar.result()));
+    }
+----
+
+In comparision to the previous solution, we report failures to the given `future` and not on the context. When a failure is reported, the fallback is called, returning a default buffer. We don't have to check whether or not `client` is `null` as it throws an exception that fails the operation (and the fallback is called).
+****
 
 ### SockJS - Event bus bridge
 
@@ -76,53 +262,7 @@ In (1), we create the `SockJSHandler`. It needs to be configured, as by default,
 This is not the only bridge that exists for the event bus. There is also a TCP event bus bridge for native systems.
 Notice also, that the SockJS bridge can also be used from Node.JS.
 
-### Delegating REST calls
 
-It's often required to implement a REST API on top of another one. This pattern can be very costly on traditional
-architecture as each call would block a thread until the call to this second REST API has completed. With Vert.x
-delegation is easy, asynchronous and non blocking.
-
-For example in the dashboard, we want to retrieve the list of operations. This list is offered by the audit service.
-So in the dashboard we have this route definition:
-
-[source, java]
-----
-router.get("/operations").handler(this::lastOperations);
-----
-
-And the handler is:
-
-[source, java]
-----
-private void lastOperations(RoutingContext context) {
-    HttpEndpoint.getClient(discovery, new JsonObject().put("name", "AUDIT"), client -> {
-        if (client.failed() || client.result() == null) {
-            context.response()
-                .putHeader("content-type", "application/json")
-                .setStatusCode(200)
-                .end(new JsonObject().put("message", "No audit service").encode());
-        } else {
-            client.result().get("/", response -> {
-              response
-                  .exceptionHandler(context::fail)
-                  .bodyHandler(buffer -> {
-                    context.response()
-                        .putHeader("content-type", "application/json")
-                        .setStatusCode(200)
-                        .end(buffer);
-                    client.result().close();
-                  });
-            })
-                .exceptionHandler(context::fail)
-                .end();
-        }
-    });
-}
-----
-
-It retrieves the audit service from the service discovery infrastructure and once it gets the HTTP client. It uses it
- to call the audit REST API. The response is simply sent back to the HTTP response. Finally, don't forget to close
- the HTTP client.
 
 ### Consuming event bus service from the browser
 

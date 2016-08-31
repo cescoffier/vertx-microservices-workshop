@@ -64,10 +64,6 @@
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
-      <artifactId>vertx-lang-ruby</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.vertx</groupId>
       <artifactId>vertx-codegen</artifactId>
       <optional>true</optional>
     </dependency>
@@ -90,7 +86,10 @@
       <groupId>io.vertx</groupId>
       <artifactId>vertx-service-discovery</artifactId>
     </dependency>
-
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-circuit-breaker</artifactId>
+    </dependency>
 
     <!-- Test dependencies -->
     <dependency>
