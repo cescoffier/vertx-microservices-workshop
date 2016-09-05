@@ -5,7 +5,7 @@ _stuff_. There is many other things Vert.x can do and that was not illustrated h
 
 Don't forget that reactive systems and so Vert.x requires a mind-shift:
 
-* Vert.x is a toolkit
+* Vert.x is a toolkit to build reactive systems
 * Asynchronous, non-blocking development model can be hard to understand at the first glance, but it becomes very
 convenient very quickly. Don't also forget, computers are asynchronous, so using such development model is
 using it the right way to use it to its whole power.

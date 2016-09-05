@@ -16,8 +16,11 @@ Then, to use the awesomeness provided by Vert.x, you just need to use it in your
 covered later.
 
 Another important word in the Vert.x description is **reactive**. Vert.x is made to build reactive
-applications, actually **systems**. Reactive systems has been defined in the http://reactivemanifesto.org[Reactive
-Manifesto]. Even if it's not that long to read, let's summarized it in 4 bullet points:
+applications, actually **systems**. Reactive systems footnote:[Reactive systems and reactive programming are two
+different _things_. Reactive programming is a development model observing and manipulating data streams, while
+reactive systems are systems reacting to requests, failures, picks of load and interacting using async messages.] has
+been defined in the  http://reactivemanifesto.org[Reactive Manifesto]. Even if it's not that long to read, let's
+summarized it in 4 bullet points:
 
 * Responsive: a reactive system needs to handle requests in a _reasonable_ time (I let you define _reasonable_).
 * Resilient: a reactive system must stay responsive in the face of _failures_ (crash, timeout, `500` errors...), so
@@ -85,7 +88,7 @@ _message_ to the initial sender
 Ok, let's step back a minute because that's a lot of information to process... Why would you use Vert.x ? Vert.x is
 incredibly flexible - whether it's simple network utilities, sophisticated modern web applications, HTTP/REST
 microservices, high volume event processing or a full blown backend message-bus application, Vert.x is a great fit.
-It's fast, and does not constraint you. Last but not least, Vert.x is not only reactive, it makes your application
- reactive; in other words: _responsive, elastic, resilient and asynchronous_!
+It's fast, and does not constraint you. Last but not least, Vert.x will let you built a reactive system; in other
+words: _responsive, elastic, resilient and asynchronous_!
 
 

@@ -11,7 +11,7 @@ The developed application is going to be:
 
 * based on Vert.x (that's why you are here, no ?)
 * distributed
-* reactive
+* built as a reactive system
 * (a bit) fun
 
 This lab offers attendees an intro-level, hands-on session with Vert.x, from the first line of code, to making
