@@ -1,0 +1,116 @@
+# Appendix A - Start, Stop and List commands
+
+Even if not required, Vert.x provides a convenient `Launcher` class. This class is _just_ the entry point of the
+application. It initializes Vert.x from the given parameter, deploys the given verticle and so on.
+
+First, this launcher is extensible. For instance, in this lab, we have our own launcher extending the Vert.x one (`io
+.vertx.workshop.common.Launcher). In addition, this launcher is actually composed by an extensible set of _command_.
+`run` is the default command and runs the given verticle. By default some other commands are available:
+
+[source]
+----
+    bare      Creates a bare instance of vert.x.
+    list      List vert.x applications
+    run       Runs a verticle called <main-verticle> in its own instance of
+              vert.x.
+    start     Start a vert.x application in background
+    stop      Stop a vert.x application
+    test      Runs a Vert.x Unit test called <test-verticle> in its own instance
+              of vert.x.
+----
+
+You can also add your own command.
+
+In this section we are going to focus on the `start`, `stop` and `list` command.
+
+When we have launched our microservices, they were blocking your shell (they were not launched in background). The
+`start` command lets you start a Vert.x application in background. For the quote-generator, you can launch it as
+follows:
+
+[source, bash]
+----
+java -jar target/quote-generator-1.0-SNAPSHOT-fat.jar start -id quote-generator --redirect-output
+----
+
+The _command_ name follows the fat jar name. It gets an `id` parameter giving a name to your application. By default,
+it generates a UUID. The `--redirect-output` flag instructs Vert.x to redirect the output to the terminal.
+
+Now, to list the Vert.x application running, you launch:
+
+[source, bash]
+----
+java -jar target/quote-generator-1.0-SNAPSHOT-fat.jar list
+
+Listing vert.x applications...
+quote-generator target/quote-generator-1.0-SNAPSHOT-fat.jar
+----
+
+Finally to `stop` the application, just launch:
+
+[source, bash]
+----
+java -jar target/quote-generator-1.0-SNAPSHOT-fat.jar stop quote-generator
+----
+
+So, with this, you can easily write a few commands launching all the microservices:
+
+[source, bash]
+----
+# Skip this instruction to use your version
+cd solution
+
+cd quote-generator
+mvn clean package
+java -jar target/quote-generator-1.0-SNAPSHOT-fat.jar start -id quote-generator --redirect-output
+cd ..
+
+cd portfolio-service
+mvn clean package
+java -jar target/portfolio-service-1.0-SNAPSHOT-fat.jar start -id portfolio-service --redirect-output
+cd ..
+
+cd compulsive-traders
+mvn clean package
+java -jar target/compulsive-traders-1.0-SNAPSHOT-fat.jar start -id compulsive-traders --redirect-output
+cd ..
+
+cd audit-service
+mvn clean package
+java -jar target/audit-service-1.0-SNAPSHOT-fat.jar start -id audit-service --redirect-output
+cd ..
+
+cd trader-dashboard
+mvn clean package
+java -jar target/trader-dashboard-1.0-SNAPSHOT-fat.jar start -id trader-dashboard --redirect-output
+cd ..
+----
+
+Once everything is launched, you can use the `list` command to check what's running:
+
+[source, bash]
+----
+java -jar target/trader-dashboard-1.0-SNAPSHOT-fat.jar list
+Listing vert.x applications...
+quote-generator target/quote-generator-1.0-SNAPSHOT-fat.jar
+portfolio-service       target/portfolio-service-1.0-SNAPSHOT-fat.jar
+compulsive-traders      target/compulsive-traders-1.0-SNAPSHOT-fat.jar
+audit-service   target/audit-service-1.0-SNAPSHOT-fat.jar
+trader-dashboard        target/trader-dashboard-1.0-SNAPSHOT-fat.jar
+----
+
+NOTE: you can use any of the fat jar to launch the `list` and `stop` commands.
+
+We can now have the opposite script stopping everything:
+
+[source, bash]
+----
+cd quote-generator
+java -jar target/quote-generator-1.0-SNAPSHOT-fat.jar stop trader-dashboard
+java -jar target/quote-generator-1.0-SNAPSHOT-fat.jar stop quote-generator
+java -jar target/quote-generator-1.0-SNAPSHOT-fat.jar stop audit-service
+java -jar target/quote-generator-1.0-SNAPSHOT-fat.jar stop compulsive-traders
+java -jar target/quote-generator-1.0-SNAPSHOT-fat.jar stop portfolio-service
+----
+
+The `stop` command send a signal to the process to ask for the termination. However, this may take time to happen
+(the termination). So, the process are not stopped immediately. You can check this with the `list` command.

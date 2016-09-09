@@ -20,4 +20,5 @@ include::chapters/audit.adoc[Database and complex composition - the audit servic
 include::chapters/dashboard.adoc[Anatomy of the dashboard]
 include::chapters/conclusion.adoc[You made it!]
 include::chapters/references.adoc[References]
+include::chapters/appendix-A-commands.adoc[Appendix A - Start, Stop and List commands]
 
