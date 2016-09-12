@@ -41,6 +41,7 @@ import io.vertx.core.Handler;
   Generated Proxy code - DO NOT EDIT
   @author Roger the Robot
 */
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class PortfolioServiceVertxEBProxy implements PortfolioService {
 
   private Vertx _vertx;

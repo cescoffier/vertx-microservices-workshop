@@ -7,9 +7,6 @@ import io.vertx.core.json.JsonObject;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Scanner;
 
 /**
@@ -18,20 +15,13 @@ import java.util.Scanner;
 public class Launcher extends io.vertx.core.Launcher {
 
   public static void main(String[] args) {
-    // TODO this should not be required, but the beforeStartingVertx method does not yet allow setting whether we
-    // start in cluster mode. This is obviously a bug.
-    List<String> list = new ArrayList<>(Arrays.asList(args));
-
-    if (list.isEmpty()) {
-      list.add("-cluster");
-    }
-
-    new Launcher().dispatch(list.toArray(new String[list.size()]));
+    new Launcher().dispatch(args);
   }
 
   @Override
   public void beforeStartingVertx(VertxOptions options) {
-    options.setClusterHost("127.0.0.1");
+    options.setClustered(true)
+        .setClusterHost("127.0.0.1");
   }
 
   @Override
