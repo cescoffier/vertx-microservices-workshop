@@ -49,7 +49,7 @@ public class RestQuoteAPIVerticle extends AbstractVerticle {
 
           // ----
         })
-        .listen(8080, ar -> {
+        .listen(config().getInteger("http.port"), ar -> {
           if (ar.succeeded()) {
             System.out.println("Server started");
           } else {

@@ -31,7 +31,7 @@ public class GeneratorConfigVerticle extends MicroServiceVerticle {
     }
 
     // Deploy another verticle without configuration.
-    vertx.deployVerticle(RestQuoteAPIVerticle.class.getName());
+    vertx.deployVerticle(RestQuoteAPIVerticle.class.getName(), new DeploymentOptions().setConfig(config()));
 
     // Publish the services in the discovery infrastructure.
     publishMessageSource("market-data", ADDRESS, rec -> {
