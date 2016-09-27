@@ -287,7 +287,7 @@ And launch the application with:
 
 [source]
 ----
-java -jar vertx-metrics-sample-1.0.0.-SNAPSHOT-fat.jar
+java -jar target/compulsive-traders-1.0-SNAPSHOT-fat.jar
 ----
 
 If you go back to the dashboard, you may start seen some moves on your portfolio. Now 3 traders are trying to make
