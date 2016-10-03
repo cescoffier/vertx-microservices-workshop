@@ -289,7 +289,11 @@ will be all valuated (or assigned). Fortunately, Vert.x provides `CompositeFutur
 executed, we knows all the futures has received a value, and so we can compute the sum (3). Finally, we send this
 result to the client by calling the `resultHandler` (4).
 
-Well, we just need the `getValueForCompany` method that call the service. Write the content of this method. You would need to create a `Future` object to report the completion of the operation. This future is the "returned" result of the method. Then, call the HTTP endpoint (`/?name= + encode(company)`). When the response arrives, check the status (should be 200) and retrieve the body (with `bodyHandler`). The body can be parsed as a `JsonObject` using `buffer.toJsonObject()`. The value you compute is the `numberOfShares` * the `bid` price (read from the body). Once the value is computed, complete the future. Don't forget to report failures to the future too. To simplify, if the company is unknown (meaning the response status code is _not_ 200) we assume the value of the shares to be 0.0.
+Well, we just need the `getValueForCompany` method that call the service. Write the content of this method. You would need to create a `Future` object to report the completion of the operation. This future is the "returned" result of the method. Then, call the HTTP endpoint (`/?name= + encode(company)`).
+
+NOTE: The `encode(String)` method is provided for you.
+
+When the response arrives, check the status (should be 200) and retrieve the body (with `bodyHandler`). The body can be parsed as a `JsonObject` using `buffer.toJsonObject()`. The value you compute is the `numberOfShares` * the `bid` price (read from the body). Once the value is computed, complete the future. Don't forget to report failures to the future too. To simplify, if the company is unknown (meaning the response status code is _not_ 200) we assume the value of the shares to be 0.0.
 
 [.assignment]
 ****
@@ -430,7 +434,3 @@ generated at compile time, and use SockJS to communicate. Behind the hood there 
  SockJS.
 
 Well, it's time to buy and sell some shares no ? Let's do that in the next chapter.
-
-
-
-
