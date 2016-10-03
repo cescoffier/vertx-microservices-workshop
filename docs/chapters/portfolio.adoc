@@ -202,7 +202,7 @@ Write the body of the `sendActionOnTheEventBus` method in oder to publish a mess
 * quote -> the quote as Json
 * date -> a date (long in milliseconds)
 * amount -> the amount
-* owner -> the updated (owned) amount
+* owned -> the updated (owned) amount
 
 [.assignment]
 ****
