@@ -1,38 +1,37 @@
 ## Preface
 
-Let's start from the beginning.... _Vert.x_. What's Vert.x ? That's a pretty good question, and probably a good start.
+Let's start from the beginning.... _Vert.x_. What's Vert.x? That's a pretty good question, and probably a good start.
  If you go on the http://vertx.io[Vert.x web site], Vert.x is defined as _"a toolkit for building reactive
- applications on the JVM"_. This description is rather fuzzy no ? What's a _toolkit_ ? What are _reactive_
- applications ? In this lab, we are going to explain these words, and build an application using Vert.x illustrating
- what Vert.x is. This application is going to be composed by _microservices_. Another buzzword to be trendy ? No,
- Vert.x was promoting _microservices_  before everyone and his dog jumped on the bandwagon.
+ applications on the JVM"_. This description is rather unclear, right? What's a _toolkit_? What are _reactive_
+ applications? In this lab, we are going to explain these words, and build an application using Vert.x illustrating
+ what Vert.x is. This application is going to be composed of _microservices_. Another buzzword that is currently trending, right ? Actually,
+ Vert.x was already promoting _microservices_  before anyone else.
 
 The developed application is going to be:
 
-* based on Vert.x (that's why you are here, no ?)
+* based on Vert.x (that's why you are here, right?)
 * distributed
 * built as a reactive system
 * (a bit) fun
 
 This lab offers attendees an intro-level, hands-on session with Vert.x, from the first line of code, to making
-services, to consuming them and finally to assembling everything in a consistent reactive system. It illustrates what
-are reactive systems, what is reactive programming, and how to build applications based on reactive microservice**s**
-(the **s** is important).
+services, to consuming them and finally to assembling everything in a consistent reactive system. It illustrates what reactive systems are, what reactive programming is, and how to build applications based on reactive microservice**s**
+(and the **s** is important).
 
-This is a BYOL (bring your own laptop) session, so bring your Windows, OSX, or Linux laptop. You need Java 8 on your
-machine (JDK, so with javac), and Apache Maven (3.3+).
+This is a BYOL (Bring Your Own Laptop) session, so bring your Windows, OSX, or Linux laptop. You need JDK 8+ on your
+machine, and Apache Maven (3.3+).
 
 What you are going to learn:
 
-* What is Vert.x and how to use its asynchronous non-blocking development model
+* What Vert.x is and how to use its asynchronous non-blocking development model
 * How to develop microservices with Vert.x with several types of services, and service discovery
-* What are and how to use `verticles`
+* What `verticles` are and how to use them 
 * How to use the Vert.x event bus to send and receive messages
 * How to expose HTTP endpoints with Vert.x, and also how to consume them
 * How to compose asynchronous actions
 * How to use several languages in the same application
-* How to use databases
+* How to use databases with Vert.x
 * How to manage failures with async results, futures, exception handlers and circuit breakers
 
-And many other points too...
+And many more...
 
