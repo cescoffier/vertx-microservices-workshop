@@ -92,7 +92,7 @@ private void lastOperations(RoutingContext context) {
                 .setStatusCode(200)
                 .end(new JsonObject().put("message", "No audit service").encode());
         } else {
-            client.result().get("/", response -> {
+            client.get("/", response -> {
               response
                   .exceptionHandler(context::fail)
                   .bodyHandler(buffer -> {
@@ -100,7 +100,6 @@ private void lastOperations(RoutingContext context) {
                         .putHeader("content-type", "application/json")
                         .setStatusCode(200)
                         .end(buffer);
-                    client.result().close();
                   });
             })
                 .exceptionHandler(context::fail)
@@ -132,6 +131,3 @@ service.getPortfolio(function (err, res) {
 ----
 
 是的，你可以直接在你的浏览器里调用相应的服务了。
-
-
-
