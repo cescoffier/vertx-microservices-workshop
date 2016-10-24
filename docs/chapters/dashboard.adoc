@@ -121,7 +121,7 @@ private void failureAwarelastOperations(RoutingContext context) {
         .end(new JsonObject().put("message", "No audit service")
             .encode());
   } else {
-    client.result().get("/", response -> {
+    client.get("/", response -> {
       response
           .exceptionHandler(context::fail)                      <1>
           .bodyHandler(buffer -> {
@@ -129,7 +129,6 @@ private void failureAwarelastOperations(RoutingContext context) {
                 .putHeader("content-type", "application/json")
                 .setStatusCode(200)
                 .end(buffer);
-            client.result().close();
           });
     })
         .exceptionHandler(context::fail)                        <2>
@@ -288,6 +287,3 @@ service.getPortfolio(function (err, res) {
 ----
 
 Yes, you can call the service method directly from your browser.
-
-
-
