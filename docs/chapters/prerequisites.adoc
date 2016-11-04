@@ -1,6 +1,6 @@
 ## Prerequisites
 
-It's going to be your turn now... But before starting, you need to install a couple of software on your machine.
+We will get to the good stuff, coding all the way soon... But before we start, we need to install a couple of software on our machine.
 
 ### Hardware
 
@@ -9,7 +9,7 @@ It's going to be your turn now... But before starting, you need to install a cou
 
 ### Java Development Kit
 
-You need a JDK 8 installed on your machine. Install is from:
+We need a JDK 8+ installed on our machine. Latest JDK can downloaded from:
 
 * http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html[Oracle JDK 8]
 
