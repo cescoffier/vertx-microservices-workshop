@@ -1,49 +1,44 @@
 ## The Micro-Trader Application
 
-Now that you know more about Vert.x and microservices, it's time to discuss the application we are going to develop
+Now that we know more about Vert.x and microservices, it's time to discuss the application we are going to develop
 in this lab.
 
-It's going to be a fake financial app, where you need to make (virtual) money... The application is composed by a set of
+It's going to be a fake financial app, where we will be making (virtual) money. The application is composed of a set of
 microservices:
 
-* The quote generator - this simulator, absolutely not realistic - generates the quotes for 3 companies _MacroHard_,
-_Divinator_, and _Black Coat_. The market data are sent on the Vert.x event bus.
+* The quote generator - this is an absolutely unrealistic simulator that generates the quotes for 3 fictional companies _MacroHard_, _Divinator_, and _Black Coat_. The market data is published on the Vert.x event bus.
 
-* The traders - the traders are a set of components receiving the quotes and deciding whether or not they want to
-sell or buy shares. For this they rely on the _portfolio_ service.
+* The traders - these are a set of components that receives quotes from the quote generator and decides whether or not to buy or sell a particular share. To make this decision, they rely on another component called the _portfolio_ service.
 
-* The portfolio - it manages the money and your current set of shares. It is exposed as a _service proxy_, i.e. a
-asynchronous RPC service on top of the Vert.x event bus. For every successful operation, it sends a message on the event
- bus describing the operation. It uses the quote generator to evaluate the current value of the portfolio.
+* The portfolio - this service manages the number of shares in our portfolio and their monetary value. It is exposed as a _service proxy_, i.e. an asynchronous RPC service on top of the Vert.x event bus. For every successful operation, it sends a message on the event bus describing the operation. It uses the quote generator to evaluate the current value of the portfolio.
 
-* The audit - that's the legal side... You need to keep a list of all your operations (yes, that's the law). The
-audit component receives the operation from the event bus and stores them in a database. It also provides a REST
-endpoint to retrieve the last operations.
+* The audit - that's the legal side, you know... We need to keep a list of all our operations (yes, that's the law). The
+audit component receives operations from the portfolio service via an event bus and address . It then stores theses in a database. It also provides a REST endpoint to retrieve the latest set of operations.
 
-* The dashboard - some UI to let you know if you became rich...
+* The dashboard - some UI to let us know when we become rich.
 
-Let's have a look to the architecture:
+Let's have a look at the architecture:
 
 image::workshop-application.png[Micro-Trader Architecture, 800]
 
 The application uses several types of services:
 
-* HTTP endpoint (_i.e._ REST API) - the service is located using an HTTP URL.
-* Service proxies that are asynchronous services exposed on the event bus using a RPC interaction, the service is
+* HTTP endpoint (_i.e._ REST API) - this service is located using an HTTP URL.
+* Service proxies - these are asynchronous services exposed on the event bus using an RPC interaction mechanism, the service is
 located using an (event bus) address.
-* Message sources that are components publishing messages on the event bus, the service is located using an (event bus)
+* Message sources - these are components publishing messages on the event bus, the service is located using an (event bus)
 address.
 
-These components runs in the same network (in this lab they will be on the same machine (yours), but in different
+These components runs in the same network (in this lab they will be on the same machine, but in different
 processes).
 
-The dashboard presents the available services, the value of each company quotes, the last operations made by your
-traders and the current state of your portfolio. It also shows the state of the different circuit breakers.
+The dashboard presents the available services, the value of each company's quotes, the latest set of operations made by our
+traders and the current state of our portfolio. It also shows the state of the different circuit breakers.
 
 image::dashboard.png[Dashboard, 800]
 
-You are going to implement critical parts of this application. The rest of the code is provided to illustrate some
-other Vert.x features. The code that needs to be written by you is indicated using **TODO** and wrapped as follows:
+We are going to implement critical parts of this application. However, the rest of the code is provided to illustrate some
+other Vert.x features. The code that needs to be written by us is indicated using **TODO** and wrapped as follows:
 
 [source,java]
 ----
