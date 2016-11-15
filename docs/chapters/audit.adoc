@@ -81,7 +81,7 @@ Vert.x would consider the verticle deploy when the `Future` is valuated. It may 
 Initializing the audit service includes:
 
 * prepare the database (table)
-* start the HTTP service and expose the REST API
+* start the HTTP service and expose the REST API. In addition publish this endpoint as a service
 * retrieve the message source on which the operation are sent
 
 So, it's clearly 3 independent actions, but the audit service is started only when all of them has been completed.
@@ -92,9 +92,15 @@ Replace the `TODO` block with some code. This code should retrieves 3 future obj
 ****
 [source, java]
 ----
-Future<HttpServer> httpEndpointReady = configureTheHTTPServer();
 Future<MessageConsumer<JsonObject>> messageListenerReady = retrieveThePortfolioMessageSource();
 Future<Void> databaseReady = initializeDatabase(config().getBoolean("drop", false));
+Future<Void> httpEndpointReady = configureTheHTTPServer().compose(
+        server -> {
+          Future<Void> regFuture = Future.future();
+          publishHttpEndpoint("audit", "localhost", server.actualPort(), regFuture.completer());
+          return regFuture;
+        }
+    );
 
 CompositeFuture.all(httpEndpointReady, databaseReady, messageListenerReady)
     .setHandler(ar -> {
@@ -148,7 +154,9 @@ Let's implement the `configureTheHTTPServer` method following this pattern. In t
 1. Create the `future` object your are going to return
 2. Create a `Router` object with: `Router.router(vertx)`
 3. Register a route (on `/`) on the router, calling `retrieveOperations`
-4. Create a HTTP server on the port 8080, and delegating the request handler to `router.accept`
+4. Create a HTTP server on the port passed in the configuration or `0` if not set (it picks an available port), and
+delegating the request handler to `router.accept`. We can pick a random port as it is exposed in the service record,
+so consumer are bound to the right port.
 5. When the server has started completes the future
 
 [.assignment]
@@ -164,7 +172,7 @@ private Future<HttpServer> configureTheHTTPServer() {
 
     vertx.createHttpServer()
         .requestHandler(router::accept)
-        .listen(8080, future.completer());
+        .listen(config().getInteger("http.port", 0), future.completer());
 
     return future;
 }
