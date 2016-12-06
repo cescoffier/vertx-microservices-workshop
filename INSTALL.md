@@ -6,14 +6,15 @@ The [Vertx From Zero To (Micro)Hero](http://escoffier.me/vertx-hol/#_let_s_start
 If you would like to avoid packaging and installing incomplete versions of these modules on your system, it's possible to only install the common classes in `vertx-workshop-common` and the parent project's pom file, so that you are able to build each of the other modules one-by-one as you complete the relevant code sections (which the tutorial systematically guides you through).
 
 After cd'ing into `vertx-workshop-common` and running `mvn clean install`, these files are installed in the local user's Maven repository:
-
-`.../.m2/repository/io/vertx/workshop/vertx-workshop-common/1.0-SNAPSHOT/_remote.repositories`
-`.../.m2/repository/io/vertx/workshop/vertx-workshop-common/1.0-SNAPSHOT/maven-metadata-local.xml`
-`.../.m2/repository/io/vertx/workshop/vertx-workshop-common/1.0-SNAPSHOT/vertx-workshop-common-1.0-SNAPSHOT.jar`
-`.../.m2/repository/io/vertx/workshop/vertx-workshop-common/1.0-SNAPSHOT/vertx-workshop-common-1.0-SNAPSHOT.pom`
-`.../.m2/repository/io/vertx/workshop/vertx-workshop-common/1.0-SNAPSHOT/vertx-workshop-common-1.0-SNAPSHOT-sources.jar`
-`.../.m2/repository/io/vertx/workshop/vertx-workshop-common/1.0-SNAPSHOT/vertx-workshop-common-1.0-SNAPSHOT-tests.jar`
-`.../.m2/repository/io/vertx/workshop/vertx-workshop-common/maven-metadata-local.xml`
+```
+.../.m2/repository/io/vertx/workshop/vertx-workshop-common/1.0-SNAPSHOT/_remote.repositories
+.../.m2/repository/io/vertx/workshop/vertx-workshop-common/1.0-SNAPSHOT/maven-metadata-local.xml
+.../.m2/repository/io/vertx/workshop/vertx-workshop-common/1.0-SNAPSHOT/vertx-workshop-common-1.0-SNAPSHOT.jar
+.../.m2/repository/io/vertx/workshop/vertx-workshop-common/1.0-SNAPSHOT/vertx-workshop-common-1.0-SNAPSHOT.pom
+.../.m2/repository/io/vertx/workshop/vertx-workshop-common/1.0-SNAPSHOT/vertx-workshop-common-1.0-SNAPSHOT-sources.jar
+.../.m2/repository/io/vertx/workshop/vertx-workshop-common/1.0-SNAPSHOT/vertx-workshop-common-1.0-SNAPSHOT-tests.jar
+.../.m2/repository/io/vertx/workshop/vertx-workshop-common/maven-metadata-local.xml
+```
 
 Create a new directory in the Maven repository:
 
