@@ -14,6 +14,10 @@ dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
 
+### Intellij IDEA
+.idea
+*.iml
+
 ### Eclipse template
 .metadata
 bin/
