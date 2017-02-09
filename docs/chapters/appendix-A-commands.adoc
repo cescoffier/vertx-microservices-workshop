@@ -4,7 +4,7 @@ Even if not required, Vert.x provides a convenient `Launcher` class. This class 
 application. It initializes Vert.x from the given parameter, deploys the given verticle and so on.
 
 First, this launcher is extensible. For instance, in this lab, we have our own launcher extending the Vert.x one (`io
-.vertx.workshop.common.Launcher). In addition, this launcher is actually composed by an extensible set of _command_.
+.vertx.workshop.common.Launcher`). In addition, this launcher is actually composed by an extensible set of _command_.
 `run` is the default command and runs the given verticle. By default some other commands are available:
 
 [source]

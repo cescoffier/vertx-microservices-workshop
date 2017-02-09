@@ -97,7 +97,7 @@ void getPortfolio(Handler<AsyncResult<Portfolio>> resultHandler);
 This method lets you retrieve a `Portfolio` object. As explained above the method is asynchronous and so has a `Handler`
  parameter receiving an `AsyncResult<Portfolio>`. The other methods follows the same pattern.
 
-NOTE: You may have also noticed that the package as a `package-info.java` file. This file is required to enable the
+NOTE: You may have also noticed that the package has a `package-info.java` file. This file is required to enable the
 service proxy generation.
 
 === Data objects
@@ -196,7 +196,7 @@ Ok, back to our code. We have provided the `buy` and `sell` methods, that are ju
  selling shares. Once the action is _emitted_, we send a message on the event bus that will be consumed by the `Audit
   Service` and the `Dashboard`. So, we are going to use the `publish` method.
 
-Write the body of the `sendActionOnTheEventBus` method in oder to publish a message on the `EVENT_ADDRESS` address containing a `JsonObject` as body. This object must contains the following entries:
+Write the body of the `sendActionOnTheEventBus` method in order to publish a message on the `EVENT_ADDRESS` address containing a `JsonObject` as body. This object must contains the following entries:
 
 * action -> the action (buy or sell)
 * quote -> the quote as Json
@@ -434,3 +434,4 @@ generated at compile time, and use SockJS to communicate. Behind the hood there 
  SockJS.
 
 Well, it's time to buy and sell some shares no ? Let's do that in the next chapter.
+

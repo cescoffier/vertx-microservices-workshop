@@ -37,9 +37,9 @@ In this lab, we won't address point 5, but you should know that Vert.x does not 
 your components. You can employ whatever technology best suites your environment. whether it is ssh, ansible, puppet, docker, cloud, fabric8, or even floppy disk.
 
 Point 6, however, is interesting, and often misunderstood. It's pretty cool to develop independent pieces of software
-that magically interact at runtime. Yes, I said _magically_ but in technology we don't believe in magic. To make this happen, what we need is some form of service _discovery_ at runtime. The service discovery mechanism can achieve it's goal with any number of suitable means. This range from; hardcoding the service location in the code (which is generally a bad idea), using a DNS lookup service, or some more advanced techniques.
+that magically interact at runtime. Yes, I said _magically_ but in technology we don't believe in magic. To make this happen, what we need is some form of service _discovery_ at runtime. The service discovery mechanism can achieve it's goal with any number of suitable means. These range from: hardcoding the service location in the code (which is generally a bad idea), using a DNS lookup service, or some more advanced techniques.
 
-Having a service discovery mechanism allows our system components interact transparently amongst each other regardless of location or envoronment. It also allows us to easily load-balance amongst our components through a round robin alogorithm, for example, thereby making our system more fault-tolerant (by locating another service provider when one breaks down).
+Having a service discovery mechanism allows our system components interact transparently amongst each other regardless of location or environment. It also allows us to easily load-balance amongst our components through a round robin alogorithm, for example, thereby making our system more fault-tolerant (by locating another service provider when one breaks down).
 
 Although by definition, microservice applications are not required to be distributed, there usually are in practice. This comes with all the distributed application benefits and constraints: consensus computation (FLP), CAP theorem, consistency, monitoring, and many other reasons to fail. So microservices applications need to be designed to accomodate failures from their early implementation stage.
 
@@ -48,7 +48,7 @@ Before we go further, there are a couple of points I would like to mention. _Mic
 
 The major concerns when it comes microservices are rapid delivery, adaptation, independence and replaceability. Every microservice is made to be replaceable by another providing the same _service / API / interface_ (at the core, it's basically an application of the https://en.wikipedia.org/wiki/Liskov_substitution_principle[Liskov substitution principle]).
 
-If you have been a developer for about 10 years, you might want to ask what difference is between microservices and SOA. For a lot of people it's about size. This is not always true because services don't necessarilly have to be small which makes the term "microservice" quite misleading. Microservices and SOA differ purpose but the basic concepts are similar:
+If you have been a developer for about 10 years, you might want to ask what difference is between microservices and SOA. For a lot of people it's about size. This is not always true because services don't necessarily have to be small which makes the term "microservice" quite misleading. Microservices and SOA differ purpose but the basic concepts are similar:
 
 * service : a defined feature accessible by an API, a client, a proxy, anything
 * service provider: a component implementing a service
@@ -60,3 +60,4 @@ software. You may have never heard about this even if you used it: COM, Corba, J
 different implementations of _service oriented computing_.
 
 Finally, there is a common misconception that microservices must be RESTful by nature. This can't be farther from the truth. Microservices can employ any number interaction style that best fit their purpose: RPC, events, messages, streams etc. In this lab we will using RESTful services, async RPC, and message sources.
+
