@@ -234,7 +234,7 @@ Then, open a new terminal and launch:
 java -jar target/quote-generator-1.0-SNAPSHOT-fat.jar
 ----
 
-This command launch the application. The main class we used creates a clustered Vert.x instance and read the
+This command launches the application. The main class we used creates a clustered Vert.x instance and reads the
 configuration from `src/conf/config.json`. This configuration provides the HTTP port on which the REST service is
 published (`35000`).
 
@@ -304,3 +304,4 @@ Let's define the important fields:
 * `bid` : the price of the stock when you sell them (buyer price)
 
 You can check https://en.wikipedia.org/wiki/Financial_quote[Wikipedia] for more details.
+

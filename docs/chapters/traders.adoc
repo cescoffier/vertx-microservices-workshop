@@ -217,7 +217,7 @@ the content is the `start` method of the verticle. Vert.x also supports Groovy c
 
 If you don't know Groovy, just copy and paste the solution. If you do, you can try to implement the trader by yourself following the same logic as the Java trader:
 
-* Groovy version of the Vert.x API are in `io.verx.groovy.x.y`, for instance `io.vertx.groovy.core.CompositeFuture`.
+* Groovy version of the Vert.x API are in `io.vertx.groovy.x.y`, for instance `io.vertx.groovy.core.CompositeFuture`.
 * Json Objects are Groovy Maps, so a `MessageConsumer<JsonObject>` in Java is a `MessageConsumer<Map>` in Groovy.
 
 [.assignment]

@@ -265,7 +265,7 @@ Notice also, that the SockJS bridge can also be used from Node.JS.
 
 ### Consuming event bus service from the browser
 
-As said above, there is a bridge between sockJS and the event bus to let the browser sends and receives messages. As
+As said above, there is a bridge between SockJS and the event bus to let the browser send and receive messages. As
 event bus services communicate using event bus messages, it is possible to implement a service client in the browser.
  Vert.x generates this client for you.
 
@@ -287,3 +287,4 @@ service.getPortfolio(function (err, res) {
 ----
 
 Yes, you can call the service method directly from your browser.
+
