@@ -10,15 +10,14 @@
 
   <parent>
     <groupId>io.vertx</groupId>
-    <artifactId>vertx-ext-parent</artifactId>
-    <version>20</version>
+    <artifactId>vertx-parent</artifactId>
+    <version>10</version>
   </parent>
 
   <packaging>pom</packaging>
 
   <properties>
-    <stack.version>3.3.3</stack.version>
-    <doc.skip>true</doc.skip>
+    <stack.version>3.4.0-SNAPSHOT</stack.version>
 
     <!--overridden in each project packaged as a fat jar -->
     <main.verticle/>
@@ -53,6 +52,8 @@
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-service-proxy</artifactId>
+      <classifier>processor</classifier>
+      <version>${stack.version}</version>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
@@ -131,33 +132,9 @@
         <configuration>
           <source>1.8</source>
           <target>1.8</target>
+          <generatedSourcesDirectory>src/main/generated</generatedSourcesDirectory>
+          <generatedTestSourcesDirectory>src/test/generated</generatedTestSourcesDirectory>
         </configuration>
-        <executions>
-          <execution>
-            <id>default-compile</id>
-            <configuration>
-              <annotationProcessors>
-                <annotationProcessor>io.vertx.codegen.CodeGenProcessor</annotationProcessor>
-              </annotationProcessors>
-              <generatedSourcesDirectory>src/main/generated</generatedSourcesDirectory>
-              <compilerArgs>
-                <arg>-AoutputDirectory=${project.basedir}/src/main</arg>
-              </compilerArgs>
-            </configuration>
-          </execution>
-          <execution>
-            <id>default-testCompile</id>
-            <configuration>
-              <annotationProcessors>
-                <annotationProcessor>io.vertx.codegen.CodeGenProcessor</annotationProcessor>
-              </annotationProcessors>
-              <generatedTestSourcesDirectory>src/test/generated</generatedTestSourcesDirectory>
-              <compilerArgs>
-                <arg>-AoutputDirectory=${project.basedir}/src/test</arg>
-              </compilerArgs>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
 
