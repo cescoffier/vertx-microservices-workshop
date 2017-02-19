@@ -1,7 +1,6 @@
 package io.vertx.workshop.portfolio.impl;
 
 import io.vertx.core.*;
-import io.vertx.core.http.HttpClient;
 import io.vertx.core.json.JsonObject;
 import io.vertx.servicediscovery.ServiceDiscovery;
 import io.vertx.workshop.portfolio.Portfolio;
@@ -11,6 +10,8 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import io.vertx.ext.web.client.WebClient;
 
 /**
  * The portfolio service implementation.
@@ -50,10 +51,10 @@ public class PortfolioServiceImpl implements PortfolioService {
     // ---
   }
 
-  private void computeEvaluation(HttpClient httpClient, Handler<AsyncResult<Double>> resultHandler) {
+  private void computeEvaluation(WebClient webClient, Handler<AsyncResult<Double>> resultHandler) {
     // We need to call the service for each company we own shares
     List<Future> results = portfolio.getShares().entrySet().stream()
-        .map(entry -> getValueForCompany(httpClient, entry.getKey(), entry.getValue()))
+        .map(entry -> getValueForCompany(webClient, entry.getKey(), entry.getValue()))
         .collect(Collectors.toList());
 
     // We need to return only when we have all results, for this we create a composite future. The set handler
@@ -65,7 +66,7 @@ public class PortfolioServiceImpl implements PortfolioService {
         });
   }
 
-  private Future<Double> getValueForCompany(HttpClient client, String company, int numberOfShares) {
+  private Future<Double> getValueForCompany(WebClient client, String company, int numberOfShares) {
     // Create the future object that will  get the value once the value have been retrieved
     Future<Double> future = Future.future();
 

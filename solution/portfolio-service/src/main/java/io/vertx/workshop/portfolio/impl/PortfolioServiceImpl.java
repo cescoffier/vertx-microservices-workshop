@@ -1,8 +1,10 @@
 package io.vertx.workshop.portfolio.impl;
 
 import io.vertx.core.*;
-import io.vertx.core.http.HttpClient;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.client.HttpResponse;
+import io.vertx.ext.web.client.WebClient;
+import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.servicediscovery.ServiceDiscovery;
 import io.vertx.servicediscovery.types.HttpEndpoint;
 import io.vertx.workshop.portfolio.Portfolio;
@@ -51,25 +53,25 @@ public class PortfolioServiceImpl implements PortfolioService {
   public void evaluate(Handler<AsyncResult<Double>> resultHandler) {
     // ----
     // First we need to discover and get a HTTP client for the `quotes` service:
-    HttpEndpoint.getClient(discovery, new JsonObject().put("name", "quotes"),
+    HttpEndpoint.getWebClient(discovery, new JsonObject().put("name", "quotes"),
         client -> {
           if (client.failed()) {
             // It failed...
             resultHandler.handle(Future.failedFuture(client.cause()));
           } else {
             // We have the client
-            HttpClient httpClient = client.result();
-            computeEvaluation(httpClient, resultHandler);
+            WebClient webClient = client.result();
+            computeEvaluation(webClient, resultHandler);
           }
         });
 
     // ---
   }
 
-  private void computeEvaluation(HttpClient httpClient, Handler<AsyncResult<Double>> resultHandler) {
+  private void computeEvaluation(WebClient webClient, Handler<AsyncResult<Double>> resultHandler) {
     // We need to call the service for each company we own shares
     List<Future> results = portfolio.getShares().entrySet().stream()
-        .map(entry -> getValueForCompany(httpClient, entry.getKey(), entry.getValue()))
+        .map(entry -> getValueForCompany(webClient, entry.getKey(), entry.getValue()))
         .collect(Collectors.toList());
 
     // We need to return only when we have all results, for this we create a composite future. The set handler
@@ -81,24 +83,26 @@ public class PortfolioServiceImpl implements PortfolioService {
         });
   }
 
-  private Future<Double> getValueForCompany(HttpClient client, String company, int numberOfShares) {
+  private Future<Double> getValueForCompany(WebClient client, String company, int numberOfShares) {
     // Create the future object that will  get the value once the value have been retrieved
     Future<Double> future = Future.future();
 
     //----
-    client.get("/?name=" + encode(company), response -> {
-      response.exceptionHandler(future::fail);
-      if (response.statusCode() == 200) {
-        response.bodyHandler(buffer -> {
-          double v = numberOfShares * buffer.toJsonObject().getDouble("bid");
+    client.get("/?name=" + encode(company))
+        .as(BodyCodec.jsonObject())
+        .send(ar -> {
+      if (ar.succeeded()) {
+        HttpResponse<JsonObject> response = ar.result();
+        if (response.statusCode() == 200) {
+          double v = numberOfShares * response.body().getDouble("bid");
           future.complete(v);
-        });
+        } else {
+          future.complete(0.0);
+        }
       } else {
-        future.complete(0.0);
+        future.fail(ar.cause());
       }
-    })
-        .exceptionHandler(future::fail)
-        .end();
+    });
     // ---
 
     return future;

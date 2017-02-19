@@ -7,6 +7,8 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.ext.web.client.WebClient;
+import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.servicediscovery.Record;
 import io.vertx.servicediscovery.ServiceDiscovery;
 import io.vertx.servicediscovery.ServiceDiscoveryOptions;
@@ -14,7 +16,6 @@ import io.vertx.servicediscovery.impl.DefaultServiceDiscoveryBackend;
 import io.vertx.servicediscovery.types.MessageSource;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -63,14 +64,14 @@ public class AuditVerticleTest {
 
     vertx.eventBus().publish("portfolio", createBuyOperation());
 
-    vertx.createHttpClient().getNow(8081, "localhost", "/", response -> {
+
+    WebClient.create(vertx).get(8081, "localhost", "/")
+        .as(BodyCodec.jsonArray())
+        .send(tc.asyncAssertSuccess(response -> {
       tc.assertEquals(response.statusCode(), 200);
-      response.bodyHandler(buffer -> {
-        JsonArray array = buffer.toJsonArray();
-        tc.assertEquals(array.size(), 1);
-        async.complete();
-      });
-    });
+      tc.assertEquals(response.body().size(), 1);
+      async.complete();
+    }));
 
   }
 
