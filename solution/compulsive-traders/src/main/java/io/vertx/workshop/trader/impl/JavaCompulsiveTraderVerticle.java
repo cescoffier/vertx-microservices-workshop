@@ -28,8 +28,8 @@ public class JavaCompulsiveTraderVerticle extends MicroServiceVerticle {
     Future<MessageConsumer<JsonObject>> marketFuture = Future.future();
     Future<PortfolioService> portfolioFuture = Future.future();
     // Retrieve the services, use the "special" completed to assign the future
-    MessageSource.getConsumer(discovery, new JsonObject().put("name", "market-data"), marketFuture.completer());
-    EventBusService.getProxy(discovery, PortfolioService.class, portfolioFuture.completer());
+    MessageSource.getConsumer(discovery, new JsonObject().put("name", "market-data"), marketFuture);
+    EventBusService.getProxy(discovery, PortfolioService.class, portfolioFuture);
 
     // When done (both services retrieved), execute the handler
     CompositeFuture.all(marketFuture, portfolioFuture).setHandler(ar -> {

@@ -77,7 +77,7 @@ public class MicroServiceVerticle extends AbstractVerticle {
     for (Record record : registeredRecords) {
       Future<Void> unregistrationFuture = Future.future();
       futures.add(unregistrationFuture);
-      discovery.unpublish(record.getRegistration(), unregistrationFuture.completer());
+      discovery.unpublish(record.getRegistration(), unregistrationFuture);
     }
 
     if (futures.isEmpty()) {
