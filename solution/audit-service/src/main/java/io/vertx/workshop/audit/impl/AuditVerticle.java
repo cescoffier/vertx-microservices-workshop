@@ -56,7 +56,7 @@ public class AuditVerticle extends MicroServiceVerticle {
     Future<Void> httpEndpointReady = configureTheHTTPServer().compose(
         server -> {
           Future<Void> regFuture = Future.future();
-          publishHttpEndpoint("audit", "localhost", server.actualPort(), regFuture.completer());
+          publishHttpEndpoint("audit", "localhost", server.actualPort(), regFuture);
           return regFuture;
         }
     );
@@ -129,7 +129,7 @@ public class AuditVerticle extends MicroServiceVerticle {
 
     vertx.createHttpServer()
         .requestHandler(router::accept)
-        .listen(config().getInteger("http.port", 0), future.completer());
+        .listen(config().getInteger("http.port", 0), future);
     //----
     return future;
   }
@@ -138,7 +138,7 @@ public class AuditVerticle extends MicroServiceVerticle {
     Future<MessageConsumer<JsonObject>> future = Future.future();
     MessageSource.getConsumer(discovery,
         new JsonObject().put("name", "portfolio-events"),
-        future.completer()
+        future
     );
     return future;
   }
@@ -154,7 +154,7 @@ public class AuditVerticle extends MicroServiceVerticle {
     Future<UpdateResult> insertionDone = Future.future();
 
     // Step 1 get the connection
-    jdbc.getConnection(connectionRetrieved.completer());
+    jdbc.getConnection(connectionRetrieved);
 
     // Step 2, when the connection is retrieved (this may have failed), do the insertion (upon success)
     connectionRetrieved.setHandler(
@@ -195,7 +195,7 @@ public class AuditVerticle extends MicroServiceVerticle {
     Future<SQLConnection> connectionRetrieved = Future.future();
     // Retrieve a connection with the database, report on the databaseReady if failed, or assign the connectionRetrieved
     // future.
-    jdbc.getConnection(connectionRetrieved.completer());
+    jdbc.getConnection(connectionRetrieved);
 
     // When the connection is retrieved, we want to drop the table (if drop is set to true)
     Function<SQLConnection, Future<SQLConnection>> dropTable = connection -> {
@@ -226,7 +226,7 @@ public class AuditVerticle extends MicroServiceVerticle {
           }
 
           // Complete the main future with the result.
-          databaseReady.completer().handle(ar);
+          databaseReady.handle(ar);
         });
 
     return databaseReady;

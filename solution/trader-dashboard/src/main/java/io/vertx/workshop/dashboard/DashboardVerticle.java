@@ -145,7 +145,7 @@ public class DashboardVerticle extends MicroServiceVerticle {
 
     circuit.executeWithFallback(
         future ->
-            client.get("/").send(ar -> future.completer().handle(ar.map(HttpResponse::body))),
+            client.get("/").send(ar -> future.handle(ar.map(HttpResponse::body))),
         t -> Buffer.buffer("{\"message\":\"No audit service, or unable to call it\"}")
     )
         .setHandler(ar -> resp.end(ar.result()));
