@@ -82,16 +82,12 @@ public class DashboardVerticle extends MicroServiceVerticle {
   }
 
   private Future<Void> retrieveAuditService() {
-    Future<Void> future = Future.future();
-    HttpEndpoint.getWebClient(discovery, new JsonObject().put("name", "audit"), client -> {
-      this.client = client.result();
-      if (client.succeeded()) {
-        future.complete();
-      } else {
-        future.fail(client.cause());
-      }
+    return Future.future(future -> {
+      HttpEndpoint.getWebClient(discovery, new JsonObject().put("name", "audit"), client -> {
+        this.client = client.result();
+        future.handle(client.map((Void)null));
+      });
     });
-    return future;
   }
 
 

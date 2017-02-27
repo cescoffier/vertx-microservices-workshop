@@ -64,10 +64,8 @@ public class MicroServiceVerticle extends AbstractVerticle {
     discovery.publish(record, ar -> {
       if (ar.succeeded()) {
         registeredRecords.add(record);
-        completionHandler.handle(Future.succeededFuture());
-      } else {
-        completionHandler.handle(Future.failedFuture(ar.cause()));
       }
+      completionHandler.handle(ar.map((Void)null));
     });
   }
 
