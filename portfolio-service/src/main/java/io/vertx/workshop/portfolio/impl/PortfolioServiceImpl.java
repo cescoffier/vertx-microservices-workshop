@@ -1,17 +1,21 @@
 package io.vertx.workshop.portfolio.impl;
 
-import io.vertx.core.*;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Handler;
+import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
-import io.vertx.servicediscovery.ServiceDiscovery;
+import io.vertx.rxjava.core.Vertx;
+import io.vertx.rx.java.RxHelper;
+import io.vertx.rxjava.ext.web.client.WebClient;
+import io.vertx.rxjava.ext.web.codec.BodyCodec;
+import io.vertx.rxjava.servicediscovery.ServiceDiscovery;
+import io.vertx.rxjava.servicediscovery.types.HttpEndpoint;
 import io.vertx.workshop.portfolio.Portfolio;
 import io.vertx.workshop.portfolio.PortfolioService;
+import rx.Observable;
+import rx.Single;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import io.vertx.ext.web.client.WebClient;
+import java.util.Map;
 
 /**
  * The portfolio service implementation.
@@ -51,33 +55,24 @@ public class PortfolioServiceImpl implements PortfolioService {
     // ---
   }
 
-  private void computeEvaluation(WebClient webClient, Handler<AsyncResult<Double>> resultHandler) {
+  private Single<Double> computeEvaluation(Single<WebClient> webClientSingle) {
     // We need to call the service for each company we own shares
-    List<Future> results = portfolio.getShares().entrySet().stream()
-        .map(entry -> getValueForCompany(webClient, entry.getKey(), entry.getValue()))
-        .collect(Collectors.toList());
+    Observable<Map.Entry<String, Integer>> shares = Observable.from(portfolio.getShares().entrySet());
 
-    // We need to return only when we have all results, for this we create a composite future. The set handler
-    // is called when all the futures has been assigned.
-    CompositeFuture.all(results).setHandler(
-        ar -> {
-          double sum = results.stream().mapToDouble(fut -> (double) fut.result()).sum();
-          resultHandler.handle(Future.succeededFuture(sum));
-        });
+    // We need to return only when we have all results, for this we create a single from the observable using
+    // by reducing the results
+    return webClientSingle.flatMap(webClient -> shares
+        .concatMap(entry -> getValueForCompany(webClient, entry.getKey(), entry.getValue()).toObservable())
+        .reduce(0D, (d1, d2) -> d1 + d2)
+        .toSingle());
   }
 
-  private Future<Double> getValueForCompany(WebClient client, String company, int numberOfShares) {
-    // Create the future object that will  get the value once the value have been retrieved
-    Future<Double> future = Future.future();
-
-    //TODO
+  private Single<Double> getValueForCompany(WebClient client, String company, int numberOfShares) {
     //----
-
+    // Create the Single that will get the value once the value have been retrieved
+    return Single.just(0D);
     // ---
-
-    return future;
   }
-
 
   @Override
   public void buy(int amount, JsonObject quote, Handler<AsyncResult<Portfolio>> resultHandler) {
@@ -140,14 +135,4 @@ public class PortfolioServiceImpl implements PortfolioService {
     }
 
   }
-
-  private static String encode(String value) {
-    try {
-      return URLEncoder.encode(value, "UTF-8");
-    } catch (UnsupportedEncodingException e) {
-      throw new RuntimeException("Unsupported encoding");
-    }
-  }
-
-
 }

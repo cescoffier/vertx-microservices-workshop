@@ -1,19 +1,21 @@
 package io.vertx.workshop.portfolio.impl;
 
-import io.vertx.core.*;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Handler;
+import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.client.HttpResponse;
-import io.vertx.ext.web.client.WebClient;
-import io.vertx.ext.web.codec.BodyCodec;
-import io.vertx.servicediscovery.ServiceDiscovery;
-import io.vertx.servicediscovery.types.HttpEndpoint;
+import io.vertx.rxjava.core.Vertx;
+import io.vertx.rx.java.RxHelper;
+import io.vertx.rxjava.ext.web.client.WebClient;
+import io.vertx.rxjava.ext.web.codec.BodyCodec;
+import io.vertx.rxjava.servicediscovery.ServiceDiscovery;
+import io.vertx.rxjava.servicediscovery.types.HttpEndpoint;
 import io.vertx.workshop.portfolio.Portfolio;
 import io.vertx.workshop.portfolio.PortfolioService;
+import rx.Observable;
+import rx.Single;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 /**
  * The portfolio service implementation.
@@ -53,59 +55,43 @@ public class PortfolioServiceImpl implements PortfolioService {
   public void evaluate(Handler<AsyncResult<Double>> resultHandler) {
     // ----
     // First we need to discover and get a HTTP client for the `quotes` service:
-    HttpEndpoint.getWebClient(discovery, new JsonObject().put("name", "quotes"),
-        client -> {
-          if (client.failed()) {
-            // It failed...
-            resultHandler.handle(Future.failedFuture(client.cause()));
+    Single<WebClient> webClientSingle = HttpEndpoint.rxGetWebClient(discovery, new JsonObject().put("name", "quotes"));
+
+    // Compose the discovery with the evalutation
+    Single<Double> result = computeEvaluation(webClientSingle);
+
+    // We subscribe, the resultHandler is called when all the singles has been resolved or there is a failure.
+    result.subscribe(RxHelper.toSubscriber(resultHandler));
+
+    // ---
+  }
+
+  private Single<Double> computeEvaluation(Single<WebClient> webClientSingle) {
+    // We need to call the service for each company we own shares
+    Observable<Map.Entry<String, Integer>> shares = Observable.from(portfolio.getShares().entrySet());
+
+    // We need to return only when we have all results, for this we create a single from the observable using
+    // by reducing the results
+    return webClientSingle.flatMap(webClient -> shares
+        .concatMap(entry -> getValueForCompany(webClient, entry.getKey(), entry.getValue()).toObservable())
+        .reduce(0D, (d1, d2) -> d1 + d2)
+        .toSingle());
+  }
+
+  private Single<Double> getValueForCompany(WebClient client, String company, int numberOfShares) {
+    //----
+    return client.get("/")
+        .addQueryParam("name", company)
+        .as(BodyCodec.jsonObject())
+        .rxSend()
+        .map(response -> {
+          if (response.statusCode() == 200) {
+            return numberOfShares * response.body().getDouble("bid");
           } else {
-            // We have the client
-            WebClient webClient = client.result();
-            computeEvaluation(webClient, resultHandler);
+            return 0D;
           }
         });
-
     // ---
-  }
-
-  private void computeEvaluation(WebClient webClient, Handler<AsyncResult<Double>> resultHandler) {
-    // We need to call the service for each company we own shares
-    List<Future> results = portfolio.getShares().entrySet().stream()
-        .map(entry -> getValueForCompany(webClient, entry.getKey(), entry.getValue()))
-        .collect(Collectors.toList());
-
-    // We need to return only when we have all results, for this we create a composite future. The set handler
-    // is called when all the futures has been assigned.
-    CompositeFuture.all(results).setHandler(
-        ar -> {
-          double sum = results.stream().mapToDouble(fut -> (double) fut.result()).sum();
-          resultHandler.handle(Future.succeededFuture(sum));
-        });
-  }
-
-  private Future<Double> getValueForCompany(WebClient client, String company, int numberOfShares) {
-    // Create the future object that will  get the value once the value have been retrieved
-    Future<Double> future = Future.future();
-
-    //----
-    client.get("/?name=" + encode(company))
-        .as(BodyCodec.jsonObject())
-        .send(ar -> {
-      if (ar.succeeded()) {
-        HttpResponse<JsonObject> response = ar.result();
-        if (response.statusCode() == 200) {
-          double v = numberOfShares * response.body().getDouble("bid");
-          future.complete(v);
-        } else {
-          future.complete(0.0);
-        }
-      } else {
-        future.fail(ar.cause());
-      }
-    });
-    // ---
-
-    return future;
   }
 
 
@@ -114,11 +100,13 @@ public class PortfolioServiceImpl implements PortfolioService {
     if (amount <= 0) {
       resultHandler.handle(Future.failedFuture("Cannot buy " + quote.getString("name") + " - the amount must be " +
           "greater than 0"));
+      return;
     }
 
     if (quote.getInteger("shares") < amount) {
       resultHandler.handle(Future.failedFuture("Cannot buy " + amount + " - not enough " +
           "stocks on the market (" + quote.getInteger("shares") + ")"));
+      return;
     }
 
     double price = amount * quote.getDouble("ask");
@@ -144,6 +132,7 @@ public class PortfolioServiceImpl implements PortfolioService {
     if (amount <= 0) {
       resultHandler.handle(Future.failedFuture("Cannot sell " + quote.getString("name") + " - the amount must be " +
           "greater than 0"));
+      return;
     }
 
     double price = amount * quote.getDouble("bid");
@@ -165,16 +154,5 @@ public class PortfolioServiceImpl implements PortfolioService {
       resultHandler.handle(Future.failedFuture("Cannot sell " + amount + " of " + name + " - " + "not enough stocks " +
           "in portfolio"));
     }
-
   }
-
-  private static String encode(String value) {
-    try {
-      return URLEncoder.encode(value, "UTF-8");
-    } catch (UnsupportedEncodingException e) {
-      throw new RuntimeException("Unsupported encoding");
-    }
-  }
-
-
 }
