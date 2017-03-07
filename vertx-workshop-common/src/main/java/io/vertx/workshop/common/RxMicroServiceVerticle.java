@@ -5,16 +5,13 @@ import io.vertx.core.Handler;
 import io.vertx.core.impl.ConcurrentHashSet;
 import io.vertx.rx.java.ObservableFuture;
 import io.vertx.rx.java.RxHelper;
+import io.vertx.rxjava.core.Vertx;
 import io.vertx.servicediscovery.Record;
 import io.vertx.rxjava.servicediscovery.ServiceDiscovery;
-import io.vertx.servicediscovery.ServiceDiscoveryOptions;
-import io.vertx.rxjava.servicediscovery.types.EventBusService;
 import io.vertx.rxjava.servicediscovery.types.HttpEndpoint;
 import io.vertx.rxjava.servicediscovery.types.MessageSource;
 import rx.Single;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -24,12 +21,14 @@ import java.util.Set;
  */
 public class RxMicroServiceVerticle extends MicroServiceVerticle {
 
+  protected Vertx vertx;
   protected ServiceDiscovery discovery;
   protected Set<Record> registeredRecords = new ConcurrentHashSet<>();
 
   @Override
   public void start() {
     super.start();
+    vertx = Vertx.newInstance(super.vertx);
     discovery = ServiceDiscovery.newInstance(super.discovery);
   }
 

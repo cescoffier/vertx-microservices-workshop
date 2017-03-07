@@ -1,33 +1,28 @@
 package io.vertx.workshop.audit.impl;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.eventbus.MessageConsumer;
-import io.vertx.core.http.HttpServer;
+import io.vertx.rxjava.core.eventbus.MessageConsumer;
+import io.vertx.rxjava.core.http.HttpServer;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.jdbc.JDBCClient;
-import io.vertx.ext.sql.ResultSet;
-import io.vertx.ext.sql.SQLConnection;
+import io.vertx.rxjava.ext.jdbc.JDBCClient;
+import io.vertx.rxjava.ext.sql.SQLConnection;
 import io.vertx.ext.sql.UpdateResult;
-import io.vertx.ext.web.Router;
-import io.vertx.ext.web.RoutingContext;
-import io.vertx.servicediscovery.Record;
-import io.vertx.servicediscovery.types.MessageSource;
-import io.vertx.workshop.common.Chain;
-import io.vertx.workshop.common.MicroServiceVerticle;
+import io.vertx.rxjava.ext.web.Router;
+import io.vertx.rxjava.ext.web.RoutingContext;
+import io.vertx.rxjava.servicediscovery.types.MessageSource;
+import io.vertx.workshop.common.RxMicroServiceVerticle;
+import rx.Single;
+import rx.functions.Func1;
 
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
  * A verticle storing operations in a database (hsql) and providing access to the operations.
  */
-public class AuditVerticle extends MicroServiceVerticle {
+public class AuditVerticle extends RxMicroServiceVerticle {
 
   private static final String DROP_STATEMENT = "DROP TABLE IF EXISTS AUDIT";
   private static final String CREATE_TABLE_STATEMENT = "CREATE TABLE IF NOT EXISTS AUDIT (id INTEGER IDENTITY, operation varchar(250))";
@@ -51,28 +46,17 @@ public class AuditVerticle extends MicroServiceVerticle {
     jdbc = JDBCClient.createNonShared(vertx, config());
 
     // ----
-    Future<Void> databaseReady = initializeDatabase(config().getBoolean("drop", false));
-    Future<MessageConsumer<JsonObject>> messageListenerReady = retrieveThePortfolioMessageSource();
-    Future<Void> httpEndpointReady = configureTheHTTPServer().compose(
-        server -> {
-          Future<Void> regFuture = Future.future();
-          publishHttpEndpoint("audit", "localhost", server.actualPort(), regFuture);
-          return regFuture;
-        }
-    );
+    Single<Void> databaseReady = initializeDatabase(config().getBoolean("drop", false));
+    Single<MessageConsumer<JsonObject>> messageListenerReady = retrieveThePortfolioMessageSource();
+    Single<Void> httpEndpointReady = configureTheHTTPServer().flatMap(server -> rxPublishHttpEndpoint("audit", "localhost", server.actualPort()));
 
-    CompositeFuture.all(httpEndpointReady, databaseReady, messageListenerReady)
-        .setHandler(ar -> {
-          if (ar.succeeded()) {
+    Single.zip(httpEndpointReady, databaseReady, messageListenerReady, (a,b,c) -> c)
+        .subscribe(ok -> {
             // Register the handle called on messages
-            messageListenerReady.result().handler(message -> storeInDatabase(message.body()));
+            ok.handler(message -> storeInDatabase(message.body()));
             // Notify the completion
             future.complete();
-          } else {
-            future.fail(ar.cause());
-          }
-        });
-
+        }, future::fail);
     // ----
   }
 
@@ -92,53 +76,41 @@ public class AuditVerticle extends MicroServiceVerticle {
 
     // ----
     // 1 - we retrieve the connection
-    jdbc.getConnection(ar -> {
-      if (ar.failed()) {
-        context.fail(ar.cause());
-      } else {
-        SQLConnection connection = ar.result();
-        // 2. we execute the query
-        connection.query(SELECT_STATEMENT, result -> {
-          ResultSet set = result.result();
+    Single<List<JsonObject>> result = jdbc.rxGetConnection().flatMap(
+        conn -> conn
+            // 2. we execute the query
+            .rxQuery(SELECT_STATEMENT)
+            // 3. Build the list of operations
+            .map(set -> set.getRows()
+                .stream()
+                .map(json -> new JsonObject(json.getString("OPERATION")))
+                .collect(Collectors.toList()))
+            // 4. Close the connection
+            .doAfterTerminate(conn::close));
 
-          // 3. Build the list of operations
-          List<JsonObject> operations = set.getRows().stream()
-              .map(json -> new JsonObject(json.getString("OPERATION")))
-              .collect(Collectors.toList());
-
-          // 4. Close the connection
-          connection.close();
-
-          // 5. Send the list to the response
-          context.response().setStatusCode(200).end(Json.encodePrettily(operations));
-
-
-        });
-      }
-    });
+    result.subscribe(operations -> {
+      // 5. Send the list to the response
+      context.response()
+          .setStatusCode(200)
+          .end(Json.encodePrettily(operations));
+    }, context::fail);
     // ----
   }
 
-  private Future<HttpServer> configureTheHTTPServer() {
-    Future<HttpServer> future = Future.future();
-
+  private Single<HttpServer> configureTheHTTPServer() {
     //----
     // Use a Vert.x Web router for this REST API.
     Router router = Router.router(vertx);
     router.get("/").handler(this::retrieveOperations);
 
-    vertx.createHttpServer()
+    return vertx.createHttpServer()
         .requestHandler(router::accept)
-        .listen(config().getInteger("http.port", 0), future);
+        .rxListen(config().getInteger("http.port", 0));
     //----
-    return future;
   }
 
-  private Future<MessageConsumer<JsonObject>> retrieveThePortfolioMessageSource() {
-    return Future.future(future -> MessageSource.getConsumer(discovery,
-        new JsonObject().put("name", "portfolio-events"),
-        future
-    ));
+  private Single<MessageConsumer<JsonObject>> retrieveThePortfolioMessageSource() {
+    return MessageSource.rxGetConsumer(discovery, new JsonObject().put("name", "portfolio-events"));
   }
 
 
@@ -174,7 +146,7 @@ public class AuditVerticle extends MicroServiceVerticle {
     );
   }
 
-  private Future<Void> initializeDatabase(boolean drop) {
+  private Single<Void> initializeDatabase(boolean drop) {
 
     // The database initialization is a multi-step process:
     // 1. Retrieve the connection
@@ -186,66 +158,35 @@ public class AuditVerticle extends MicroServiceVerticle {
     // For this we use `Function<X, Future<R>>`that takes a parameter `X` and return a `Future<R>` object.
 
     // This is the returned future to notify of the completion of the whole process
-    Future<Void> databaseReady = Future.future();
+    // Single<Void> databaseReady = Future.future();
 
     // This future will be assigned when the connection with the database is established.
     // We are going to use this future as a reference on the connection to close it.
-    Future<SQLConnection> connectionRetrieved = Future.future();
+    // Future<SQLConnection> connectionRetrieved = Future.future();
     // Retrieve a connection with the database, report on the databaseReady if failed, or assign the connectionRetrieved
     // future.
-    jdbc.getConnection(connectionRetrieved);
+    Single<SQLConnection> connectionRetrieved = jdbc.rxGetConnection();
 
     // When the connection is retrieved, we want to drop the table (if drop is set to true)
-    Function<SQLConnection, Future<SQLConnection>> dropTable = connection -> {
-      Future<SQLConnection> future = Future.future();
+    Func1<SQLConnection, Single<SQLConnection>> dropTable = connection -> {
       if (!drop) {
-        future.complete(connection); // Immediate completion.
+        return Single.just(connection); // Immediate completion.
       } else {
-        connection.execute(DROP_STATEMENT, completer(future, connection));
+        return connection.rxExecute(DROP_STATEMENT).map(v -> connection);
       }
-      return future;
     };
 
     // When the table is dropped, we recreate it
-    Function<SQLConnection, Future<Void>> createTable = connection -> {
-      Future<Void> future = Future.future();
-      connection.execute(CREATE_TABLE_STATEMENT, future.completer());
-      return future;
-    };
+    Func1<SQLConnection, Single<Void>> createTable = connection -> connection.rxExecute(CREATE_TABLE_STATEMENT);
 
     // Ok, now it's time to chain all these actions:
-    // connectionRetrieved -> dropTable -> createTable -> in all case close the connection
-
-    Chain.chain(connectionRetrieved, dropTable, createTable)
-        .setHandler(ar -> {
-          // Whatever the result, if the connection has been retrieved, close it
-          if (connectionRetrieved.result() != null) {
-            connectionRetrieved.result().close();
-          }
-
-          // Complete the main future with the result.
-          databaseReady.handle(ar);
-        });
-
-    return databaseReady;
+    return connectionRetrieved
+        .flatMap(conn ->
+            Single.just(conn)
+                .flatMap(dropTable)
+                .flatMap(createTable)
+                // Whatever the result, if the connection has been retrieved, close it
+                .doAfterTerminate(conn::close)
+        );
   }
-
-  /**
-   * A utility method returning a `Handler<SQLConnection>`
-   *
-   * @param future     the future.
-   * @param connection the connection
-   * @return the handler.
-   */
-  private static Handler<AsyncResult<Void>> completer(Future<SQLConnection> future, SQLConnection connection) {
-    return ar -> {
-      if (ar.failed()) {
-        future.fail(ar.cause());
-      } else {
-        future.complete(connection);
-      }
-    };
-  }
-
-
 }
