@@ -52,7 +52,7 @@ public class MicroServiceVerticle extends AbstractVerticle {
     publish(record, completionHandler);
   }
 
-  private void publish(Record record, Handler<AsyncResult<Void>> completionHandler) {
+  protected void publish(Record record, Handler<AsyncResult<Void>> completionHandler) {
     if (discovery == null) {
       try {
         start();

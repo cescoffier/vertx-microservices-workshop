@@ -12,4 +12,11 @@
 
     <artifactId>vertx-workshop-common</artifactId>
 
+    <dependencies>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-rx-java</artifactId>
+        </dependency>
+    </dependencies>
+
 </project>
