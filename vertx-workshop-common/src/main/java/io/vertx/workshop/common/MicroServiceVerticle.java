@@ -64,10 +64,8 @@ public class MicroServiceVerticle extends AbstractVerticle {
     discovery.publish(record, ar -> {
       if (ar.succeeded()) {
         registeredRecords.add(record);
-        completionHandler.handle(Future.succeededFuture());
-      } else {
-        completionHandler.handle(Future.failedFuture(ar.cause()));
       }
+      completionHandler.handle(ar.map((Void)null));
     });
   }
 
@@ -77,7 +75,7 @@ public class MicroServiceVerticle extends AbstractVerticle {
     for (Record record : registeredRecords) {
       Future<Void> unregistrationFuture = Future.future();
       futures.add(unregistrationFuture);
-      discovery.unpublish(record.getRegistration(), unregistrationFuture.completer());
+      discovery.unpublish(record.getRegistration(), unregistrationFuture);
     }
 
     if (futures.isEmpty()) {

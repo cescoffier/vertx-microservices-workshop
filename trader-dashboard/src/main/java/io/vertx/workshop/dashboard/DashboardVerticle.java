@@ -3,10 +3,12 @@ package io.vertx.workshop.dashboard;
 import io.vertx.circuitbreaker.CircuitBreaker;
 import io.vertx.circuitbreaker.CircuitBreakerOptions;
 import io.vertx.core.Future;
-import io.vertx.core.http.HttpClient;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.client.HttpResponse;
+import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.handler.sockjs.BridgeOptions;
 import io.vertx.ext.web.handler.sockjs.PermittedOptions;
@@ -21,7 +23,7 @@ import io.vertx.workshop.common.MicroServiceVerticle;
 public class DashboardVerticle extends MicroServiceVerticle {
 
   private CircuitBreaker circuit;
-  private HttpClient client;
+  private WebClient client;
 
   @Override
   public void start(Future<Void> future) {
@@ -80,16 +82,12 @@ public class DashboardVerticle extends MicroServiceVerticle {
   }
 
   private Future<Void> retrieveAuditService() {
-    Future<Void> future = Future.future();
-    HttpEndpoint.getClient(discovery, new JsonObject().put("name", "audit"), client -> {
-      this.client = client.result();
-      if (client.succeeded()) {
-        future.complete();
-      } else {
-        future.fail(client.cause());
-      }
+    return Future.future(future -> {
+      HttpEndpoint.getWebClient(discovery, new JsonObject().put("name", "audit"), client -> {
+        this.client = client.result();
+        future.handle(client.map((Void)null));
+      });
     });
-    return future;
   }
 
 
@@ -100,16 +98,15 @@ public class DashboardVerticle extends MicroServiceVerticle {
           .setStatusCode(200)
           .end(new JsonObject().put("message", "No audit service").encode());
     } else {
-      client.get("/", response -> {
-        response
-            .bodyHandler(buffer -> {
-              context.response()
-                  .putHeader("content-type", "application/json")
-                  .setStatusCode(200)
-                  .end(buffer);
-            });
-      })
-          .end();
+      client.get("/").send(ar -> {
+        if (ar.succeeded()) {
+          HttpResponse<Buffer> response = ar.result();
+          context.response()
+              .putHeader("content-type", "application/json")
+              .setStatusCode(200)
+              .end(response.body());
+        }
+      });
     }
   }
 }
