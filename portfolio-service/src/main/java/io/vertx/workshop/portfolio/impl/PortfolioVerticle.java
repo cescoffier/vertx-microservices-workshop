@@ -17,7 +17,7 @@ public class PortfolioVerticle extends MicroServiceVerticle {
     super.start();
 
     // Create the service object
-    PortfolioServiceImpl service = new PortfolioServiceImpl(io.vertx.rxjava.core.Vertx.newInstance(vertx), io.vertx.rxjava.servicediscovery.ServiceDiscovery.newInstance(discovery), config().getDouble("money", 10000.00));
+    PortfolioServiceImpl service = new PortfolioServiceImpl(vertx, discovery, config().getDouble("money", 10000.00));
 
     // Register the service proxy on the event bus
     ProxyHelper.registerService(PortfolioService.class, vertx, service, ADDRESS);
