@@ -21,10 +21,9 @@ MASTER_DOCBOOK=${MASTER_ADOC/.adoc/.xml}
 
 # Command options
 mkdir -p output
-SHARED_OPTIONS='-a numbered -a experimental -a source-highlighter=coderay -r asciidoctor-diagram -a imagesdir=images
+SHARED_OPTIONS='-a toc=left -a stylesheet! -a numbered -a experimental -a source-highlighter=prettify -r asciidoctor-diagram -a imagesdir=images
 --destination-dir=output'
 
-cp stylesheets/* output
 cp -R images output
 cp -R style output
 
