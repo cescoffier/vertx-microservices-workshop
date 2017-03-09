@@ -1,20 +1,19 @@
 package io.vertx.workshop.audit.impl;
 
 import io.vertx.core.Future;
-import io.vertx.rxjava.core.eventbus.MessageConsumer;
-import io.vertx.rxjava.core.http.HttpServer;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.sql.UpdateResult;
+import io.vertx.rxjava.core.eventbus.MessageConsumer;
+import io.vertx.rxjava.core.http.HttpServer;
 import io.vertx.rxjava.ext.jdbc.JDBCClient;
 import io.vertx.rxjava.ext.sql.SQLConnection;
-import io.vertx.ext.sql.UpdateResult;
 import io.vertx.rxjava.ext.web.Router;
 import io.vertx.rxjava.ext.web.RoutingContext;
 import io.vertx.rxjava.servicediscovery.types.MessageSource;
 import io.vertx.workshop.common.RxMicroServiceVerticle;
 import rx.Single;
-import rx.functions.Func1;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -120,30 +119,21 @@ public class AuditVerticle extends RxMicroServiceVerticle {
     // 2. execute the insertion statement
     // 3. close the connection
 
-    Future<SQLConnection> connectionRetrieved = Future.future();
-    Future<UpdateResult> insertionDone = Future.future();
-
     // Step 1 get the connection
-    jdbc.getConnection(connectionRetrieved);
+    Single<SQLConnection> connectionRetrieved = jdbc.rxGetConnection();
 
     // Step 2, when the connection is retrieved (this may have failed), do the insertion (upon success)
-    connectionRetrieved.setHandler(
-        ar -> {
-          if (ar.failed()) {
-            System.err.println("Failed to insert operation in database: " + ar.cause());
-          } else {
-            SQLConnection connection = ar.result();
-            connection.updateWithParams(INSERT_STATEMENT,
-                new JsonArray().add(operation.encode()),
-                insertionDone.completer());
-          }
-        }
-    );
+    Single<UpdateResult> update = connectionRetrieved.flatMap(connection -> connection
+        .rxUpdateWithParams(INSERT_STATEMENT, new JsonArray().add(operation.encode()))
 
-    // Step 3, when the insertion is done, close the connection.
-    insertionDone.setHandler(
-        ar -> connectionRetrieved.result().close()
-    );
+        // Step 3, when the insertion is done, close the connection.
+        .doAfterTerminate(connection::close));
+
+    update.subscribe(result -> {
+      // Ok
+    }, err -> {
+      System.err.println("Failed to insert operation in database: " + err);
+    });
   }
 
   private Single<Void> initializeDatabase(boolean drop) {
@@ -153,40 +143,34 @@ public class AuditVerticle extends RxMicroServiceVerticle {
     // 2. Drop the table is exist
     // 3. Create the table
     // 4. Close the connection (in any case)
-    // To handle such a process, we are going to create a set of Future we are going to compose as a chain:
+    // To handle such a process, we are going to create an RxJava Single and compose it with the RxJava flatMap operation:
     // retrieve the connection -> drop table -> create table -> close the connection
-    // For this we use `Function<X, Future<R>>`that takes a parameter `X` and return a `Future<R>` object.
+    // For this we use `Func1<X, Single<R>>`that takes a parameter `X` and return a `Single<R>` object.
 
-    // This is the returned future to notify of the completion of the whole process
-    // Single<Void> databaseReady = Future.future();
-
-    // This future will be assigned when the connection with the database is established.
+    // This is the starting point of our Rx operations
+    // This single will be completed when the connection with the database is established.
     // We are going to use this future as a reference on the connection to close it.
-    // Future<SQLConnection> connectionRetrieved = Future.future();
-    // Retrieve a connection with the database, report on the databaseReady if failed, or assign the connectionRetrieved
-    // future.
     Single<SQLConnection> connectionRetrieved = jdbc.rxGetConnection();
-
-    // When the connection is retrieved, we want to drop the table (if drop is set to true)
-    Func1<SQLConnection, Single<SQLConnection>> dropTable = connection -> {
-      if (!drop) {
-        return Single.just(connection); // Immediate completion.
-      } else {
-        return connection.rxExecute(DROP_STATEMENT).map(v -> connection);
-      }
-    };
-
-    // When the table is dropped, we recreate it
-    Func1<SQLConnection, Single<Void>> createTable = connection -> connection.rxExecute(CREATE_TABLE_STATEMENT);
 
     // Ok, now it's time to chain all these actions:
     return connectionRetrieved
-        .flatMap(conn ->
-            Single.just(conn)
-                .flatMap(dropTable)
-                .flatMap(createTable)
-                // Whatever the result, if the connection has been retrieved, close it
-                .doAfterTerminate(conn::close)
-        );
+        .flatMap(conn -> {
+
+          Single<Void> next;
+          if (drop) {
+            // When the connection is retrieved, we want to drop the table (if drop is set to true)
+            next = conn.rxExecute(DROP_STATEMENT);
+
+            // When the table is dropped, we recreate it
+            next = next.flatMap(v -> conn.rxExecute(CREATE_TABLE_STATEMENT));
+          } else {
+
+            // Just create the table
+            next = conn.rxExecute(CREATE_TABLE_STATEMENT);
+          }
+
+          // Whatever the result, if the connection has been retrieved, close it
+          return next.doAfterTerminate(conn::close);
+        });
   }
 }
