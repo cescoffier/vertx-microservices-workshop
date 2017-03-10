@@ -32,7 +32,7 @@ public class Chain {
       if (ar.failed()) {
         future.fail(ar.cause());
       } else {
-        operation2.apply(ar.result()).setHandler(future.completer());
+        operation2.apply(ar.result()).setHandler(future);
       }
     });
     return future;
@@ -69,7 +69,7 @@ public class Chain {
               if (ar2.failed()) {
                 future.fail(ar2.cause());
               } else {
-                operation3.apply(ar2.result()).setHandler(future.completer());
+                operation3.apply(ar2.result()).setHandler(future);
               }
             }
         );
@@ -108,7 +108,7 @@ public class Chain {
         future.fail(arg.cause());
       } else {
         Future<R> chain = chain(arg.result(), operation1, operation2, operation3);
-        chain.setHandler(future.completer());
+        chain.setHandler(future);
       }
     });
 
@@ -142,7 +142,7 @@ public class Chain {
         future.fail(arg.cause());
       } else {
         Future<R> chain = chain(arg.result(), operation1, operation2);
-        chain.setHandler(future.completer());
+        chain.setHandler(future);
       }
     });
 
