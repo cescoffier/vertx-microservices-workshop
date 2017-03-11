@@ -149,7 +149,7 @@ public class AuditVerticle extends RxMicroServiceVerticle {
 
     // This is the starting point of our Rx operations
     // This single will be completed when the connection with the database is established.
-    // We are going to use this future as a reference on the connection to close it.
+    // We are going to use this single as a reference on the connection to close it.
     Single<SQLConnection> connectionRetrieved = jdbc.rxGetConnection();
 
     // Ok, now it's time to chain all these actions:
