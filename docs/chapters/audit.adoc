@@ -66,7 +66,7 @@ RxJava implements the Reactive Extensions for the JVM and is a library for compo
 programs.
 
 
-### Task - Composing methods returning Future.
+### Task - Composing methods returning Single.
 
 Open the `io.vertx.workshop.audit.impl.AuditVerticle` class. The first important detail of this verticle is its
 `start` method. As the `start` method from the Java trader, the method is asynchronous, and report its completion in the
@@ -74,15 +74,28 @@ Open the `io.vertx.workshop.audit.impl.AuditVerticle` class. The first important
 
 [source, java]
 ----
-public void start(Future<Void> future) {
-     // creates the jdbc client.
-     jdbc = JDBCClient.createNonShared(vertx, config());
+  public void start(Future<Void> future) {
+    super.start();
 
-     // TODO
-     // ----
-     future.fail("not implemented yet");
-     // ----
-}
+    // creates the jdbc client.
+    jdbc = JDBCClient.createNonShared(vertx, config());
+
+    // TODO
+    // ----
+    Single<MessageConsumer<JsonObject>> ready = Single.error(new UnsupportedOperationException("not yet implemented"));
+    // ----
+
+    readySingle.doOnSuccess(consumer -> {
+      // on success we set the handler that will store message in the database
+      consumer.handler(message -> storeInDatabase(message.body()));
+    }).subscribe(consumer -> {
+      // complete the verticle start with a success
+      future.complete();
+    }, error -> {
+      // signal a verticle start failure
+      future.fail(error);
+    });
+  }
 ----
 
 Vert.x would consider the verticle deploy when the `Future` is valuated. It may also report a failure if the verticle
@@ -96,113 +109,96 @@ Initializing the audit service includes:
 
 So, it's clearly 3 independent actions, but the audit service is started only when all of them has been completed.
 
-Replace the `TODO` block with some code. This code should retrieves 3 future objects (from methods provided in the class) and _wait_ for the completion of the three tasks. When there, register a `Handler` on the portfolio message source calling `storeInDatabase` for each received message. Don't forget to complete or fail `future`.
+Replace the `TODO` block with some code. This code should retrieves 3 single objects (from methods provided in the class)
+and _wait_ for the completion of the three tasks. The three singles should be combined in one `Single<MessageConsumer<JsonObject>>`.
+
+On success this single registers a message listener on the portfolio message source  storing the operation in the database
+for each received message.
+
+Its completion notifies Vert.x that the start process is completed (or successfully or not), it calls `future.complete()` and
+`future.fail(cause)`.
 
 [.assignment]
 ****
 [source, java]
 ----
-Future<MessageConsumer<JsonObject>> messageListenerReady = retrieveThePortfolioMessageSource();
-Future<Void> databaseReady = initializeDatabase(config().getBoolean("drop", false));
-Future<Void> httpEndpointReady = configureTheHTTPServer().compose(
-        server -> {
-          Future<Void> regFuture = Future.future();
-          publishHttpEndpoint("audit", "localhost", server.actualPort(), regFuture.completer());
-          return regFuture;
-        }
-    );
-
-CompositeFuture.all(httpEndpointReady, databaseReady, messageListenerReady)
-    .setHandler(ar -> {
-      if (ar.succeeded()) {
-        // Register the handle called on messages
-        messageListenerReady.result().handler(message -> storeInDatabase(message.body()));
-        // Notify the completion
-        future.complete();
-      } else {
-        future.fail(ar.cause());
-      }
-    });
+    Single<Void> databaseReady = initializeDatabase(config().getBoolean("drop", false));
+    Single<Void> httpEndpointReady = configureTheHTTPServer()
+        .flatMap(server -> rxPublishHttpEndpoint("audit", "localhost", server.actualPort()));
+    Single<MessageConsumer<JsonObject>> messageConsumerReady = retrieveThePortfolioMessageSource();
+    Single<MessageConsumer<JsonObject>> readySingle = Single.zip(
+        databaseReady,
+        httpEndpointReady,
+        messageConsumerReady,
+        (db, http, consumer) -> consumer);
 ----
 
-First we create 3 `Futures`, one per action to execute. We are going to see how they are created in a minute. Then we
-compose all of them using the `CompositeFuture.all` operator. When all the actions are completed, it calls the given
-handler that registers the message listener storing the operation in the database.
-
-To notify Vert.x that the start process is completed (or successfully or not), it calls `future.complete()` and
-`future.fail(cause)`.
+First we create 3 `Single`, one per action to execute. We are going to see how they are created in a minute. Then we
+compose all of them using the `Single.zip` operator. The zip function returns the consumer single as this is the
+one we really care about.
 ****
 
-### Task - Implementing a method returning a Future
+### Task - Implementing a method returning a Single
 
 We have mentioned that async method have a signature with a `Handler` as last parameter. There is an equivalent syntax
-that returns a `Future` object when the operations they are executing are completed:
+that returns a `Single` object when the operations they are executing are completed:
 
 [source, java]
 ----
-void asyncMethod(a, b, Handler<R> handler);
+void asyncMethod(a, b, Handler<AsyncResult<R>> handler);
 // is equivalent to
-Future<R> asyncMethod(a, b);
+Single<R> asyncMethod(a, b);
 ----
 
-Indeed, the caller can attach a `Handler` on the returned `Future` object to be notified when the operation has
-completed:
+Indeed, the caller can subscribe on the returned `Single` object to execute the async operation and be notified when
+the operation has completed or failed
 
 [source, java]
 ----
-Future<R> future = asyncMethod(a, b);
-future.setHandler(ar -> {
-  if (ar.failed()) { /* the operaiton has failed */ }
-  else {
+Single<R> single = asyncMethod(a, b);
+single.subscribe(r  -> {
     // Do something with the result
-  }
-});
+  }, err -> {
+    // the operation has failed
+  });
 ----
 
-Let's implement the `configureTheHTTPServer` method following this pattern. In this method we are going to use a new Vert.x Component: Vert.x Web. Vert.x Web is a Vert.x extension to build modern web application. Here we are going to use a `Router` which let us implement _REST_ APIs easily (_à la_ Hapi or ExpressJS). So:
+Let's implement the `configureTheHTTPServer` method following this pattern. In this method we are going to use a new Vert.x
+Component: Vert.x Web. Vert.x Web is a Vert.x extension to build modern web application. Here we are going to use
+a `Router` which let us implement _REST_ APIs easily (_à la_ Hapi or ExpressJS). So:
 
-1. Create the `future` object your are going to return
-2. Create a `Router` object with: `Router.router(vertx)`
-3. Register a route (on `/`) on the router, calling `retrieveOperations`
-4. Create a HTTP server on the port passed in the configuration or `0` if not set (it picks an available port), and
-delegating the request handler to `router.accept`. We can pick a random port as it is exposed in the service record,
-so consumer are bound to the right port.
-5. When the server has started completes the future
+1. Create a `Router` object with: `Router.router(vertx)`
+2. Register a route (on `/`) on the router, calling `retrieveOperations`
+3. Create a HTTP server delegating the request handler to `router.accept`.
+4. Retrieve the port passed in the configuration or `0` if not set (it picks an available port), we can pick
+    a random port as it is exposed in the service record, so consumer are bound to the right port.
+5. Start the server with the `rxListen` version of the listen method that returns a single.
 
 [.assignment]
 ****
 [source, java]
 ----
-private Future<HttpServer> configureTheHTTPServer() {
-    Future<HttpServer> future = Future.future();
-
+private Single<HttpServer> configureTheHTTPServer() {
     // Use a Vert.x Web router for this REST API.
     Router router = Router.router(vertx);
     router.get("/").handler(this::retrieveOperations);
 
-    vertx.createHttpServer()
+    return vertx.createHttpServer()
         .requestHandler(router::accept)
-        .listen(config().getInteger("http.port", 0), future.completer());
-
-    return future;
+        .rxListen(config().getInteger("http.port", 0));
 }
 ----
 
 It creates a `Router`. The `Router` is an object from http://vertx.io/docs/vertx-web/java/[Vert.x web] that ease the
 creation of REST API with Vert.x. We won't go into too much details here, but if you want to implement REST API with
 Vert.x, this is the way to go. On our `Router` we declare a _route_: when a request arrive on `/`, it calls this `Handler`.
-Then, we create the HTTP server. The `requestHandler` is a specific method of the `router`, and in the `listen`
-handler we pass `future.completer()`. This `completer` is a sugar roughly doing:
-
-[source, java]
-----
-if (ar.failed()) { future.fail(ar.cause()); }
-else { future.complete(ar.result()); }
+Then, we create the HTTP server. The `requestHandler` is a specific method of the `router`, and we  return the result
+of the `rxListen` method.
 ----
 ****
 
-So, the caller can call this method and get a `Future`. It can register a `Handler` on it that is called when the
-`Future` receives a value (or a failure).
+So, the caller can call this method and get a `Single`. It can subscribe on it to bind the server and be notified
+of the completion of the operation (or failure).
 
 If you look at the `retrieveThePortfolioMessageSource`, you would see the very same pattern.
 
@@ -218,90 +214,73 @@ composition. This method:
 
 All these operations may fail.
 
-In the last paragraph we have seen methods returning `Future`. `Chains` are a composition of such functions:
+In the last paragraph we have seen methods returning `Single`. `Chains` are a composition of such functions:
 
 1. you have an input
-2. you execute a first `Function` taking the input from (1) and returning a `Future`
-3. you execute a second `Function` taking the input from (2) and returning a `Future`
+2. you execute a first `Function` taking the input from (1) and returning a `Single`
+3. you execute a second `Function` taking the input from (2) and returning a `Single`
 4. ....
 
-The completion of a chain is a `Future` object. If one of the chained operation fails, this `Future` is marked as
+The completion of a chain is a `Single` object. If one of the chained operation fails, this `Single` is marked as
 failed, otherwise it is completed with the result of the last operation:
 
 [source, code]
 ----
-Future<X> chain = Chain.chain(input, function1, function2, function3);
+Single<X> chain = input.flatMap(function1).flatMap(function2).flatMap(function3);
 ----
 
-A chain can be triggered by a `Future` too, so is started upon the successful completion of the given
-`Future`.
-
-So to use the composition pattern, we just need a set of `Functions` and a `Future` that would trigger the chain.
-Let's create this `Future` first:
+So to use the composition pattern, we just need a set of `Functions` and a `Single` that would trigger the chain.
+Let's create this `Single` first:
 
 [source, java]
 ----
-// This future will be assigned when the connection with the database is established.
-// We are going to use this future as a reference on the connection to close it.
-Future<SQLConnection> connectionRetrieved = Future.future();
-// Retrieve a connection with the database, report on the databaseReady if failed, or
-// assign the connectionRetrieved future.
-jdbc.getConnection(connectionRetrieved.completer());
+// This is the starting point of our Rx operations
+// This single will be completed when the connection with the database is established.
+// We are going to use this single as a reference on the connection to close it.
+Single<SQLConnection> connectionRetrieved = jdbc.rxGetConnection();
 ----
 
-Then, we need two functions taking a `SQLConnection` as parameter
+Then, we need compose the single with the `flatMap` method that is taking a `SQLConnection` as parameter and returns
+a single that contains the result of the database initialization.
 
-1. The first function drops the table if needed
-2. The second function creates the table
+1. we create the batch to execute
+2. the `rxBatch` executes the batch gives us the single returns of the operation
+3. finally we close the connection with `doAfterTerminate`
 
 [source,java]
 ----
-// When the connection is retrieved, we want to drop the table (if drop is set to true)
-Function<SQLConnection, Future<SQLConnection>> dropTable = connection -> {
-  Future<SQLConnection> future = Future.future();
-  if (!drop) {
-    future.complete(connection); // Immediate completion.
-  } else {
-    connection.execute(DROP_STATEMENT, completer(future, connection));
-  }
-  return future;
-};
+Single<List<Integer>> resultSingle = connectionRetrieved
+  .flatMap(conn -> {
+    // When the connection is retrieved
 
-// When the table is dropped, we recreate it
-Function<SQLConnection, Future<Void>> createTable = connection -> {
-  Future<Void> future = Future.future();
-  connection.execute(CREATE_TABLE_STATEMENT, future.completer());
-  return future;
-};
+    // Prepare the batch
+    List<String> batch = new ArrayList<>();
+    if (drop) {
+      // When the table is dropped, we recreate it
+      batch.add(DROP_STATEMENT);
+    }
+    // Just create the table
+    batch.add(CREATE_TABLE_STATEMENT);
+
+    // We compose with a statement batch
+    Single<List<Integer>> next = conn.rxBatch(batch);
+
+    // Whatever the result, if the connection has been retrieved, close it
+    return next.doAfterTerminate(conn::close);
+  });
 ----
 
-As explained above, both function returns a `Future` object. The result of the first function is used as input of the
- second function.
+The `resultSingle` is the final result providing a `Single<List<Integer>>` but we will return only a `Single<Void>`
+ as the caller only cares about the global result and not the detail.
 
-It's now time to build the chain:
+This is simple achieved with the `map` operations on the single:
 
-[source, java]
+[source,java]
 ----
-// Ok, now it's time to chain all these actions:
-// connectionRetrieved -> dropTable -> createTable -> in all case
-// close the connection
-
-Chain.chain(connectionRetrieved, dropTable, createTable)       // <1>
-    .setHandler(ar -> {                                        // <2>
-      // Whatever the result, if the connection has been
-      // retrieved, close it
-      if (connectionRetrieved.result() != null) {               // <3>
-        connectionRetrieved.result().close();
-      }
-
-      // Complete the main future with the result.
-      databaseReady.completer().handle(ar);                     // <4>
-    });
+return resultSingle.<Void>map(null);
 ----
 
-In (1) we create the chain. The first parameter is the `Future` triggering the chain. The two other parameters are
-the chained functions. We attach a `Handler` to the returned `Future` that is executed when the chain has been
-executed with the result (2). In (3), we check whether we have a connection and close it. Finally, in (4) we complete the main `Future` (returned by the method).
+And voilà!
 
 ### Task - Async JDBC with a callback-based composition
 
