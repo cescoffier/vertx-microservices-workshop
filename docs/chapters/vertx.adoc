@@ -73,7 +73,8 @@ HTTP server is established and so can do something else. When the response has b
 
 Finally, Vert.x applications runs _"on the JVM"_
 the Java Virtual Machine (8+). This means Vert.x
-applications can be developed using any language that runs on the JVM. Including Java(of course), Groovy, Ceylon, Ruby, JavaScript etc. We can even mix and match any combination of all these languages. The polyglot nature of Vert.x application allows you use the most appropriate language for the task.
+applications can be developed using any language that runs on the JVM. Including Java(of course), Groovy, Ceylon, Ruby, JavaScript, Kotlin and Scala.
+We can even mix and match any combination of all these languages. The polyglot nature of Vert.x application allows you use the most appropriate language for the task.
 
 Vert.x lets you implement distributed applications, either by using the built-in TCP and HTTP server and client, but
 also using the Vert.x event bus, a lightweight mechanism to send and receive messages. With the event bus, you send
