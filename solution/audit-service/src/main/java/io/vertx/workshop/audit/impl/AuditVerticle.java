@@ -5,6 +5,7 @@ import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.sql.UpdateResult;
+import io.vertx.rx.java.RxHelper;
 import io.vertx.rxjava.core.eventbus.MessageConsumer;
 import io.vertx.rxjava.core.http.HttpServer;
 import io.vertx.rxjava.ext.jdbc.JDBCClient;
@@ -46,17 +47,18 @@ public class AuditVerticle extends RxMicroServiceVerticle {
 
     // ----
     Single<Void> databaseReady = initializeDatabase(config().getBoolean("drop", false));
-    Single<MessageConsumer<JsonObject>> messageListenerReady = retrieveThePortfolioMessageSource();
     Single<Void> httpEndpointReady = configureTheHTTPServer().flatMap(server -> rxPublishHttpEndpoint("audit", "localhost", server.actualPort()));
-
-    Single.zip(httpEndpointReady, databaseReady, messageListenerReady, (a,b,c) -> c)
-        .subscribe(ok -> {
-            // Register the handle called on messages
-            ok.handler(message -> storeInDatabase(message.body()));
-            // Notify the completion
-            future.complete();
-        }, future::fail);
+    Single<MessageConsumer<JsonObject>> messageConsumerReady = retrieveThePortfolioMessageSource();
+    Single<MessageConsumer<JsonObject>> ready = Single.zip(databaseReady, httpEndpointReady, messageConsumerReady, (db, http, consumer) -> consumer);
     // ----
+
+    ready.doOnSuccess(consumer -> {
+      consumer.handler(message -> storeInDatabase(message.body()));
+    }).subscribe(consumer -> {
+      future.complete();
+    }, error -> {
+      future.fail(error);
+    });
   }
 
   @Override
