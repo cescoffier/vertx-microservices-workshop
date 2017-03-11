@@ -56,6 +56,16 @@ The Audit service:
 Interactions with the database use the `vertx-jdbc-client`, an async version of JDBC. So expect to see some SQL code
 (I know you love it).
 
+
+### Rxjava
+
+Vert.x uses a simple callback based asynchrony and its `Future` object is an helper tool useful for callback
+coordination.
+
+RxJava implements the Reactive Extensions for the JVM and is a library for composing asynchronous and event-based
+programs.
+
+
 ### Task - Composing methods returning Future.
 
 Open the `io.vertx.workshop.audit.impl.AuditVerticle` class. The first important detail of this verticle is its
