@@ -2,14 +2,24 @@
 <meta name="description" content="A hand's on lab about building reactive microservice systems with Vert.x">
 
 
-<link href="style/css/docs.css" media="screen" rel="stylesheet">
-<link href="style/css/font-awesome.min.css" media="screen" rel="stylesheet">
+<link href="assets/css/docs.css" media="screen" rel="stylesheet">
+<link href="assets/css/font-awesome.min.css" media="screen" rel="stylesheet">
 <link href="http://vertx.io/javascripts/styles/rainbow.min.css" media="screen" rel="stylesheet">
+<script src="assets/js/jquery-3.1.1.js"></script>
 
-<!--<link rel="stylesheet" href="style/css/bootstrap.min.css">-->
-<!--<link rel="stylesheet" href="style/css/font-awesome.min.css">-->
-<!--<link rel="stylesheet" href="style/css/style.css">-->
-
-<!--<script src="style/js/jquery-3.1.0.min.js"></script>-->
-<!--<script src="style/js/bootstrap.min.js"></script>-->
-<!--<script src="style/js/my-lib.js"></script>-->
+<script>
+  $(document).ready(function() {
+    $(document)
+        .find("div.assignment div.content")
+        .each(function(index, elt) {
+          elt = $(elt);
+          elt.hide();
+          var button = $("<button type='button'>Show me the code</button>");
+          elt.parent()
+              .append(button).on("click", function() {
+            $(this).find("button").remove();
+            elt.show();
+          });
+        });
+  });
+</script>
