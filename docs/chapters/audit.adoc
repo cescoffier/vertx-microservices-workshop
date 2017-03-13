@@ -59,15 +59,178 @@ Interactions with the database use the `vertx-jdbc-client`, an async version of 
 
 ### Rxjava
 
+#### Intro
+
 Vert.x uses a simple callback based asynchrony and its `Future` object is an helper tool useful for callback
 coordination. RxJava implements the Reactive Extensions for the JVM and is a library for composing asynchronous and
 event-based programs.
 
 With RxJava, you model your code around data flow (called `Observable`). These data flow are pipes in which data
-transits. these `Observable` can represent bounded or unbounded streams, but also streams with a single element.
+transits. These `Observable` can represent finite or infinite streams, but also streams with a single element. When
+a stream is known to hold exactly one element, it is convenient to use the `Single` type. Finally a `Completable`
+represents a stream with no elements, i.e it can only complete without a value or fail.
 
-// .... TODO .... //
+To use such reactive type, a _subscription_ operation is necessary.
 
+[source, java]
+----
+Observable<String> observable = getStringObservable();
+
+// Subscribe to the stream
+observable.subscribe(item -> {
+  // Received a String item
+  }, error -> {
+  // Error termination => no more items
+  }, () -> {
+  // Normal termination => no more items
+  });
+----
+
+Singles are simpler to work with as they hold exactly one element, they have some similarities with future/promises
+although they have noticeable differences:
+
+- a future/promise is the result of an asynchronous operation, e.g, you start a server and you get a promise of the server bind result
+- a single result usually has a side effect at subscription time, e.g you subscribe to the single, as side effect it start the server
+and the single notifies you of the bind result
+
+[source, java]
+----
+Single<String> single = getStringSingle();
+
+// Subscribe to the single
+single.subscribe(item -> {
+  // Completion with the string item
+  }, error -> {
+  // Completion with an error
+  });
+----
+
+#### Composition and transformation
+
+RxJava provides a very useful set of operators for composing and transforming asynchronous flows.
+
+We will use the main ones in this lab : `map`, `flatMap` and `zip`.
+
+The `map` operator transforms synchronously the result of an operation.
+
+[source, java]
+----
+// Transform the stream of strings into a stream of Buffer
+Observable<Buffer> observable = getStringObservable().map(s -> vertx.fileSystem().readFileBlocking(s));
+
+// Transform the string single into a Buffer single
+Single<Buffer> single = getStringSingle().map(s -> vertx.fileSystem().readFileBlocking(s));
+----
+
+The drawback of the `map` operator is the imposed synchrony, in order to retrieve the content of a file we have
+to use the _blocking_ version of the filesystem, and thus we break the Vert.x golden rule!
+
+Fortunately there is an asynchronous version called `flatMap`.
+
+[source, java]
+----
+// Transform the stream of strings into a stream of Buffer
+Observable<Buffer> observable = getStringObservable().flatMap(s -> {
+  Single<Buffer> single = vertx.fileSystem().rxReadFile();
+  return single.toObservable();
+});
+
+// Transform the string single into a Buffer single
+Single<Buffer> single = getStringSingle().flatMap(s -> {
+  Single<Buffer> single = vertx.fileSystem().rxReadFile();
+  return single;
+});
+----
+
+The `zip` operator combines the results of several `Observable`/`Single` in a single result, let's see with `Single`:
+
+[source, java]
+----
+Single<String> single1 = getStringSingle();
+Single<String> single2 = getStringSingle();
+Single<String> single3 = getStringSingle();
+
+Single<String> combinedSingle = Single.zip(single1, single2, single3, (s1,s2,s3) -> s1 + s2 + s3);
+
+combinedSingle.subscribe(s -> {
+  // Got the three concatenated strings
+}, error -> {
+  // At least one of single1, single2 or single3 failed
+});
+
+----
+
+It works similarly for `Observable`, but for the sake of the conciseness we will not study it here.
+
+### Vert.x Rx
+
+Vert.x has an Rx version of its asynchronous API packaged with the `io.vertx.*rxjava*` prefix, e.g `io.vertx.*rxjava*.core.Vertx`
+ is the Rx version of `io.vertx.core.Vertx`. The _rxified_ version of Vert.x exposes the asynchronous methods as
+ `Single` and the stream types as `Observable`.
+
+#### Vert.x streams
+
+The type `ReadStream<T>` models a reactive streams of `T` items, for instance an `HttpServerRequest` is a `ReadStream<Buffer>`.
+
+The _rxified_ version exposes a `toObservable()` method to turn the stream into an `Observable<T>`:
+
+[source, java]
+----
+import io.vertx.rxjva.core.Vertx;
+import io.vertx.rxjva.core.http.HttpServer;
+
+...
+
+Vertx vertx = Vert.vertx();
+HttpServer server = vertx.createHttpServer();
+server.requestHandler(request -> {
+  if (request.path().equals("/upload")) {
+    Observable<Buffer> observable = request.toObservable();
+    observable.subscribe(buffer -> {
+      // Got an uploaded buffer
+      }, error -> {
+      // Got an error => no more buffers
+      }, () -> {
+      // Done => no more buffers
+    });
+  }
+});
+----
+
+In this section, we will not use `Observable` as we don't focus much on reactive streams. However we will discover and
+use `Single`.
+
+#### Vert.x singles
+
+Each asynchronous method, i.e a method having a last parameter `Handler<AsyncResult<T>>`, has an _rxified_ version, named
+ after the original method name prefixe by `rx`, with the same parameters minus the last and returning a `Single` of the
+ asynchronous type.
+
+Unlike the original method, calling the _rx_ version does not make an actual call. Instead you get a single that will
+call the actual method at subscription time.
+
+[source, java]
+----
+import io.vertx.rxjva.core.Vertx;
+import io.vertx.rxjva.core.http.HttpServer;
+
+...
+
+Vertx vertx = Vert.vertx();
+HttpServer server = vertx.createHttpServer();
+server.requestHandler(request -> ...);
+
+// The single has been created but the server is actually not starting at this point
+Single<HttpServer> listenSingle = server.rxListen(8080);
+
+// Triggers the actual start
+listenSingle.subscribe(
+  server -> {
+    // The server is started and bound on 8080
+  }, error -> {
+    // The server could not start
+  });
+----
 
 ### Task - Composing methods returning Single.
 
