@@ -157,6 +157,6 @@ public class AuditVerticle extends RxMicroServiceVerticle {
           return next.doAfterTerminate(conn::close);
         });
 
-    return resultSingle.<Void>map(null);
+    return resultSingle.map(list -> null);
   }
 }
