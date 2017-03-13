@@ -88,6 +88,6 @@ _message_ to the initial sender
 Wao!, that's a lot of information to process... However, you might still want to ask: **What kind of applications can I use Vert.x for?** We say, Vert.x is
 incredibly flexible - whether it's simple network utilities, sophisticated modern web applications, HTTP/REST
 microservices, high volume event processing or a full blown backend message-bus application, Vert.x is a great fit.
-It's fast, and does not constraint you. Last but not least, Vert.x provides appropriate tools to build reactive systems; sytems that are: _responsive, elastic, resilient and asynchronous_!
+It's fast, and does not constraint you. Last but not least, Vert.x provides appropriate tools to build reactive systems; systems that are: _responsive, elastic, resilient and asynchronous_!
 
 

@@ -60,10 +60,13 @@ Interactions with the database use the `vertx-jdbc-client`, an async version of 
 ### Rxjava
 
 Vert.x uses a simple callback based asynchrony and its `Future` object is an helper tool useful for callback
-coordination.
+coordination. RxJava implements the Reactive Extensions for the JVM and is a library for composing asynchronous and
+event-based programs.
 
-RxJava implements the Reactive Extensions for the JVM and is a library for composing asynchronous and event-based
-programs.
+With RxJava, you model your code around data flow (called `Observable`). These data flow are pipes in which data
+transits. these `Observable` can represent bounded or unbounded streams, but also streams with a single element.
+
+// .... TODO .... //
 
 
 ### Task - Composing methods returning Single.
