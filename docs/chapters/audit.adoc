@@ -170,7 +170,7 @@ Vert.x has an Rx version of its asynchronous API packaged with the `io.vertx.*rx
 
 #### Vert.x streams
 
-The type `ReadStream<T>` models a reactive streams of `T` items, for instance an `HttpServerRequest` is a `ReadStream<Buffer>`.
+The type `ReadStream<T>` models a reactive sequence of `T` items, for instance an `HttpServerRequest` is a `ReadStream<Buffer>`.
 
 The _rxified_ version exposes a `toObservable()` method to turn the stream into an `Observable<T>`:
 
@@ -305,6 +305,9 @@ one we really care about.
 ****
 
 ### Task - Implementing a method returning a Single
+
+Now our verticle extends the `RxMicroServiceVerticle` base class, this class provides the same helper method
+  than `MicroServiceVerticle` using Rx singles.
 
 We have mentioned that async method have a signature with a `Handler` as last parameter. There is an equivalent syntax
 that returns a `Single` object when the operations they are executing are completed:
@@ -493,13 +496,9 @@ jdbc.getConnection(ar -> {
 ----
 ****
 
-So obviously it's possible too not use composition. But imagine when you have several asynchronous operation to chain, it become a callback hell very quickly. So, as a recommendation: use the Vert.x composition operators.
-
-IMPORTANT: All the composition operators (`all`, `compose`, `any`, `chain`...) are implemented on top of callbacks.
-The _pure_ async programming is using callbacks, `Future` and composition are there to provide a direct
-correspondence between synchronous functions and asynchronous operations and so ease the implementation of complex
-processes.
-
+So obviously it's possible too not use composition. But imagine when you have several asynchronous operation to
+chain, it become a callback hell very quickly. So, as a recommendation: use the Vert.x composition operators or use
+the _rxified_ version of Vert.x API.
 
 ### Show time !
 
