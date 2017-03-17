@@ -1,4 +1,4 @@
-# Appendix A - Start, Stop and List commands
+## Appendix A - Start, Stop and List commands
 
 Even if not required, Vert.x provides a convenient `Launcher` class. This class is _just_ the entry point of the
 application. It initializes Vert.x from the given parameter, deploys the given verticle and so on.

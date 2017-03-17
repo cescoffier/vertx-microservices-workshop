@@ -25,7 +25,7 @@ SHARED_OPTIONS='-a toc=left -a stylesheet! -a numbered -a experimental -a source
 --destination-dir=output'
 
 cp -R images output
-cp -R style output
+cp -R assets output
 
 echo "Converting to HTML ..."
 $ASCIIDOCTOR -v $SHARED_OPTIONS $MASTER_ADOC

@@ -5,6 +5,7 @@ import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.sql.UpdateResult;
+import io.vertx.rx.java.RxHelper;
 import io.vertx.rxjava.core.eventbus.MessageConsumer;
 import io.vertx.rxjava.core.http.HttpServer;
 import io.vertx.rxjava.ext.jdbc.JDBCClient;
@@ -15,6 +16,7 @@ import io.vertx.rxjava.servicediscovery.types.MessageSource;
 import io.vertx.workshop.common.RxMicroServiceVerticle;
 import rx.Single;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -46,17 +48,26 @@ public class AuditVerticle extends RxMicroServiceVerticle {
 
     // ----
     Single<Void> databaseReady = initializeDatabase(config().getBoolean("drop", false));
-    Single<MessageConsumer<JsonObject>> messageListenerReady = retrieveThePortfolioMessageSource();
-    Single<Void> httpEndpointReady = configureTheHTTPServer().flatMap(server -> rxPublishHttpEndpoint("audit", "localhost", server.actualPort()));
-
-    Single.zip(httpEndpointReady, databaseReady, messageListenerReady, (a,b,c) -> c)
-        .subscribe(ok -> {
-            // Register the handle called on messages
-            ok.handler(message -> storeInDatabase(message.body()));
-            // Notify the completion
-            future.complete();
-        }, future::fail);
+    Single<Void> httpEndpointReady = configureTheHTTPServer()
+        .flatMap(server -> rxPublishHttpEndpoint("audit", "localhost", server.actualPort()));
+    Single<MessageConsumer<JsonObject>> messageConsumerReady = retrieveThePortfolioMessageSource();
+    Single<MessageConsumer<JsonObject>> readySingle = Single.zip(
+        databaseReady,
+        httpEndpointReady,
+        messageConsumerReady,
+        (db, http, consumer) -> consumer);
     // ----
+
+    readySingle.doOnSuccess(consumer -> {
+      // on success we set the handler that will store message in the database
+      consumer.handler(message -> storeInDatabase(message.body()));
+    }).subscribe(consumer -> {
+      // complete the verticle start with a success
+      future.complete();
+    }, error -> {
+      // signal a verticle start failure
+      future.fail(error);
+    });
   }
 
   @Override
@@ -101,10 +112,9 @@ public class AuditVerticle extends RxMicroServiceVerticle {
     // Use a Vert.x Web router for this REST API.
     Router router = Router.router(vertx);
     router.get("/").handler(this::retrieveOperations);
-
-    return vertx.createHttpServer()
-        .requestHandler(router::accept)
-        .rxListen(config().getInteger("http.port", 0));
+    HttpServer server = vertx.createHttpServer().requestHandler(router::accept);
+    Integer port = config().getInteger("http.port", 0);
+    return server.rxListen(port);
     //----
   }
 
@@ -149,28 +159,30 @@ public class AuditVerticle extends RxMicroServiceVerticle {
 
     // This is the starting point of our Rx operations
     // This single will be completed when the connection with the database is established.
-    // We are going to use this future as a reference on the connection to close it.
+    // We are going to use this single as a reference on the connection to close it.
     Single<SQLConnection> connectionRetrieved = jdbc.rxGetConnection();
 
     // Ok, now it's time to chain all these actions:
-    return connectionRetrieved
+    Single<List<Integer>> resultSingle = connectionRetrieved
         .flatMap(conn -> {
+          // When the connection is retrieved
 
-          Single<Void> next;
+          // Prepare the batch
+          List<String> batch = new ArrayList<>();
           if (drop) {
-            // When the connection is retrieved, we want to drop the table (if drop is set to true)
-            next = conn.rxExecute(DROP_STATEMENT);
-
             // When the table is dropped, we recreate it
-            next = next.flatMap(v -> conn.rxExecute(CREATE_TABLE_STATEMENT));
-          } else {
-
-            // Just create the table
-            next = conn.rxExecute(CREATE_TABLE_STATEMENT);
+            batch.add(DROP_STATEMENT);
           }
+          // Just create the table
+          batch.add(CREATE_TABLE_STATEMENT);
+
+          // We compose with a statement batch
+          Single<List<Integer>> next = conn.rxBatch(batch);
 
           // Whatever the result, if the connection has been retrieved, close it
           return next.doAfterTerminate(conn::close);
         });
+
+    return resultSingle.map(list -> null);
   }
 }

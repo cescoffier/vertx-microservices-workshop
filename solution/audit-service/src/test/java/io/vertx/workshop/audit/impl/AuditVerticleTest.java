@@ -47,9 +47,7 @@ public class AuditVerticleTest {
                 r.cause().printStackTrace();
                 tc.fail(r.cause());
               }
-              vertx.deployVerticle(AuditVerticle.class.getName(), new DeploymentOptions().setConfig(CONFIGURATION), s -> {
-                async.complete();
-              });
+              vertx.deployVerticle(AuditVerticle.class.getName(), new DeploymentOptions().setConfig(CONFIGURATION), tc.asyncAssertSuccess(s -> async.complete()));
             });
   }
 
