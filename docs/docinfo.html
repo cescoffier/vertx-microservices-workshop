@@ -5,21 +5,22 @@
 <link href="assets/css/docs.css" media="screen" rel="stylesheet">
 <link href="assets/css/font-awesome.min.css" media="screen" rel="stylesheet">
 <link href="http://vertx.io/javascripts/styles/rainbow.min.css" media="screen" rel="stylesheet">
+<link href="assets/css/hol.css" media="screen" rel="stylesheet">
 <script src="assets/js/jquery-3.1.1.js"></script>
 
 <script>
-  $(document).ready(function() {
-    $(document)
-        .find("div.assignment")
-        .each(function(index, elt) {
-          elt = $(elt);
-          var content = elt.children("div.content");
-          content.hide();
-          var button = $("<button type='button'>Show me the code</button>");
-          elt.append(button).on("click", function() {
-            button.remove();
-            content.show();
-          });
-        });
-  });
+    $(document).ready(function() {
+        $(document)
+            .find("div.assignment")
+            .each(function(index, elt) {
+                elt = $(elt);
+                var content = elt.children("div.content");
+                content.hide();
+                var button = $("<button type='button'>Show me the code</button>");
+                elt.append(button).on("click", function() {
+                    button.remove();
+                    content.show();
+                });
+            });
+    });
 </script>

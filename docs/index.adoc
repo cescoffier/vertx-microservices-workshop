@@ -1,6 +1,6 @@
 # Vert.x - From zero to (micro)-hero
 Clement Escoffier, Julien Viet
-v0.5, August 30th, 2016
+v0.6, March, 18th, 2017
 :toc: left
 :toclevels: 4
 :imagesdir: images
