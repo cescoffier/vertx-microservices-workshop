@@ -2,3 +2,85 @@ body {
     margin: 10px;
 }
 
+p,
+blockquote,
+dt,
+td.content,
+span.alt {
+    font-size: inherit;
+}
+
+#header,
+#content,
+#footnotes,
+#footer {
+    max-width: 90.5em;
+}
+
+.quoteblock blockquote,
+.quoteblock blockquote,
+td.content {
+    font-size: 1.2em;
+}
+
+.assignment pre code {
+    background-color: transparent;
+}
+
+.sidebarblock p,
+.sidebarblock dt,
+.sidebarblock td.content,
+p.tableblock {
+    font-size: 1em;
+}
+
+a[data-toggle='collapse'] {
+    margin-bottom: 10px;
+}
+
+h1 {
+    font-size: 46px;
+    font-weight: bold;
+}
+
+#toctitle,
+.h1,
+.h2,
+.h3,
+.h4,
+.h5,
+.h6,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: inherit;
+    line-height: 1.1;
+    color: inherit;
+}
+
+h1 {
+    margin: .67em 0;
+    font-size: 1.5em;
+}
+
+li p {
+    font-size: 1em;
+}
+
+code {
+    color: #c7254e;
+}
+
+code,
+kbd,
+pre,
+samp {
+    font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+}
+
+.quoteblock blockquote:before {
+    vertical-align: baseline;
+}
