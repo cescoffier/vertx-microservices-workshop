@@ -325,7 +325,7 @@ the last quote of the company with the `get` method (2). `get` prepares the requ
  called. The Web Client is already configured with the right IP and port (the service discovery manages this).
 Then we can read the body and compute the evaluation. When done, we assigned a value to the `Future` (3).
 If the company cannot be found, we evaluate these shares to `0.0` (4).
-If anything went wrong while sending the request or receving the response, we fail (5) future with the `Throwable` cause.
+If anything went wrong while sending the request or receving the response, we fail (5) the future with the `Throwable` cause.
 
 ****
 
