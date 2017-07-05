@@ -244,19 +244,19 @@ Fill the `evaluate` method to retrieve the `quotes` service. You can retrieve Ht
 ****
 [source, java]
 ----
-HttpEndpoint.getClient(discovery, new JsonObject().put("name", "quotes"), // <1>
+HttpEndpoint.getWebClient(discovery, new JsonObject().put("name", "quotes"), // <1>
   client -> {
-       if (client.failed()) {                                                     // <2>
-         // It failed...
-         resultHandler.handle(Future.failedFuture(client.cause()));
-       } else {
-         // We have the client
-         HttpClient httpClient = client.result();                                 // <3>
-         computeEvaluation(httpClient, resultHandler);
-       }
- });
+    if (client.failed()) {                                                   // <2>
+      // It failed...
+      resultHandler.handle(Future.failedFuture(client.cause()));
+    } else {
+      // We have the client
+      WebClient webClient = client.result();                                 // <3>
+      computeEvaluation(webClient, resultHandler);
+    }
+  });
 ----
-<1> Get the HTTP Client for the requested service.
+<1> Get the Web Client for the requested service.
 <2> The client cannot be retrieved (service not found), report the failure
 <3> We have the client, let's continue...
 ****
@@ -265,21 +265,18 @@ Here is how the `computeEvaluation` method is implemented:
 
 [source, java]
 ----
-private void computeEvaluation(HttpClient httpClient, Handler<AsyncResult<Double>> resultHandler) {
     // We need to call the service for each company we own shares
     List<Future> results = portfolio.getShares().entrySet().stream()
-        .map(entry -> getValueForCompany(httpClient, entry.getKey(), entry.getValue()))    // <1>
+        .map(entry -> getValueForCompany(webClient, entry.getKey(), entry.getValue()))    // <1>
         .collect(Collectors.toList());
 
-
-    // We need to return only when we have all results, for this we create a composite future.
-    // The set handler is called when all the futures has been assigned.
-    CompositeFuture.all(results).setHandler(                                            // <2>
-      ar -> {
-        double sum = results.stream().mapToDouble(fut -> (double) fut.result()).sum();  // <3>
-        resultHandler.handle(Future.succeededFuture(sum));                              // <4>
-    });
-}
+    // We need to return only when we have all results, for this we create a composite future. The set handler
+    // is called when all the futures has been assigned.
+    CompositeFuture.all(results).setHandler(                                              // <2>
+        ar -> {
+          double sum = results.stream().mapToDouble(fut -> (double) fut.result()).sum();  // <3>
+          resultHandler.handle(Future.succeededFuture(sum));                              // <4>
+        });
 ----
 
 First, we need to get a list of `Future` that would receive the different evaluations (one per company) (1). This
@@ -299,37 +296,36 @@ When the response arrives, check the status (should be 200) and retrieve the bod
 ****
 [source, java]
 ----
-private Future<Double> getValueForCompany(HttpClient client, String company, int numberOfShares) {
-  // Create the future object that will  get the value once the value have been retrieved
-  Future<Double> future = Future.future();                                           // <1>
+  private Future<Double> getValueForCompany(WebClient client, String company, int numberOfShares) {
+    // Create the future object that will  get the value once the value have been retrieved
+    Future<Double> future = Future.future();                                           // <1>
 
-  client.get("/?name=" + encode(company), response -> {                              // <2>
-    response.exceptionHandler(future::fail);                                         // <3>
-    if (response.statusCode() == 200) {
-      response.bodyHandler(buffer -> {
-        double v = numberOfShares * buffer.toJsonObject().getDouble("bid");
-        future.complete(v);                                                          // <4>
-      });
-    } else {
-      future.complete(0.0);                                                          // <5>
-    }
-  })
-    .exceptionHandler(future::fail)                                                  // <6>
-    .end();                                                                          // <7>
+    client.get("/?name=" + encode(company))                                            // <2>
+        .as(BodyCodec.jsonObject())
+        .send(ar -> {
+      if (ar.succeeded()) {
+        HttpResponse<JsonObject> response = ar.result();
+        if (response.statusCode() == 200) {
+          double v = numberOfShares * response.body().getDouble("bid");
+          future.complete(v);                                                          // <3>
+        } else {
+          future.complete(0.0);                                                        // <4>
+        }
+      } else {
+        future.fail(ar.cause());                                                       // <5>
+      }
+    });
 
-  return future;
-}
+    return future;
+  }
 ----
 
-First, we create the `Future` object that will be returned by the method (1). Then, we use the HTTP client to retrieve
-the last quote of the company with the `get` method (2). `get` prepares the request but does not emit it until `end` is
- called. The HTTP Client is already configured with the right IP and port (the service discovery manages this). When we
-  get the response, we have to register an `exceptionHandler` (3) to catch failures that may happen when receiving the
-  response body. Then we can read the body and compute the evaluation. When done, we assigned a value to the `Future`
-  (4). If the company cannot be found, we evaluate these shares to `0.0` (5).
-
-As the connection to the server may fail, we should also register an `exceptionHandler` on the client itself (6).
-Finally, we emit the request using the `end` method (7).
+First, we create the `Future` object that will be returned by the method (1). Then, we use the Web Client to retrieve
+the last quote of the company with the `get` method (2). `get` prepares the request but does not emit it until `send` is
+ called. The Web Client is already configured with the right IP and port (the service discovery manages this).
+Then we can read the body and compute the evaluation. When done, we assigned a value to the `Future` (3).
+If the company cannot be found, we evaluate these shares to `0.0` (4).
+If anything went wrong while sending the request or receving the response, we fail (5) future with the `Throwable` cause.
 
 ****
 
