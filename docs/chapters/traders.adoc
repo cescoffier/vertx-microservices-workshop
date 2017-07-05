@@ -39,7 +39,7 @@ public void start() throws Exception {
 ----
 
 The `JavaCompulsiveTraderVerticle` is deployed with some `DeploymentOptions` (1). This one sets the _number of
-instances_ to 2, so Vert.x is not instantiating this verticle once, with twice (2 different objects).
+instances_ to 2, so Vert.x is not instantiating this verticle once, but twice (2 different objects).
 So, the previous code deploys three traders.
 
 The Groovy verticle is deployed by passing the file name. The verticle file is in `src/main/resources` and will be
