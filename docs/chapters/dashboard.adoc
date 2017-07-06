@@ -61,24 +61,23 @@ And the handler is:
 [source, java]
 ----
 private void callAuditService(RoutingContext context) {
-    if (client == null) {
-      context.response()
-          .putHeader("content-type", "application/json")
-          .setStatusCode(200)
-          .end(new JsonObject().put("message", "No audit service").encode());
-    } else {
-      client.get("/", response -> {
-        response
-            .bodyHandler(buffer -> {
-              context.response()
-                  .putHeader("content-type", "application/json")
-                  .setStatusCode(200)
-                  .end(buffer);
-            });
-      })
-          .end();
-    }
+  if (client == null) {
+    context.response()
+        .putHeader("content-type", "application/json")
+        .setStatusCode(200)
+        .end(new JsonObject().put("message", "No audit service").encode());
+  } else {
+    client.get("/").send(ar -> {
+      if (ar.succeeded()) {
+        HttpResponse<Buffer> response = ar.result();
+        context.response()
+            .putHeader("content-type", "application/json")
+            .setStatusCode(200)
+            .end(response.body());
+      }
+    });
   }
+}
 ----
 
 The audit service is retrieved in the verticle `start` method. If the service was not found, it returns a _no audit service_ message. Otherwise, it uses the retrieved HTTP client to call the audit REST API. The response is simply sent back to the HTTP response.
@@ -94,53 +93,40 @@ ways to handle failures:
 * timeout
 * circuit breaker
 
-We have already covered the first point. In this section we cover the point 2 and 3. The next section is about circuit
- breakers.
+We have already covered the first point. In this section we cover timeouts. The next section is about circuit breakers.
 
-Exception handlers are _handlers_ receiving a `Throwable` parameter and are responsible for managing the reported error. It is used on object that does not called a `Handler<AsyncResult<?>>` such as on a HTTP request. During a HTTP request-response interaction, failures can happen at several places:
-
-* a connection issue - the server does not reply or cannot be found.
-* a response issue - the server is there, but the connection is lost while retrieving the content
-* a server issue - the server returns a failure
-
-This last point is _application specific_ and need to be handle by your code. The first two points are managed
-by exception handlers on the 1) HTTP request, 2) HTTP response objects. Vert.x uses two different handlers because
-the root issue is different.
-
-Copy this method into another one called `callAuditServiceWithExceptionHandler`, and set the `exceptionHandler` on the HTTP request and HTTP response. Both should call the `fail` method on the `RoutingContext` parameter. In addition, on the request, configure the response timeout. The exception handler set on the request is called if the response cannot be retrieved before this timeout. Don't forget to update the handler of the `/operations` route to call this new method.
+Copy this method into another one called `callAuditServiceTimeout`, and set the `timeout` on the HTTP request.
+The `fail` method on the `RoutingContext` should be called in case of failure.
+The asynchronous result is failed if the response cannot be retrieved before this timeout.
+Don't forget to update the handler of the `/operations` route to call this new method.
 
 [.assignment]
 ****
 [source, java]
 ----
-private void failureAwarelastOperations(RoutingContext context) {
+private void callAuditServiceTimeout(RoutingContext context) {
   if (client == null) {
     context.response()
         .putHeader("content-type", "application/json")
         .setStatusCode(200)
-        .end(new JsonObject().put("message", "No audit service")
-            .encode());
+        .end(new JsonObject().put("message", "No audit service").encode());
   } else {
-    client.get("/", response -> {
-      response
-          .exceptionHandler(context::fail)                      <1>
-          .bodyHandler(buffer -> {
-            context.response()
-                .putHeader("content-type", "application/json")
-                .setStatusCode(200)
-                .end(buffer);
-          });
-    })
-        .exceptionHandler(context::fail)                        <2>
-        .setTimeout(5000)                                       <3>
-        .end();
+    client.get("/")
+        .timeout(5000)
+        .send(ar -> {
+      if (ar.succeeded()) {
+        HttpResponse<Buffer> response = ar.result();
+        context.response()
+            .putHeader("content-type", "application/json")
+            .setStatusCode(200)
+            .end(response.body());
+      } else {
+        context.fail(ar.cause());
+      }
+    });
   }
- });
 }
 ----
-<1> Exception handler called when reading the response fails
-<2> Exception handler called when the connection with the server cannot be established
-<3> Timeout configuration
 ****
 
 Once done, build the dashboard with:
@@ -202,28 +188,23 @@ Once done, rebuild and restart the dashboard. Stop the audit service and see how
 ****
 [source, java]
 ----
-private void callAuditServiceWithExceptionHandlerWithCircuitBreaker(RoutingContext context) {
+  private void callAuditServiceTimeoutWithCircuitBreaker(RoutingContext context) {
     HttpServerResponse resp = context.response()
         .putHeader("content-type", "application/json")
         .setStatusCode(200);
 
     circuit.executeWithFallback(
         future ->
-            client.get("/", response -> {
-              response
-                  .exceptionHandler(future::fail)
-                  .bodyHandler(future::complete);
-            })
-                .exceptionHandler(future::fail)
-                .setTimeout(5000)
-                .end(),
+            client.get("/").send(ar -> future.handle(ar.map(HttpResponse::body))),
         t -> Buffer.buffer("{\"message\":\"No audit service, or unable to call it\"}")
     )
         .setHandler(ar -> resp.end(ar.result()));
-    }
+  }
 ----
 
-In comparision to the previous solution, we report failures to the given `future` and not on the context. When a failure is reported, the fallback is called, returning a default buffer. We don't have to check whether or not `client` is `null` as it throws an exception that fails the operation (and the fallback is called).
+In comparision to the previous solution, we report failures to the given `future` and not on the context.
+When a failure is reported, the fallback is called, returning a default buffer.
+We don't have to check whether or not `client` is `null` as it throws an exception that fails the operation (and the fallback is called).
 ****
 
 ### SockJS - Event bus bridge

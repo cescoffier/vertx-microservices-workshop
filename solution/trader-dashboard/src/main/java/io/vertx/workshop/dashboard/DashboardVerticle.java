@@ -111,7 +111,7 @@ public class DashboardVerticle extends MicroServiceVerticle {
     }
   }
 
-  private void callAuditServiceWithExceptionHandler(RoutingContext context) {
+  private void callAuditServiceTimeout(RoutingContext context) {
     if (client == null) {
       context.response()
           .putHeader("content-type", "application/json")
@@ -134,7 +134,7 @@ public class DashboardVerticle extends MicroServiceVerticle {
     }
   }
 
-  private void callAuditServiceWithExceptionHandlerWithCircuitBreaker(RoutingContext context) {
+  private void callAuditServiceTimeoutWithCircuitBreaker(RoutingContext context) {
     HttpServerResponse resp = context.response()
         .putHeader("content-type", "application/json")
         .setStatusCode(200);

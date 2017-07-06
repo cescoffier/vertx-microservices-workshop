@@ -39,7 +39,7 @@ public void start() throws Exception {
 ----
 
 The `JavaCompulsiveTraderVerticle` is deployed with some `DeploymentOptions` (1). This one sets the _number of
-instances_ to 2, so Vert.x is not instantiating this verticle once, with twice (2 different objects).
+instances_ to 2, so Vert.x is not instantiating this verticle once, but twice (2 different objects).
 So, the previous code deploys three traders.
 
 The Groovy verticle is deployed by passing the file name. The verticle file is in `src/main/resources` and will be
@@ -53,7 +53,7 @@ Open the `io.vertx.workshop.trader.impl.JavaCompulsiveTraderVerticle` class. In 
 
 1. Initialize the trader
 2. Retrieve the 2 services we use
-3. When both have been retrieve, apply the trading logic on every new market data.
+3. When both have been retrieved, apply the trading logic on every new market data.
 
 #### Task - 1. Initialize the trader
 
