@@ -17,7 +17,7 @@
   <packaging>pom</packaging>
 
   <properties>
-    <stack.version>3.4.1</stack.version>
+    <stack.version>3.4.2</stack.version>
 
     <!--overridden in each project packaged as a fat jar -->
     <main.verticle/>
@@ -82,7 +82,7 @@
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
-      <artifactId>vertx-hazelcast</artifactId>
+      <artifactId>vertx-infinispan</artifactId>
     </dependency>
 
     <!-- Microservice toolbox -->
@@ -157,7 +157,7 @@
           <version>2.10</version>
           <executions>
             <execution>
-              <id>unpack-hazelcast-configuration</id>
+              <id>unpack-jgroups-configuration</id>
               <phase>process-resources</phase>
               <goals>
                 <goal>unpack-dependencies</goal>
@@ -165,7 +165,7 @@
               <configuration>
                 <includeArtifactIds>vertx-workshop-common</includeArtifactIds>
                 <outputDirectory>${project.build.directory}/classes</outputDirectory>
-                <includes>**/cluster.xml</includes>
+                <includes>**/jgroups.xml</includes>
               </configuration>
             </execution>
           </executions>
