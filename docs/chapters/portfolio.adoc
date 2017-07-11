@@ -238,7 +238,8 @@ That's a bit more tricky, so let's do it step by step. First, in the `evaluate`,
 endpoint (service) provided by the quote generator. This service is named `quotes`. We published in in the previous
 section. So, let's start to get this service.
 
-Fill the `evaluate` method to retrieve the `quotes` service. You can retrieve Http services using `HttpEndpoint.getClient`. The `name` of the service is `quotes`. If you can't retrieve the service, just passed a failed async result to the handler. Otherwise, call `computeEvaluation`.
+Fill the `evaluate` method to retrieve the `quotes` service. You can retrieve Http services using `HttpEndpoint.getWebClient`.
+The `name` of the service is `quotes`. If you can't retrieve the service, just pass a failed async result to the handler. Otherwise, call `computeEvaluation`.
 
 [.assignment]
 ****

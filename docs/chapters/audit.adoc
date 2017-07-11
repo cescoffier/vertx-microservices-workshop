@@ -363,7 +363,6 @@ creation of REST API with Vert.x. We won't go into too much details here, but if
 Vert.x, this is the way to go. On our `Router` we declare a _route_: when a request arrive on `/`, it calls this `Handler`.
 Then, we create the HTTP server. The `requestHandler` is a specific method of the `router`, and we  return the result
 of the `rxListen` method.
-----
 ****
 
 So, the caller can call this method and get a `Single`. It can subscribe on it to bind the server and be notified
