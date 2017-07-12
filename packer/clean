@@ -1,0 +1,7 @@
+#!/bin/bash
+
+rm -rf \
+ packer_cache\
+ output-virtualbox-iso\
+ packer.log
+

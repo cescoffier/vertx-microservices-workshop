@@ -1,0 +1,48 @@
+{
+  "variables": {
+    "fedora_25_url": "https://download.fedoraproject.org/pub/fedora/linux/releases/25/Workstation/x86_64/iso/Fedora-Workstation-netinst-x86_64-25-1.3.iso",
+    "cpus": "1",
+    "memory": "2048",
+    "vram": "128"
+  },
+  "builders": [{
+    "vm_name": "vertx-workshop",
+    "type": "virtualbox-iso",
+    "format": "ova",
+    "guest_os_type": "Fedora_64",
+    "guest_additions_mode": "disable",
+    "iso_url": "{{user `fedora_25_url`}}",
+    "iso_checksum": "6a1e69416b0d72efd2962ce01bdad547074a32b70f7d70e2e6436d16398522a7",
+    "iso_checksum_type": "sha256",
+    "http_directory": "http",
+    "boot_wait": "5s",
+    "boot_command": [
+      "<tab> ",
+      "inst.ks=http://{{.HTTPIP}}:{{.HTTPPort}}/anaconda-ks.cfg ",
+      
+      "biosdevname=0 ",
+      "net.ifnames=0 ",
+      "<enter>"
+    ],
+    "ssh_username": "vertx",
+    "ssh_password": "vertx",
+    "ssh_timeout": "120m",
+    "ssh_pty": "true",
+    "shutdown_command": "echo 'vertx' | sudo -S systemctl poweroff",
+    "vboxmanage": [
+      ["modifyvm", "{{.Name}}", "--cpus", "{{user `cpus`}}"],
+      ["modifyvm", "{{.Name}}", "--memory", "{{user `memory`}}"],
+      ["modifyvm", "{{.Name}}", "--vram", "{{user `vram`}}"]
+    ]
+  }],
+  "provisioners": [{
+    "type": "shell",
+    "scripts": [
+      "scripts/oracle_jdk.sh",
+      "scripts/maven.sh",
+      "scripts/intellij_ce.sh",
+      "scripts/lab_setup.sh"
+    ]
+  }]
+}
+
