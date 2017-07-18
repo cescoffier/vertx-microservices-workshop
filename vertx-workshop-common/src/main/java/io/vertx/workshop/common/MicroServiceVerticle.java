@@ -34,7 +34,7 @@ public class MicroServiceVerticle extends AbstractVerticle {
     publish(record, completionHandler);
   }
 
-  public void publishMessageSource(String name, String address, Class contentClass, Handler<AsyncResult<Void>>
+  public void publishMessageSource(String name, String address, Class<?> contentClass, Handler<AsyncResult<Void>>
       completionHandler) {
     Record record = MessageSource.createRecord(name, address, contentClass);
     publish(record, completionHandler);
@@ -46,7 +46,7 @@ public class MicroServiceVerticle extends AbstractVerticle {
     publish(record, completionHandler);
   }
 
-  public void publishEventBusService(String name, String address, Class serviceClass, Handler<AsyncResult<Void>>
+  public void publishEventBusService(String name, String address, Class<?> serviceClass, Handler<AsyncResult<Void>>
       completionHandler) {
     Record record = EventBusService.createRecord(name, address, serviceClass);
     publish(record, completionHandler);
