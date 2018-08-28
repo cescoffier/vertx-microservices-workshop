@@ -148,7 +148,7 @@ Wow... one single line ? Let's dissect it:
 But, wait, what is the relationship between `AsyncResult` and `Future` ? A `Future` represents the result of an action
 that may, or may not, have occurred yet. The result may be `null` if the `Future` is used to detect the completion of
  an operation. The operation behind a `Future` object may succeed or fail. `AsyncResult` is a structure describing the
-  success of the failure of an operation. So, `Future` are `AsyncResult`. In Vert.x `AsyncResult` instances are
+  success or failure of an operation. So, `Future` are `AsyncResult`. In Vert.x `AsyncResult` instances are
   created from the `Future` class.
 
 `AsyncResult` describes:
