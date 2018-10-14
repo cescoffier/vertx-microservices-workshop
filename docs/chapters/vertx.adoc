@@ -33,7 +33,7 @@ Also, Vert.x is event-driven and also non-blocking. Events are delivered in an
 _event loop_ that **must never be blocked**. Let's explain why. Unlike traditional, let's say "enterprise", systems,
 Vert.x uses a very small number of threads. Some of these threads are _event loops_, they are responsible for
 dispatching the events in `Handlers`. If you block this thread, the events won't be delivered anymore. This
-execution model impacts how you write your code, instead of the _traditional_ mofrl of blocking code, your code is
+execution model impacts how you write your code, instead of the _traditional_ model of blocking code, your code is
 going to be asynchronous footnote:[Asynchronous: the caller does not wait for a returned response, but pass
  a _callback_ which is executed when the result has been computed] and non-blocking footnote:[Non-blocking: the code
   must not block the executing thread - so it must avoid blocking IO, long processing time etc.].
