@@ -16,12 +16,6 @@ After cd'ing into `vertx-workshop-common` and running `mvn clean install`, these
 .../.m2/repository/io/vertx/workshop/vertx-workshop-common/maven-metadata-local.xml
 ```
 
-Create a new directory in the Maven repository:
-
-`.../.m2/repository/io/vertx/workshop/vertx-microservice-workshop/1.0-SNAPSHOT/`
-
-... then copy the parent pom file for this project into that directory, giving it the name `vertx-microservice-workshop-1.0-SNAPSHOT.pom`:
-
-`.../.m2/repository/io/vertx/workshop/vertx-microservice-workshop/1.0-SNAPSHOT/vertx-microservice-workshop-1.0-SNAPSHOT.pom`
+After this, cd into project root dir `vertx-microservices-workshop` and run `mvn -N install`, This will create required directory structure and install parent pom into local maven repo.
 
 Now you can run `mvn clean package` within the other modules and all the maven dependencies will resolve without error.
