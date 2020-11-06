@@ -53,12 +53,11 @@ public class AuditVerticle extends RxMicroServiceVerticle {
     readySingle.doOnSuccess(consumer -> {
       // on success we set the handler that will store message in the database
       consumer.handler(message -> storeInDatabase(message.body()));
-    }).subscribe(consumer -> {
-      // complete the verticle start with a success
-      future.complete();
-    }, error -> {
-      // signal a verticle start failure
-      future.fail(error);
+    }).doOnSuccess(consumer -> {
+      // on success publish the audit endpoint for dashboard to consume
+      rxPublishHttpEndpoint("audit", "localhost", config().getInteger("http.port", 36000))
+        .doOnSuccess(future::complete)
+        .doOnError(future::fail);
     });
   }
 
